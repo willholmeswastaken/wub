@@ -1,7 +1,7 @@
 import { db } from '@/server/db';
 import { links } from '@/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
  
 export async function GET(
     request: Request,

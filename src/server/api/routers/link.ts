@@ -10,7 +10,7 @@ export const linkRouter = createTRPCRouter({
      }))
     .mutation(async ({ ctx, input }) => {
       let unique = false;
-      let short_code: string = '';
+      let short_code = '';
       while(!unique) {
         short_code = getShortcode();
         const existingLink = await ctx.db.query.links.findFirst({
@@ -34,7 +34,7 @@ export const linkRouter = createTRPCRouter({
      }))
     .mutation(async ({ ctx, input }) => {
       let unique = false;
-      let short_code: string = '';
+      let short_code = '';
       while(!unique) {
         short_code = getShortcode();
         const existingLink = await ctx.db.query.links.findFirst({
