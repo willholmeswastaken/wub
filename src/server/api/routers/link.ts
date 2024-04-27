@@ -3,6 +3,8 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/
 import { links } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
+// todo: Need to add rate limiting.
+
 export const linkRouter = createTRPCRouter({
     create: protectedProcedure
     .input(z.object({ 
