@@ -19,6 +19,16 @@ import { type AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `wub_${name}`);
 
+export const links = createTable("link", {
+  short_code: varchar("short_code", { length: 8 }).notNull().primaryKey(),
+  url: varchar("url", { length: 2048 }).notNull(),
+  title: text("title"),
+  userId: varchar("userId", { length: 255 })
+  .notNull()
+  .references(() => users.id),
+  createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
+});
+
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
   name: varchar("name", { length: 255 }),
@@ -31,6 +41,7 @@ export const users = createTable("user", {
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
+  links: many(links),
 }));
 
 export const accounts = createTable(
