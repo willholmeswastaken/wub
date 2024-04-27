@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { links } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { db } from "@/server/db";
 
 // todo: Need to add rate limiting.
 
@@ -11,49 +12,35 @@ export const linkRouter = createTRPCRouter({
         url: z.string().url(),
      }))
     .mutation(async ({ ctx, input }) => {
-      let unique = false;
-      let short_code = '';
-      while(!unique) {
-        short_code = getShortcode();
-        const existingLink = await ctx.db.query.links.findFirst({
-            where: eq(links.short_code, short_code)
-        });
-        if(!existingLink) {
-            unique = true;
-        }
-      }
-      await ctx.db.insert(links).values({
-        url: input.url,
-        userId: ctx.session.user.id,
-        short_code
-      });
-
-      return short_code;
+      return await createShortLink(ctx.db, '', input.url, ctx.session.user.id);
     }),
     createAnon: publicProcedure
     .input(z.object({ 
         url: z.string().url(),
      }))
     .mutation(async ({ ctx, input }) => {
-      let unique = false;
-      let short_code = '';
+      return await createShortLink(ctx.db, '', input.url);
+    }),
+});
+
+async function createShortLink(database: typeof db, short_code: string, url: string, userId?: string): Promise<string> {
+    let unique = false;
       while(!unique) {
         short_code = getShortcode();
-        const existingLink = await ctx.db.query.links.findFirst({
+        const existingLink = await database.query.links.findFirst({
             where: eq(links.short_code, short_code)
         });
         if(!existingLink) {
             unique = true;
         }
       }
-      await ctx.db.insert(links).values({
-        url: input.url,
+      await database.insert(links).values({
+        url,
         short_code
       });
 
       return short_code;
-    }),
-});
+}
 
 function getShortcode() {
     const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
