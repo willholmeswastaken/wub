@@ -32,6 +32,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                     </div>
                     <div className="w-full max-w-sm space-y-2">
                         <form className="flex space-x-2" onSubmit={e => {
+                            // todo: tidy up so that the value of the url is retrieved from state. Eventually will use a form lib.
                             e.preventDefault();
                             if (isLoggedIn) {
                                 loggedInCreate.mutate({ url: parseUrl() });
