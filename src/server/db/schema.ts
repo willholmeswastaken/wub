@@ -24,7 +24,6 @@ export const links = createTable("link", {
   url: varchar("url", { length: 2048 }).notNull(),
   title: text("title"),
   userId: varchar("userId", { length: 255 })
-  .notNull()
   .references(() => users.id),
   createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
 });
