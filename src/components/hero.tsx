@@ -3,20 +3,40 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
-import { useState } from "react";
+import { useForm, SubmitHandler } from "react-hook-form"
+
+type UrlInput = {
+    url: string;
+}
 
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     const anonCreate = api.link.createAnon.useMutation({
         onSuccess(shortCode) {
             // alert(`Shortened URL: ${window.location.origin}/${shortCode}`);
+            setValue("url", "");
         }
     });
     const loggedInCreate = api.link.create.useMutation();
-    const [url, setUrl] = useState('');
 
-    const parseUrl = () => !url.startsWith('http://') || !url.startsWith('https://')
+    const parseUrl = (url: string) => !url.startsWith('http://') || !url.startsWith('https://')
         ? `https://${url}`
         : url;
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        setValue
+    } = useForm<UrlInput>()
+
+    const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
+        const parsedUrl = parseUrl(url);
+        if (isLoggedIn) {
+            loggedInCreate.mutate({ url: parsedUrl });
+        } else {
+            anonCreate.mutate({ url: parsedUrl });
+        }
+    }
     return (
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
             <div className="container px-4 md:px-6">
@@ -31,18 +51,18 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                         </p>
                     </div>
                     <div className="w-full max-w-sm space-y-2">
-                        <form className="flex space-x-2" onSubmit={e => {
-                            // todo: tidy up so that the value of the url is retrieved from state. Eventually will use a form lib.
-                            e.preventDefault();
-                            if (isLoggedIn) {
-                                loggedInCreate.mutate({ url: parseUrl() });
-                            } else {
-                                anonCreate.mutate({ url: parseUrl() });
-                            }
-                        }}>
-                            <Input className="max-w-lg flex-1" placeholder="Enter a long URL" onChange={e => setUrl(e.target.value)} />
-                            <Button type="submit">Shorten</Button>
-                        </form>
+                        <div className="flex flex-col">
+                            <form className="flex space-x-2" onSubmit={handleSubmit(onSubmit)}>
+                                <Input
+                                    className="max-w-lg flex-1"
+                                    placeholder="Enter a long URL"
+                                    {...register("url", { required: true })}
+                                />
+
+                                <Button type="submit">Shorten</Button>
+                            </form>
+                            {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
+                        </div>
                     </div>
                 </div>
             </div>
