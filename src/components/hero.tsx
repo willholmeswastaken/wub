@@ -8,7 +8,7 @@ import { useState } from "react";
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     const anonCreate = api.link.createAnon.useMutation({
         onSuccess(shortCode) {
-            alert(`Shortened URL: ${window.location.origin}/${shortCode}`);
+            // alert(`Shortened URL: ${window.location.origin}/${shortCode}`);
         }
     });
     const loggedInCreate = api.link.create.useMutation();
