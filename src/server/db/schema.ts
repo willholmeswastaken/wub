@@ -23,8 +23,9 @@ export const links = createTable("link", {
   url: varchar("url", { length: 2048 }).notNull(),
   title: text("title"),
   userId: varchar("userId", { length: 255 })
-  .references(() => users.id),
+    .references(() => users.id),
   createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
+  click_count: integer("click_count").default(0),
 });
 
 export const users = createTable("user", {
