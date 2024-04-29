@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { Header } from "@/components/header";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,12 +26,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${inter.variable}`}>
         <TRPCReactProvider>
-          <div className="flex flex-col min-h-[100dvh]">
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
+          <>
+            <div className="flex flex-col min-h-[100dvh]">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
+            </div>
+            <Toaster />
+          </>
         </TRPCReactProvider>
       </body>
     </html >
