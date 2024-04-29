@@ -4,19 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
 import { useForm, SubmitHandler } from "react-hook-form"
+import { Spinner } from "./ui/spinner";
+import { toast } from "sonner";
+import copy from 'clipboard-copy';
 
 type UrlInput = {
     url: string;
 }
 
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
-    const anonCreate = api.link.createAnon.useMutation({
+    const { mutate: anonMutate, isPending: anonMutatePending } = api.link.createAnon.useMutation({
         onSuccess(shortCode) {
-            // alert(`Shortened URL: ${window.location.origin}/${shortCode}`);
+            const shortLink = `${window.location.origin}/${shortCode}`;
+            toast.success("Short link created!", {
+                description: shortLink,
+                action: {
+                    label: "Copy link",
+                    onClick: () => {
+                        void copy(shortLink);
+                    },
+                },
+            });
             setValue("url", "");
         }
     });
-    const loggedInCreate = api.link.create.useMutation();
+    const { mutate: loggedInMutate, isPending: loggedInMutatePending } = api.link.create.useMutation();
 
     const parseUrl = (url: string) => !url.startsWith('http://') || !url.startsWith('https://')
         ? `https://${url}`
@@ -32,9 +44,9 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
         const parsedUrl = parseUrl(url);
         if (isLoggedIn) {
-            loggedInCreate.mutate({ url: parsedUrl });
+            loggedInMutate({ url: parsedUrl });
         } else {
-            anonCreate.mutate({ url: parsedUrl });
+            anonMutate({ url: parsedUrl });
         }
     }
     return (
@@ -59,7 +71,13 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                                     {...register("url", { required: true })}
                                 />
 
-                                <Button type="submit">Shorten</Button>
+                                <Button type="submit" className="w-20">
+                                    {
+                                        anonMutatePending || loggedInMutatePending
+                                            ? (<Spinner size='small' className="text-white" />)
+                                            : 'Shorten'
+                                    }
+                                </Button>
                             </form>
                             {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
                         </div>
