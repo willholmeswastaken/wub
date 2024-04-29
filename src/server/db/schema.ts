@@ -4,6 +4,7 @@ import {
   integer,
   pgTableCreator,
   primaryKey,
+  serial,
   text,
   timestamp,
   varchar,
@@ -27,6 +28,20 @@ export const links = createTable("link", {
   createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
   click_count: integer("click_count").default(0),
 });
+
+export const linksRelations = relations(links, ({ many }) => ({
+  clicks: many(clicks)
+}));
+
+export const clicks = createTable("click", {
+  id: serial("id").primaryKey(),
+  short_code: varchar("short_code", { length: 8 }).notNull(),
+  timestamp: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
+  userAgent: text("userAgent"),
+  ipAddress: varchar("ipAddress", { length: 255 }),
+}, (click) => ({
+  shortCodeIdx: index("click_short_code_idx").on(click.short_code)
+}));
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
