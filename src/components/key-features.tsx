@@ -9,7 +9,7 @@ export function KeyFeatures() {
                         <div className="space-y-2">
                             <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Powerful Link Shortening</h2>
                             <p className="max-w-[600px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                                Need to share your link and get access to analytics from them? We've got you covered. We are free and open-source.
+                                Need to share your link and get access to analytics from them? We&apos;ve got you covered. We are free and open-source.
                             </p>
                         </div>
                         <div className="flex flex-col gap-2 min-[400px]:flex-row">
