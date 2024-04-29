@@ -28,7 +28,7 @@ export const logClick = inngest.createFunction(
             throw new NonRetriableError("Short link not found");
         }
 
-        logger.info({ short_code: event.data.short_code, click_count: res }, "Click count updated");
+        logger.info({ short_code: event.data.short_code, new_click_count: res }, "Click count updated");
         return { new_click_count: res }
     },
 );
