@@ -1,6 +1,5 @@
 import { db } from '@/server/db';
 import { links } from '@/server/db/schema';
-import { inngest } from '@/server/inngest/client';
 import logger from '@/server/logger';
 import { queueClient } from '@/server/qstash';
 import { eq } from 'drizzle-orm';

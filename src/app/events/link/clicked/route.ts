@@ -4,7 +4,7 @@ import logger from "@/server/logger";
 import { LogClickEvent } from "@/server/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { sql, eq } from "drizzle-orm";
-import { NonRetriableError } from "inngest";
+import { NextResponse } from "next/server";
 
 async function handler(request: Request) {
     const data = await request.json() as LogClickEvent;
@@ -19,7 +19,7 @@ async function handler(request: Request) {
 
     if (res.length === 0) {
         logger.info({ short_code: data.short_code }, "Short link not found, cant update click count");
-        throw new NonRetriableError("Short link not found");
+        return new NextResponse('Bad Request', { status: 400 });
     }
 
     logger.info({ short_code: data.short_code, new_click_count: res }, "Click count updated");
