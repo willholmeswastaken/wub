@@ -27,6 +27,7 @@ export const links = createTable("link", {
     .references(() => users.id),
   createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
   click_count: integer("click_count").default(0),
+  expires_at: timestamp("expires_at", { mode: "date" }),
 });
 
 export const linksRelations = relations(links, ({ many }) => ({

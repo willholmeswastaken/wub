@@ -49,7 +49,8 @@ async function createShortLink(database: typeof db, url: string, userId?: string
   }
   await database.insert(links).values({
     url,
-    short_code
+    short_code,
+    expires_at: userId ? null : new Date(new Date().getTime() + (30 * 60 * 1000))
   });
 
   shortLinkLogger.info({ short_code }, 'Short link created in database');

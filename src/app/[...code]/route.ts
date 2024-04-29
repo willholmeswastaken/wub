@@ -21,6 +21,10 @@ export async function GET(
         functionLogger.info('Short link not found');
         redirect('/')
     }
+    if (route.expires_at && route.expires_at > new Date()) {
+        functionLogger.info('Short link expired');
+        redirect('/')
+    }
 
     await queueClient.logClick({
         short_code: params.code,
