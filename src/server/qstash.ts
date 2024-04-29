@@ -3,7 +3,7 @@ import { Client } from "@upstash/qstash";
 
 export const qStashClient = new Client({ token: env.QSTASH_TOKEN });
 
-type LogClickEvent = {
+export type LogClickEvent = {
     short_code: string;
 }
 
