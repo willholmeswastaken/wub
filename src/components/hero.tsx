@@ -20,8 +20,8 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                 description: shortLink,
                 action: {
                     label: "Copy link",
-                    onClick: async () => {
-                        await copy(shortLink);
+                    onClick: () => {
+                        void copy(shortLink);
                     },
                 },
             });
