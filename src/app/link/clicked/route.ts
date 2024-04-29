@@ -7,7 +7,7 @@ import { sql, eq } from "drizzle-orm";
 import { NonRetriableError } from "inngest";
 
 async function handler(request: Request) {
-    const data: LogClickEvent = await request.json();
+    const data = await request.json() as LogClickEvent;
 
     logger.info({ short_code: data.short_code }, "Log click event received");
 
