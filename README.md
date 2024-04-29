@@ -2,11 +2,12 @@
 The open-source url shortener.
 
 ## Tech Stack
-1. Hosting - Vercel
-2. DB - Neon
-3. Logs - LogFlare
-4. Redis / Ratelimiting - Upstash
-5. Inngest - Serverless queueing
+1. Vercel - Hosting
+2. Neon Postgres - DB
+3. LogFlare - Additional Logging
+4. Upstash
+    1. Redis - Rate limiting
+    2. QStash - Serverless queuing
 
 ## Project management
 Using Linear to keep a backlog of ideas / things I want to do with Wub.
