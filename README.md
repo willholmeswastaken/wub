@@ -6,6 +6,7 @@ The open-source url shortener.
 2. DB - Neon
 3. Logs - LogFlare
 4. Redis / Ratelimiting - Upstash
+5. Inngest - Serverless queueing
 
 ## Project management
 Using Linear to keep a backlog of ideas / things I want to do with Wub.
