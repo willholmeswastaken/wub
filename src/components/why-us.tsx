@@ -6,11 +6,10 @@ export function WhyUs() {
             <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6 lg:gap-10">
                 <div className="space-y-3">
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                        Why Choose Our Link Shortener?
+                        Why Choose Wub?
                     </h2>
                     <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-                        Our link shortener offers a range of features to help you streamline your online presence. Batch link
-                        shortening, custom domains, and advanced analytics put you in control.
+                        Wub puts you in control of your links. Our powerful link shortening tool lets you create short, tracked, and branded links.
                     </p>
                 </div>
                 <div className="grid w-full grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -18,16 +17,16 @@ export function WhyUs() {
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                             <LinkIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                         </div>
-                        <h3 className="mt-4 text-xl font-bold">Batch Link Shortening</h3>
-                        <p className="mt-2 text-gray-500 dark:text-gray-400">Save time by shortening multiple links at once.</p>
+                        <h3 className="mt-4 text-xl font-bold">Quick link response handling</h3>
+                        <p className="mt-2 text-gray-500 dark:text-gray-400">Our service utilises Vercel's edge network. Meaning we can act as quickly as possible.</p>
                     </div>
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                             <GlobeIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
                         </div>
-                        <h3 className="mt-4 text-xl font-bold">Custom Domains</h3>
+                        <h3 className="mt-4 text-xl font-bold">Custom Short Links</h3>
                         <p className="mt-2 text-gray-500 dark:text-gray-400">
-                            Use your own domain to create branded, memorable links.
+                            Use your own wording to create a meaningful, custom short link.
                         </p>
                     </div>
                     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
@@ -36,7 +35,7 @@ export function WhyUs() {
                         </div>
                         <h3 className="mt-4 text-xl font-bold">Advanced Analytics</h3>
                         <p className="mt-2 text-gray-500 dark:text-gray-400">
-                            Track clicks, referrers, and more to optimize your links.
+                            Track clicks, geographic data and optimize your links.
                         </p>
                     </div>
                 </div>
