@@ -21,7 +21,7 @@ export async function GET(
         functionLogger.info('Short link not found');
         redirect('/')
     }
-    if (route.expires_at && route.expires_at > new Date()) {
+    if (route.expires_at && new Date() > route.expires_at) {
         functionLogger.info('Short link expired');
         redirect('/')
     }
