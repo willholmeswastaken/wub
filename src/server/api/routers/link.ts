@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
+import { TRPCError } from "@trpc/server";
 
 export const linkRouter = createTRPCRouter({
   create: protectedProcedure
@@ -14,7 +15,7 @@ export const linkRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const rateLimited = await protectRoute(ctx.headers.get('x-forwarded-for'));
       if (rateLimited) {
-        throw new Error("Unable to process request")
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Unable to process request' });
       }
       return await createShortLink(ctx.db, input.url, ctx.session.user.id);
     }),
@@ -25,7 +26,7 @@ export const linkRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const rateLimited = await protectRoute(ctx.headers.get('x-forwarded-for'));
       if (rateLimited) {
-        throw new Error("Unable to process request")
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Unable to process request' });
       }
       return await createShortLink(ctx.db, input.url);
     }),
