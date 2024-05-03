@@ -8,6 +8,7 @@ import { Spinner } from "./ui/spinner";
 import { toast } from "sonner";
 import copy from 'clipboard-copy';
 import { parseUrl } from "@/lib/url";
+import LinkStackView from "./link-stack-view";
 
 type UrlInput = {
     url: string;
@@ -85,6 +86,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                                 </Button>
                             </form>
                             {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
+                            <LinkStackView />
                         </div>
                     </div>
                 </div>
