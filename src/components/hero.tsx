@@ -69,7 +69,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                         </p>
                     </div>
                     <div className="w-full max-w-sm space-y-2">
-                        <div className="flex flex-col">
+                        <div className="flex flex-col space-y-4">
                             <form className="flex space-x-2" onSubmit={handleSubmit(onSubmit)}>
                                 <Input
                                     className="max-w-lg flex-1"
