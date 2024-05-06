@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LinkIcon } from "./link-icon";
 
-export default function ShortLink({ url, clicks }: { url: string, clicks: number }) {
+export default function ShortLink({ url, clicks, shortUrl }: { url: string, clicks: number, shortUrl: string }) {
     // make it animate in
     // add copy button
     // make clicks look cool with icon graph
@@ -14,7 +14,7 @@ export default function ShortLink({ url, clicks }: { url: string, clicks: number
                 <LinkIcon />
                 <div className="flex flex-col items-start justify-start space-y-0">
                     <CardTitle className="flex flex-row space-x-2">
-                        <span>{url}</span>
+                        <span>{shortUrl}</span>
                         <span>{clicks}</span>
                     </CardTitle>
                     <CardDescription>{url}</CardDescription>

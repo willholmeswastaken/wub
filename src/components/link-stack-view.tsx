@@ -33,6 +33,7 @@ export default function LinkStackView() {
                     <ShortLink
                         url={link.url}
                         clicks={link.clicks}
+                        shortUrl={link.shortUrl}
                     />
                 </motion.div>
             ))}
