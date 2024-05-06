@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { links } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
-import { db } from "@/server/db";
+import { type InferInsertModel, eq } from "drizzle-orm";
+import { type db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
 import { TRPCError } from "@trpc/server";
@@ -32,7 +32,7 @@ export const linkRouter = createTRPCRouter({
     }),
 });
 
-async function createShortLink(database: typeof db, url: string, userId?: string): Promise<string> {
+async function createShortLink(database: typeof db, url: string, userId?: string): Promise<InferInsertModel<typeof links>> {
   const shortLinkLogger = logger.child({ url, userId });
   let unique = false;
   let short_code = '';
@@ -48,14 +48,14 @@ async function createShortLink(database: typeof db, url: string, userId?: string
       shortLinkLogger.info({ short_code }, 'Unique short code found');
     }
   }
-  await database.insert(links).values({
+  const link = await database.insert(links).values({
     url,
     short_code,
     expires_at: userId ? null : new Date(new Date().getTime() + (30 * 60 * 1000))
-  });
+  }).returning();
 
   shortLinkLogger.info({ short_code }, 'Short link created in database');
-  return short_code;
+  return link[0]!;
 }
 
 function getShortcode() {

@@ -1,5 +1,6 @@
 'use client';
 
+import { useLinkStore } from "@/stores/link";
 import ShortLink from "./short-link";
 import { motion } from "framer-motion";
 
@@ -19,17 +20,19 @@ const item = {
 };
 
 export default function LinkStackView() {
+    const links = useLinkStore(state => state.links);
+    if (links.length === 0) return null;
     return (
         <motion.div
             variants={container}
             initial="hidden"
             animate="show"
             className="flex flex-col space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-                <motion.div key={i} variants={item} className="item">
+            {links.map((link) => (
+                <motion.div key={link.shortUrl} variants={item} className="item">
                     <ShortLink
-                        url="https://drizzle.team"
-                        clicks={100}
+                        url={link.url}
+                        clicks={link.clicks}
                     />
                 </motion.div>
             ))}

@@ -26,7 +26,7 @@ export const links = createTable("link", {
   userId: varchar("userId", { length: 255 })
     .references(() => users.id),
   createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
-  click_count: integer("click_count").default(0),
+  click_count: integer("click_count").notNull().default(0),
   expires_at: timestamp("expires_at", { mode: "date" }),
 });
 

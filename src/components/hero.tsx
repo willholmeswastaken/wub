@@ -3,27 +3,31 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
-import { useForm, SubmitHandler } from "react-hook-form"
+import { useForm, type SubmitHandler } from "react-hook-form"
 import { Spinner } from "./ui/spinner";
 import { toast } from "sonner";
 import copy from 'clipboard-copy';
 import { parseUrl } from "@/lib/url";
 import LinkStackView from "./link-stack-view";
+import { useLinkStore } from "@/stores/link";
+import { type InferInsertModel } from "drizzle-orm";
+import { type links } from "@/server/db/schema";
 
 type UrlInput = {
     url: string;
 }
 
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
+    const addTempLink = useLinkStore(state => state.addLink);
     const {
         register,
         handleSubmit,
         formState: { errors },
-        setValue
+        setValue,
     } = useForm<UrlInput>();
 
-    const onShortLinkSuccess = (shortCode: string) => {
-        const shortLink = `${window.location.origin}/${shortCode}`;
+    const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
+        const shortLink = `${window.location.origin}/${link.short_code}`;
         toast.success("Short link created!", {
             description: shortLink,
             action: {
@@ -33,12 +37,18 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                 },
             },
         });
+        addTempLink({
+            url: link.url,
+            clicks: link.click_count!,
+            shortUrl: shortLink,
+            expiresAt: link.expires_at
+        });
         setValue("url", "");
     }
 
     const { mutate: anonMutate, isPending: anonMutatePending } = api.link.createAnon.useMutation({
-        onSuccess(shortCode) {
-            onShortLinkSuccess(shortCode);
+        onSuccess(link) {
+            onShortLinkSuccess(link);
         }
     });
     const { mutate: loggedInMutate, isPending: loggedInMutatePending } = api.link.create.useMutation({
