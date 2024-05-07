@@ -4,13 +4,9 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { LinkIcon } from "./link-icon";
 import { BarChartIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-export default function ShortLink({ url, clicks, shortUrl }: { url: string, clicks: number, shortUrl: string }) {
-    // make it animate in
-    // add copy button
-    // make clicks look cool with icon graph
-    // add a default favicon
-
+export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: string, clicks: number, shortUrl: string, expiresAt?: Date | null }) {
     const copyLinkToClipboard = () => {
         navigator.clipboard.writeText(shortUrl)
             .then(() => {
@@ -21,8 +17,10 @@ export default function ShortLink({ url, clicks, shortUrl }: { url: string, clic
                 console.error(err);
             });
     }
+
+    const isExpired = !!expiresAt && new Date(expiresAt) < new Date();
     return (
-        <Card className="hover:border-black duration-75 transition-[border-color] cursor-pointer shadow-lg border-gray-200">
+        <Card className={cn("hover:border-black duration-75 transition-[border-color] cursor-pointer shadow-lg border-gray-200", isExpired && "line-through text-gray-400 cursor-not-allowed")}>
             <CardHeader className="flex flex-row px-4 py-3 space-x-2 items-center justify-start space-y-0">
                 <LinkIcon className="h-10 w-10" />
                 <div className="flex flex-col space-y-0 items-start">
@@ -31,7 +29,8 @@ export default function ShortLink({ url, clicks, shortUrl }: { url: string, clic
                             {shortUrl}
                         </CardTitle>
                         <button
-                            className="bg-gray-100 hover:bg-blue-200 transition-all rounded-full duration-75 hover:scale-105 active:scale-95 p-1.5"
+                            className={cn("bg-gray-100 hover:bg-blue-200 transition-all rounded-full duration-75 hover:scale-105 active:scale-95 p-1.5", isExpired && "cursor-not-allowed")}
+                            disabled={isExpired}
                             onClick={copyLinkToClipboard}
                         >
                             <CopyIcon width={14} height={14} className="text-gray-700 transition-all group-hover:text-blue-800" />

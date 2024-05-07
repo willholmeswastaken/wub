@@ -9,14 +9,14 @@ const container = {
     show: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.1,
+            staggerChildren: 0.2,
         },
     },
 };
 
 const item = {
     hidden: { scale: 0 },
-    show: { scale: 1, transition: { duration: 0.25, type: "spring" } },
+    show: { scale: 1, transition: { duration: 0.4, type: "spring" } },
 };
 
 export default function LinkStackView() {
@@ -34,6 +34,7 @@ export default function LinkStackView() {
                         url={link.url}
                         clicks={link.clicks}
                         shortUrl={link.shortUrl}
+                        expiresAt={link.expiresAt}
                     />
                 </motion.div>
             ))}
