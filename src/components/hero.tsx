@@ -89,14 +89,6 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                                     placeholder="Enter a long URL"
                                     {...register("url", { required: true })}
                                 />
-
-                                <Button type="submit" className="w-20">
-                                    {
-                                        anonMutatePending || loggedInMutatePending
-                                            ? (<Spinner size='small' className="text-white" />)
-                                            : 'Shorten'
-                                    }
-                                </Button>
                             </form>
                             {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
                             <LinkStackView />
