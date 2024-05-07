@@ -85,10 +85,18 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                         <div className="flex flex-col space-y-4">
                             <form className="flex space-x-2" onSubmit={handleSubmit(onSubmit)}>
                                 <Input
-                                    className="max-w-lg flex-1"
-                                    placeholder="Enter a long URL"
+                                    className="max-w-lg flex-1 text-base"
+                                    placeholder="https://willholmes.dev"
                                     {...register("url", { required: true })}
                                 />
+
+                                <Button type="submit" className="w-20">
+                                    {
+                                        anonMutatePending || loggedInMutatePending
+                                            ? (<Spinner size='small' className="text-white" />)
+                                            : 'Shorten'
+                                    }
+                                </Button>
                             </form>
                             {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
                             <LinkStackView />
