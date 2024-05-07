@@ -8,7 +8,7 @@ export function Header() {
                 <LinkIcon className="h-6 w-6" />
                 <span className="sr-only">Link Shortener</span>
             </Link>
-            <nav className="ml-auto flex gap-4 sm:gap-6">
+            {/* <nav className="ml-auto flex gap-4 sm:gap-6">
                 <Link className="text-sm font-medium hover:underline underline-offset-4" href="#">
                     Features
                 </Link>
@@ -21,7 +21,7 @@ export function Header() {
                 <Link className="text-sm font-medium hover:underline underline-offset-4" href="#">
                     Contact
                 </Link>
-            </nav>
+            </nav> */}
         </header>
     )
 }
