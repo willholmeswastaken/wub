@@ -23,7 +23,7 @@ export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: s
         <Card className={cn("hover:border-black duration-75 transition-[border-color] cursor-pointer shadow-lg border-gray-200", isExpired && "line-through text-gray-400 cursor-not-allowed")}>
             <CardHeader className="flex flex-row px-4 py-3 space-x-2 items-center justify-start space-y-0">
                 <LinkIcon className="h-10 w-10" />
-                <div className="flex flex-col space-y-0 items-start">
+                <div className="flex flex-col flex-wrap space-y-0 items-start">
                     <div className="flex flex-row space-x-2 items-center">
                         <CardTitle className="">
                             {shortUrl}
