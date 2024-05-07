@@ -2,23 +2,45 @@
 
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LinkIcon } from "./link-icon";
-import { CopyIcon } from "lucide-react";
+import { BarChartIcon, CopyIcon } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ShortLink({ url, clicks, shortUrl }: { url: string, clicks: number, shortUrl: string }) {
     // make it animate in
     // add copy button
     // make clicks look cool with icon graph
     // add a default favicon
+
+    const copyLinkToClipboard = () => {
+        navigator.clipboard.writeText(shortUrl)
+            .then(() => {
+                toast.success("Link copied to clipboard")
+            })
+            .catch(err => {
+                toast.error("Failed to copy link to clipboard")
+                console.error(err);
+            });
+    }
     return (
         <Card className="hover:border-black duration-75 transition-[border-color] cursor-pointer shadow-lg border-gray-200">
-            <CardHeader className="flex flex-row p-4 space-x-2 items-center justify-start space-y-0">
+            <CardHeader className="flex flex-row px-4 py-3 space-x-2 items-center justify-start space-y-0">
                 <LinkIcon className="h-10 w-10" />
                 <div className="flex flex-col space-y-0 items-start">
-                    <CardTitle className="flex flex-row space-x-2 items-center">
-                        <span>{shortUrl}</span>
-                        <span>{clicks}</span>
-                        <button className="bg-gray-100 hover:bg-blue-200 transition-all rounded-full duration-75 hover:scale-105 active:scale-95 p-1.5"><CopyIcon width={14} height={14} className="text-gray-700 transition-all group-hover:text-blue-800" /></button>
-                    </CardTitle>
+                    <div className="flex flex-row space-x-2 items-center">
+                        <CardTitle className="">
+                            {shortUrl}
+                        </CardTitle>
+                        <button
+                            className="bg-gray-100 hover:bg-blue-200 transition-all rounded-full duration-75 hover:scale-105 active:scale-95 p-1.5"
+                            onClick={copyLinkToClipboard}
+                        >
+                            <CopyIcon width={14} height={14} className="text-gray-700 transition-all group-hover:text-blue-800" />
+                        </button>
+                        <div className="flex flex-row space-x-1 bg-gray-100 p-1.5 rounded-lg items-center text-sm transition-all hover:scale-105">
+                            <BarChartIcon width={14} height={14} className="text-gray-700" />
+                            <span className="hidden sm:block">{clicks} clicks</span>
+                        </div>
+                    </div>
                     <CardDescription>{url}</CardDescription>
                 </div>
             </CardHeader>
