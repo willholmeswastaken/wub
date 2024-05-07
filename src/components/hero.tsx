@@ -3,26 +3,31 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
-import { useForm, SubmitHandler } from "react-hook-form"
+import { useForm, type SubmitHandler } from "react-hook-form"
 import { Spinner } from "./ui/spinner";
 import { toast } from "sonner";
 import copy from 'clipboard-copy';
 import { parseUrl } from "@/lib/url";
+import LinkStackView from "./link-stack-view";
+import { useLinkStore } from "@/stores/link";
+import { type InferInsertModel } from "drizzle-orm";
+import { type links } from "@/server/db/schema";
 
 type UrlInput = {
     url: string;
 }
 
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
+    const addTempLink = useLinkStore(state => state.addLink);
     const {
         register,
         handleSubmit,
         formState: { errors },
-        setValue
+        setValue,
     } = useForm<UrlInput>();
 
-    const onShortLinkSuccess = (shortCode: string) => {
-        const shortLink = `${window.location.origin}/${shortCode}`;
+    const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
+        const shortLink = `${window.location.origin}/${link.short_code}`;
         toast.success("Short link created!", {
             description: shortLink,
             action: {
@@ -32,12 +37,18 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                 },
             },
         });
+        addTempLink({
+            url: link.url,
+            clicks: link.click_count!,
+            shortUrl: shortLink,
+            expiresAt: link.expires_at
+        });
         setValue("url", "");
     }
 
     const { mutate: anonMutate, isPending: anonMutatePending } = api.link.createAnon.useMutation({
-        onSuccess(shortCode) {
-            onShortLinkSuccess(shortCode);
+        onSuccess(link) {
+            onShortLinkSuccess(link);
         }
     });
     const { mutate: loggedInMutate, isPending: loggedInMutatePending } = api.link.create.useMutation({
@@ -47,6 +58,9 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     });
 
     const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
+        // @ts-expect-error its ok
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        document.activeElement?.blur();
         const parsedUrl = parseUrl(url);
         if (isLoggedIn) {
             loggedInMutate({ url: parsedUrl });
@@ -56,7 +70,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+        <section className="w-full py-12 md:py-24 lg:py-32">
             <div className="container px-4 md:px-6">
                 <div className="flex flex-col items-center space-y-4 text-center">
                     <div className="space-y-2">
@@ -67,12 +81,12 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                             Wub is the open-source link shortener that is built to scale.
                         </p>
                     </div>
-                    <div className="w-full max-w-sm space-y-2">
-                        <div className="flex flex-col">
+                    <div className="w-full max-w-lg space-y-2">
+                        <div className="flex flex-col space-y-4">
                             <form className="flex space-x-2" onSubmit={handleSubmit(onSubmit)}>
                                 <Input
-                                    className="max-w-lg flex-1"
-                                    placeholder="Enter a long URL"
+                                    className="max-w-lg flex-1 text-base"
+                                    placeholder="https://willholmes.dev"
                                     {...register("url", { required: true })}
                                 />
 
@@ -85,6 +99,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                                 </Button>
                             </form>
                             {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
+                            <LinkStackView />
                         </div>
                     </div>
                 </div>
