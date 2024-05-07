@@ -58,6 +58,9 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     });
 
     const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
+        // @ts-expect-error its ok
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+        document.activeElement?.blur();
         const parsedUrl = parseUrl(url);
         if (isLoggedIn) {
             loggedInMutate({ url: parsedUrl });
