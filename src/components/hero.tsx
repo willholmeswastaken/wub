@@ -53,8 +53,8 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
         }
     });
     const { mutate: loggedInMutate, isPending: loggedInMutatePending } = api.link.create.useMutation({
-        onSuccess(shortCode) {
-            onShortLinkSuccess(shortCode);
+        onSuccess(link) {
+            onShortLinkSuccess(link);
         }
     });
 
@@ -83,7 +83,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                         </p>
                     </div>
                     <div className="w-full max-w-lg space-y-2">
-                        <div className="flex flex-col space-y-4">
+                        <div className="flex flex-col space-y-6">
                             <form className="flex space-x-2" onSubmit={handleSubmit(onSubmit)}>
                                 <Input
                                     className="max-w-lg flex-1 text-base"
