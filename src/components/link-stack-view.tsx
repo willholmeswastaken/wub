@@ -3,6 +3,7 @@
 import { useLinkStore } from "@/stores/link";
 import ShortLink from "./short-link";
 import { motion } from "framer-motion";
+import { api } from "@/trpc/react";
 
 const container = {
     hidden: { opacity: 0 },
@@ -21,6 +22,7 @@ const item = {
 
 export default function LinkStackView() {
     const links = useLinkStore(state => state.links);
+    const { data } = api.link.getTempLinks.useQuery(links.map(link => link.shortCode))
     if (links.length === 0) return null;
     return (
         <motion.div
@@ -32,7 +34,7 @@ export default function LinkStackView() {
                 <motion.div key={link.shortUrl} variants={item} className="item">
                     <ShortLink
                         url={link.url}
-                        clicks={link.clicks}
+                        clicks={data?.find(tl => tl.short_code === link.shortCode)?.click_count ?? link.clicks}
                         shortUrl={link.shortUrl}
                         expiresAt={link.expiresAt}
                     />

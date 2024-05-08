@@ -6,6 +6,7 @@ type TempLink = {
     clicks: number;
     shortUrl: string;
     expiresAt?: Date | null;
+    shortCode: string;
 };
 
 export const useLinkStore = create<{ links: Array<TempLink>, addLink: (link: TempLink) => void }>()(

@@ -41,7 +41,8 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
             url: link.url,
             clicks: link.click_count!,
             shortUrl: shortLink,
-            expiresAt: link.expires_at
+            expiresAt: link.expires_at,
+            shortCode: link.short_code,
         });
         setValue("url", "");
     }
