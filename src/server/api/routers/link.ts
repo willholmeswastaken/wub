@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { links } from "@/server/db/schema";
-import { type InferInsertModel, eq, inArray, and, isNotNull } from "drizzle-orm";
+import { type InferInsertModel, eq, inArray, and, isNotNull, isNull } from "drizzle-orm";
 import { type db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
@@ -35,7 +35,7 @@ export const linkRouter = createTRPCRouter({
   .input(z.array(z.string()))
   .query(async ({ ctx, input }) => {
     const tempLinks = await ctx.db.query.links.findMany({
-      where: and(inArray(links.short_code, input), isNotNull(links.expires_at))
+      where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
     });
     return tempLinks;
   })
