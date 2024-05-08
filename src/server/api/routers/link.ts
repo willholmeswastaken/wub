@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { links } from "@/server/db/schema";
-import { type InferInsertModel, eq } from "drizzle-orm";
+import { type InferInsertModel, eq, inArray } from "drizzle-orm";
 import { type db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
@@ -30,6 +30,15 @@ export const linkRouter = createTRPCRouter({
       }
       return await createShortLink(ctx.db, input.url);
     }),
+  
+  getTempLinks: publicProcedure
+  .input(z.array(z.string()))
+  .query(async ({ ctx, input }) => {
+    const tempLinks = await ctx.db.query.links.findMany({
+      where: inArray(links.short_code, input)
+    });
+    return tempLinks;
+  })
 });
 
 async function createShortLink(database: typeof db, url: string, userId?: string): Promise<InferInsertModel<typeof links>> {
