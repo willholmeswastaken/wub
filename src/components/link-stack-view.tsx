@@ -21,7 +21,7 @@ const item = {
 };
 
 export default function LinkStackView() {
-    const links = useLinkStore(state => state.links);
+    const links = useLinkStore(state => state.links.sort((a, b) => new Date(b.expiresAt ?? 0).getTime() - new Date(a.expiresAt ?? 0).getTime()));
     const { data } = api.link.getTempLinks.useQuery(links.map(link => link.shortCode))
     if (links.length === 0) return null;
     return (
