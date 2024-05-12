@@ -1,3 +1,8 @@
+import { AppHeader } from "@/components/app-header";
+
 export default function Dashboard() {
-    return <div>Hello world!</div>
+    return (
+
+        <AppHeader />
+    )
 }
