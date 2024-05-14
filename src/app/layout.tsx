@@ -6,6 +6,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { Header } from "@/components/header";
 import { Toaster } from "sonner";
 import { Footer } from "@/components/footer";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
           </>
         </TRPCReactProvider>
         <Footer />
+        <SpeedInsights />
       </body>
     </html >
   );
