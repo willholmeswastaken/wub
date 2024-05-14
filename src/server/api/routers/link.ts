@@ -30,15 +30,23 @@ export const linkRouter = createTRPCRouter({
       }
       return await createShortLink(ctx.db, input.url);
     }),
-  
+
   getTempLinks: publicProcedure
-  .input(z.array(z.string()))
-  .query(async ({ ctx, input }) => {
-    const tempLinks = await ctx.db.query.links.findMany({
-      where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
-    });
-    return tempLinks;
-  })
+    .input(z.array(z.string()))
+    .query(async ({ ctx, input }) => {
+      const tempLinks = await ctx.db.query.links.findMany({
+        where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
+      });
+      return tempLinks;
+    }),
+  getUserLinks: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userLinks = await ctx.db.query.links.findMany({
+        orderBy: (links, { desc }) => [desc(links.created_at)],
+        where: eq(links.userId, ctx.session.user.id)
+      });
+      return userLinks;
+    }),
 });
 
 async function createShortLink(database: typeof db, url: string, userId?: string): Promise<InferInsertModel<typeof links>> {
@@ -60,7 +68,8 @@ async function createShortLink(database: typeof db, url: string, userId?: string
   const link = await database.insert(links).values({
     url,
     short_code,
-    expires_at: userId ? null : new Date(new Date().getTime() + (30 * 60 * 1000))
+    expires_at: userId ? null : new Date(new Date().getTime() + (30 * 60 * 1000)),
+    userId
   }).returning();
 
   shortLinkLogger.info({ short_code }, 'Short link created in database');

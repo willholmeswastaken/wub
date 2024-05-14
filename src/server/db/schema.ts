@@ -25,7 +25,7 @@ export const links = createTable("link", {
   title: text("title"),
   userId: varchar("userId", { length: 255 })
     .references(() => users.id),
-  createdAt: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
+  created_at: timestamp("created_at", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   click_count: integer("click_count").notNull().default(0),
   expires_at: timestamp("expires_at", { mode: "date" }),
 });
@@ -37,7 +37,7 @@ export const linksRelations = relations(links, ({ many }) => ({
 export const clicks = createTable("click", {
   id: serial("id").primaryKey(),
   short_code: varchar("short_code", { length: 8 }).notNull(),
-  timestamp: timestamp("createdAt", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
+  timestamp: timestamp("timestamp", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
   userAgent: text("userAgent"),
   ipAddress: varchar("ipAddress", { length: 255 }),
 }, (click) => ({
