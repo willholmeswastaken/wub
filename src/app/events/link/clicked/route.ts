@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { clicks, links } from "@/server/db/schema";
 import logger from "@/server/logger";
-import { LogClickEvent } from "@/server/qstash";
+import { type LogClickEvent } from "@/server/qstash";
 import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
 import { sql, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";

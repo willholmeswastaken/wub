@@ -47,6 +47,11 @@ export const linkRouter = createTRPCRouter({
       });
       return userLinks;
     }),
+  deleteLink: protectedProcedure
+    .input(z.string())
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.delete(links).where(and(eq(links.short_code, input), eq(links.userId, ctx.session.user.id)));
+    })
 });
 
 async function createShortLink(database: typeof db, url: string, userId?: string): Promise<InferInsertModel<typeof links>> {
