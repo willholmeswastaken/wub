@@ -2,26 +2,16 @@
 
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { LinkIcon } from "./link-icon";
-import { BarChartIcon, CopyIcon, LucideTimer, LucideTimerOff } from "lucide-react";
-import { toast } from "sonner";
+import { LucideTimer, LucideTimerOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
 import { Popover, PopoverContent } from "@/components/ui/popover";
 import { PopoverTrigger } from "@radix-ui/react-popover";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/copy-button";
+import { ClicksButton } from "@/components/clicks-button";
 
 export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: string, clicks: number, shortUrl: string, expiresAt?: Date | null }) {
-    const copyLinkToClipboard = () => {
-        navigator.clipboard.writeText(shortUrl)
-            .then(() => {
-                toast.success("Link copied to clipboard")
-            })
-            .catch(err => {
-                toast.error("Failed to copy link to clipboard")
-                console.error(err);
-            });
-    }
-
     const isExpired = !!expiresAt && new Date(expiresAt) < new Date();
 
     const calculateExpiry = useCallback(() => {
@@ -53,17 +43,11 @@ export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: s
                         <CardTitle className="">
                             {shortUrl}
                         </CardTitle>
-                        <button
-                            className={cn("bg-gray-100 hover:bg-blue-200 transition-all rounded-full duration-75 hover:scale-105 active:scale-95 p-1.5", isExpired && "cursor-not-allowed")}
-                            disabled={isExpired}
-                            onClick={copyLinkToClipboard}
-                        >
-                            <CopyIcon width={14} height={14} className="text-gray-700 transition-all group-hover:text-blue-800" />
-                        </button>
-                        <div className="flex flex-row space-x-1 bg-gray-100 p-1.5 rounded-lg items-center text-sm transition-all hover:scale-105">
-                            <BarChartIcon width={14} height={14} className="text-gray-700" />
-                            <span className="hidden sm:block">{clicks} clicks</span>
-                        </div>
+                        <CopyButton
+                            isExpired={isExpired}
+                            text={shortUrl}
+                        />
+                        <ClicksButton clicks={clicks} />
                     </div>
                     {
                         expiresAt && (

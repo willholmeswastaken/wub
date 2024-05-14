@@ -30,15 +30,22 @@ export const linkRouter = createTRPCRouter({
       }
       return await createShortLink(ctx.db, input.url);
     }),
-  
+
   getTempLinks: publicProcedure
-  .input(z.array(z.string()))
-  .query(async ({ ctx, input }) => {
-    const tempLinks = await ctx.db.query.links.findMany({
-      where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
-    });
-    return tempLinks;
-  })
+    .input(z.array(z.string()))
+    .query(async ({ ctx, input }) => {
+      const tempLinks = await ctx.db.query.links.findMany({
+        where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
+      });
+      return tempLinks;
+    }),
+  getUserLinks: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userLinks = await ctx.db.query.links.findMany({
+        where: eq(links.userId, ctx.session.user.id)
+      });
+      return userLinks;
+    }),
 });
 
 async function createShortLink(database: typeof db, url: string, userId?: string): Promise<InferInsertModel<typeof links>> {
