@@ -10,7 +10,7 @@ export async function Header() {
 
     return (
         <header className="px-4 lg:px- h-14 flex items-center justify-between">
-            <Link className="flex items-center justify-center" href="#">
+            <Link className="flex items-center justify-center" href="/">
                 <LinkIcon className="h-6 w-6" />
                 <span className="sr-only">Link Shortener</span>
             </Link>

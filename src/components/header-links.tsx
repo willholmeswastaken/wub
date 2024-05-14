@@ -68,10 +68,12 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                                <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
-                                <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                            <DropdownMenuItem asChild>
+                                <Link href="/api/auth/signout" className="flex justify-start items-start cursor-pointer">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Log out</span>
+                                    <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                                </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
