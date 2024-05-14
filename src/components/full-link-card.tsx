@@ -36,7 +36,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode:
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2">
-                            <a href="#" className="text-sm font-semibold">wub.sh/{shortCode}</a>
+                            <a href="#" className="text-sm font-semibold truncate">{window.location.origin}/{shortCode}</a>
                             <CopyButton
                                 isExpired={false}
                                 text={`${window.location.origin}/${shortCode}`}
