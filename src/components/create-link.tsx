@@ -75,10 +75,10 @@ export function CreateLink() {
                         {...register("url", { required: true })}
                     />
                     {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
+                    <DialogFooter>
+                        <Button type="submit">Create Link</Button>
+                    </DialogFooter>
                 </form>
-                <DialogFooter>
-                    <Button type="submit">Create Link</Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     )
