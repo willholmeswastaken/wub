@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut } from "@/components/ui/dropdown-menu";
@@ -9,6 +9,7 @@ import { api } from "@/trpc/react";
 import { toast } from "sonner";
 import { getProjectUrl } from "@/lib/project-url";
 import { useLinkStore } from "@/stores/link";
+import { Logo } from "@/components/logo";
 
 export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode: string, url: string, clicks: number, createdAt: Date }) {
     const deleteLinkFromCache = useLinkStore(state => state.deleteLink);
@@ -35,8 +36,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode:
             <div className="flex items-center justify-between relative">
                 <div className="relative flex shrink items-start">
                     <Avatar>
-                        <AvatarImage src="https://github.com/shadcn.png" />
-                        <AvatarFallback>CN</AvatarFallback>
+                        <AvatarFallback><Logo /></AvatarFallback>
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2">

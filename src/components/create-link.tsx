@@ -66,7 +66,7 @@ export function CreateLink() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle className="flex justify-center items-center space-x-1">
+                    <DialogTitle className="flex justify-center items-center space-x-2">
                         <div className="bg-gray-100 p-2 rounded-full">
                             <GlobeIcon className="w-6 h-6" />
                         </div>
