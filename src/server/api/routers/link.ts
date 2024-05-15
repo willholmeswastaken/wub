@@ -5,7 +5,7 @@ import { type InferInsertModel, eq, inArray, and, isNotNull, isNull } from "driz
 import { type db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
-import { TRPCError } from "@trpc/server";
+import { TRPCError, type inferRouterOutputs } from "@trpc/server";
 
 export const linkRouter = createTRPCRouter({
   create: protectedProcedure
@@ -80,6 +80,8 @@ async function createShortLink(database: typeof db, url: string, userId?: string
   shortLinkLogger.info({ short_code }, 'Short link created in database');
   return link[0]!;
 }
+
+export type LinkRouterOutputs = inferRouterOutputs<typeof linkRouter>;
 
 function getShortcode() {
   const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
