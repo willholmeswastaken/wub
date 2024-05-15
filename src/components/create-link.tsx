@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import copy from 'clipboard-copy';
 import { parseUrl } from "@/lib/url";
 import { useRef } from "react";
+import { GlobeIcon } from "lucide-react";
+import { Spinner } from "./ui/spinner";
 
 type UrlInput = {
     url: string;
@@ -63,9 +65,14 @@ export function CreateLink() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Create a new link</DialogTitle>
+                    <DialogTitle className="flex justify-center items-center space-x-1">
+                        <div className="bg-gray-100 p-2 rounded-full">
+                            <GlobeIcon className="w-6 h-6" />
+                        </div>
+                        <h3>Create a new link</h3>
+                    </DialogTitle>
                 </DialogHeader>
-                <form className="flex flex-col items-start gap-1" onSubmit={handleSubmit(onSubmit)}>
+                <form className="flex flex-col items-start gap-1 w-full" onSubmit={handleSubmit(onSubmit)}>
                     <Label htmlFor="url" className="text-xs">
                         Destination Url
                     </Label>
@@ -75,8 +82,11 @@ export function CreateLink() {
                         {...register("url", { required: true })}
                     />
                     {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
-                    <DialogFooter>
-                        <Button type="submit">Create Link</Button>
+                    <DialogFooter className="w-full pt-2">
+                        <Button type="submit" className="w-full" disabled={createLinkMutate.isPending}>
+                            Create Link
+                            <Spinner className="ml-2 text-white h-4 w-4" show={createLinkMutate.isPending} />
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
