@@ -1,7 +1,6 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { LinkIcon } from "./link-icon";
 import { LucideTimer, LucideTimerOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useEffect, useState } from "react";
@@ -10,6 +9,7 @@ import { PopoverTrigger } from "@radix-ui/react-popover";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
+import { Logo } from "@/components/logo";
 
 export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: string, clicks: number, shortUrl: string, expiresAt?: Date | null }) {
     const isExpired = !!expiresAt && new Date(expiresAt) < new Date();
@@ -37,7 +37,7 @@ export default function ShortLink({ url, clicks, shortUrl, expiresAt }: { url: s
     return (
         <Card className={cn("hover:border-black duration-75 transition-[border-color] cursor-pointer shadow-lg border-gray-200", isExpired && "line-through text-gray-400 cursor-not-allowed")}>
             <CardHeader className="flex flex-row px-4 py-3 space-x-2 items-center justify-start space-y-0">
-                <LinkIcon className="h-10 w-10" />
+                <Logo />
                 <div className="relative flex flex-col flex-wrap space-y-0 items-start w-full sm:w-3/4">
                     <div className="flex flex-row space-x-2 items-center">
                         <CardTitle className="">

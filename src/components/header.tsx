@@ -1,15 +1,15 @@
 import Link from "next/link";
-import { LinkIcon } from "@/components/link-icon";
 import { getServerAuthSession } from "@/server/auth";
-import { HeaderLinks } from "./header-links";
+import { HeaderLinks } from "@/components/header-links";
+import { Logo } from "@/components/logo";
 
 export async function Header() {
     const data = await getServerAuthSession();
 
     return (
         <header className="px-4 lg:px- h-14 flex items-center justify-between">
-            <Link className="flex items-center justify-center" href="/">
-                <LinkIcon className="h-6 w-6" />
+            <Link className="flex items-start justify-center" href="/">
+                <Logo />
                 <span className="sr-only">Link Shortener</span>
             </Link>
             <HeaderLinks
