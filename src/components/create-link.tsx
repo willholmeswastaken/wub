@@ -21,6 +21,7 @@ import { parseUrl } from "@/lib/url";
 import { useRef } from "react";
 import { GlobeIcon } from "lucide-react";
 import { Spinner } from "./ui/spinner";
+import { getProjectUrl } from "@/lib/project-url";
 
 type UrlInput = {
     url: string;
@@ -31,7 +32,7 @@ export function CreateLink() {
     const utils = api.useUtils();
     const createLinkMutate = api.link.create.useMutation({
         onSuccess: async (link: InferInsertModel<typeof links>) => {
-            const shortLink = `${window.location.origin}/${link.short_code}`;
+            const shortLink = `${getProjectUrl()}${link.short_code}`;
             toast.success("Short link created!", {
                 description: shortLink,
                 action: {

@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { LinkIcon } from "@/components/link-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { getServerAuthSession } from "@/server/auth";
 import { HeaderLinks } from "./header-links";
 

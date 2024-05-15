@@ -7,8 +7,11 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import { api } from "@/trpc/react";
 import { toast } from "sonner";
+import { getProjectUrl } from "@/lib/project-url";
+import { useLinkStore } from "@/stores/link";
 
 export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode: string, url: string, clicks: number, createdAt: Date }) {
+    const deleteLinkFromCache = useLinkStore(state => state.deleteLink);
     const formatDate = (date: Date): string => {
         const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' };
         return date.toLocaleDateString('en-US', options);
@@ -18,6 +21,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode:
         onSuccess: async () => {
             await utils.link.getUserLinks.refetch();
             toast.success("Link deleted successfully!");
+            deleteLinkFromCache(shortCode);
         }
     });
 
@@ -36,10 +40,10 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode:
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2">
-                            <a href="#" className="text-sm font-semibold truncate">{window.location.origin}/{shortCode}</a>
+                            <a href="#" className="text-sm font-semibold truncate">{getProjectUrl()}{shortCode}</a>
                             <CopyButton
                                 isExpired={false}
-                                text={`${window.location.origin}/${shortCode}`}
+                                text={`${getProjectUrl()}${shortCode}`}
                             />
                         </div>
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-sm font-normal text-gray-600">
