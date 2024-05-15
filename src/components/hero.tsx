@@ -12,6 +12,7 @@ import LinkStackView from "./link-stack-view";
 import { useLinkStore } from "@/stores/link";
 import { type InferInsertModel } from "drizzle-orm";
 import { type links } from "@/server/db/schema";
+import { getProjectUrl } from "@/lib/project-url";
 
 type UrlInput = {
     url: string;
@@ -27,7 +28,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     } = useForm<UrlInput>();
 
     const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
-        const shortLink = `${window.location.origin}/${link.short_code}`;
+        const shortLink = `${getProjectUrl()}${link.short_code}`;
         toast.success("Short link created!", {
             description: shortLink,
             action: {
