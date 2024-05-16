@@ -14,7 +14,7 @@ export default async function Dashboard() {
     return (
         <div className="flex flex-col space-y-10 pb-10">
             <AppHeader />
-            <LinksView initialLinks={links} />
+            <LinksView initialLinks={links} user={session.user} />
         </div>
     )
 }

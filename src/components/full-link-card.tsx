@@ -1,6 +1,6 @@
 'use client';
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut } from "@/components/ui/dropdown-menu";
@@ -10,8 +10,9 @@ import { toast } from "sonner";
 import { getProjectUrl } from "@/lib/project-url";
 import { useLinkStore } from "@/stores/link";
 import { Logo } from "@/components/logo";
+import { type User } from "next-auth";
 
-export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode: string, url: string, clicks: number, createdAt: Date }) {
+export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shortCode: string, url: string, clicks: number, createdAt: Date, user: User }) {
     const deleteLinkFromCache = useLinkStore(state => state.deleteLink);
     const formatDate = (date: Date): string => {
         const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' };
@@ -39,16 +40,23 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt }: { shortCode:
                         <AvatarFallback><Logo /></AvatarFallback>
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
-                        <div className="flex max-w-fit flex-wrap items-center gap-x-2">
-                            <a href="#" className="text-sm font-semibold truncate">{getProjectUrl()}{shortCode}</a>
+                        <div className="flex max-w-fit flex-wrap items-center gap-x-2 pb-2">
+                            <a href="#" className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">{getProjectUrl()}{shortCode}</a>
                             <CopyButton
                                 isExpired={false}
                                 text={`${getProjectUrl()}${shortCode}`}
                             />
                         </div>
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-sm font-normal text-gray-600">
+                            <Avatar className="w-4 h-4">
+                                <AvatarFallback>
+                                    <span>{user.name?.substring(0, 1)}</span>
+                                </AvatarFallback>
+                                <AvatarImage src={user.image ?? ''} />
+                            </Avatar>
+                            <span className="text-black">-</span>
                             <span>{formattedDate}</span>
-                            <span>-</span>
+                            <span className="text-black">-</span>
                             <a href="#" className="hover:underline">{url}</a>
                         </div>
                     </div>

@@ -40,8 +40,8 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
                     <DropdownMenu>
                         <DropdownMenuTrigger>
                             <Avatar>
-                                <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>CN</AvatarFallback>
+                                <AvatarImage src={user.image ?? ''} />
+                                <AvatarFallback>{user.name?.substring(0, 1)}</AvatarFallback>
                             </Avatar>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56">
