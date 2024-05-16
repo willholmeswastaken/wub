@@ -5,33 +5,20 @@ import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuShortcut } from "@/components/ui/dropdown-menu";
 import { EllipsisVertical, Trash2Icon } from "lucide-react";
-import { api } from "@/trpc/react";
-import { toast } from "sonner";
 import { getProjectUrl } from "@/lib/project-url";
-import { useLinkStore } from "@/stores/link";
 import { Logo } from "@/components/logo";
 import { type User } from "next-auth";
+import { DeleteLink } from "@/components/delete-link";
+import { useState } from "react";
 
 export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shortCode: string, url: string, clicks: number, createdAt: Date, user: User }) {
-    const deleteLinkFromCache = useLinkStore(state => state.deleteLink);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const formatDate = (date: Date): string => {
         const options: Intl.DateTimeFormatOptions = { month: 'long', day: 'numeric' };
         return date.toLocaleDateString('en-US', options);
     };
-    const utils = api.useUtils();
-    const deleteLink = api.link.deleteLink.useMutation({
-        onSuccess: async () => {
-            await utils.link.getUserLinks.refetch();
-            toast.success("Link deleted successfully!");
-            deleteLinkFromCache(shortCode);
-        }
-    });
-
-    const handleDelete = (shortCode: string) => {
-        deleteLink.mutate(shortCode);
-    };
-
     const formattedDate = formatDate(createdAt);
+
     return (
         <div className="w-full bg-white rounded-lg shadow-lg p-4 border-gray-50 hover:shadow-xl duration-200 transition-all hover:cursor-pointer">
             <div className="flex items-center justify-between relative">
@@ -70,7 +57,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-40">
-                            <DropdownMenuItem className="text-red-500 focus:bg-red-500 focus:text-white focus:cursor-pointer" onClick={() => handleDelete(shortCode)}>
+                            <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="text-red-500 focus:bg-red-500 focus:text-white focus:cursor-pointer">
                                 <Trash2Icon className="mr-2 h-4 w-4" />
                                 <span>Delete</span>
                                 <DropdownMenuShortcut>⇧⌘X</DropdownMenuShortcut>
@@ -78,6 +65,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+                <DeleteLink isOpen={isDeleteDialogOpen} setIsOpen={setIsDeleteDialogOpen} shortCode={shortCode} />
             </div>
         </div>
     )
