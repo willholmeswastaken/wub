@@ -20,7 +20,7 @@ import copy from 'clipboard-copy';
 import { parseUrl } from "@/lib/url";
 import { useRef } from "react";
 import { GlobeIcon } from "lucide-react";
-import { Spinner } from "./ui/spinner";
+import { Spinner } from "@/components/ui/spinner";
 import { getProjectUrl } from "@/lib/project-url";
 
 type UrlInput = {
@@ -70,7 +70,7 @@ export function CreateLink() {
                         <div className="bg-gray-100 p-2 rounded-full">
                             <GlobeIcon className="w-6 h-6" />
                         </div>
-                        <h3>Create a new link</h3>
+                        <span>Create a new link</span>
                     </DialogTitle>
                 </DialogHeader>
                 <form className="flex flex-col items-start gap-1 w-full" onSubmit={handleSubmit(onSubmit)}>
@@ -82,7 +82,7 @@ export function CreateLink() {
                         className="col-span-3"
                         {...register("url", { required: true })}
                     />
-                    {errors.url && <span className="text-left text-sm text-red-600 pl-1">Please enter a url</span>}
+                    {errors.url && <span className="text-left text-sm text-red-600 pl-1">{errors.url.message}</span>}
                     <DialogFooter className="w-full pt-2">
                         <Button type="submit" className="w-full" disabled={createLinkMutate.isPending}>
                             Create Link
