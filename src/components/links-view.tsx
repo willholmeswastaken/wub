@@ -5,8 +5,9 @@ import { FullLinkCard } from "@/components/full-link-card";
 import { CreateLink } from "@/components/create-link";
 import { RelaxingGuyIcon } from "@/components/relaxing-guy-icon";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
+import { type User } from "next-auth";
 
-export function LinksView({ initialLinks }: { initialLinks: LinkRouterOutputs['getUserLinks'] }) {
+export function LinksView({ initialLinks, user }: { initialLinks: LinkRouterOutputs['getUserLinks'], user: User }) {
     const { data } = api.link.getUserLinks.useQuery(undefined, { initialData: initialLinks });
     return (
         <section className="h-full flex-1 mx-auto max-w-2xl w-full px-2 flex flex-col space-y-3">
@@ -24,6 +25,7 @@ export function LinksView({ initialLinks }: { initialLinks: LinkRouterOutputs['g
                             url={link.url}
                             clicks={link.click_count}
                             createdAt={link.created_at}
+                            user={user}
                         />
                     ))
             }
