@@ -10,6 +10,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import { browser } from "process";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -27,6 +28,7 @@ export const links = createTable("link", {
     .references(() => users.id),
   created_at: timestamp("created_at", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   click_count: integer("click_count").notNull().default(0),
+  last_clicked: timestamp("last_clicked", { mode: "date" }),
   expires_at: timestamp("expires_at", { mode: "date" }),
 });
 
@@ -36,13 +38,28 @@ export const linksRelations = relations(links, ({ many }) => ({
 
 export const clicks = createTable("click", {
   id: serial("id").primaryKey(),
-  short_code: varchar("short_code", { length: 8 }).notNull(),
+  short_code: text("short_code").notNull(), // Assuming short_code can be of variable length
   timestamp: timestamp("timestamp", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
   userAgent: text("userAgent"),
-  ipAddress: varchar("ipAddress", { length: 255 }),
+  ipAddress: text("ipAddress"), // IPv6 addresses can be up to 45 characters
+  country: text("country"), // ISO 3166-1 alpha-2 country codes are 2 characters
+  city: text("city"),
+  region: text("region"),
+  latitude: text("latitude"), // Latitude values are typically up to 15 characters
+  longitude: text("longitude"), // Longitude values are typically up to 15 characters
+  device: text("device"),
+  device_vendor: text("device_vendor"),
+  device_model: text("device_model"),
+  browser: text("browser"),
+  browser_version: text("browser_version"),
+  engine: text("engine"),
+  engine_version: text("engine_version"),
+  os: text("os"),
+  os_version: text("os_version"),
 }, (click) => ({
   shortCodeIdx: index("click_short_code_idx").on(click.short_code)
 }));
+
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),

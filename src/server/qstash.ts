@@ -7,6 +7,20 @@ export type LogClickEvent = {
     short_code: string;
     ipAddress: string;
     userAgent: string;
+    country: string;
+    city: string;
+    region: string;
+    latitude: string;
+    longitude: string;
+    device: string;
+    device_vendor: string;
+    device_model: string;
+    browser: string;
+    browser_version: string;
+    engine: string;
+    engine_version: string;
+    os: string;
+    os_version: string;
 }
 
 export const queueClient = {
