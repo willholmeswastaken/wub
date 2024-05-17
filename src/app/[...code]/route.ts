@@ -31,6 +31,8 @@ export async function GET(
     if (!isUaBot(request)) {
         const ua = userAgent(request);
         const geo = request.geo;
+        console.log(ua);
+        console.log(geo);
         await queueClient.logClick({
             short_code: params.code,
             ipAddress: request.ip ?? '',
@@ -56,3 +58,5 @@ export async function GET(
     functionLogger.info({ redirect_to: route.url }, 'Short link found redirecting to ');
     redirect(route.url)
 }
+
+export const runtime = 'edge'
