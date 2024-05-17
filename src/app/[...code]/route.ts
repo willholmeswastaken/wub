@@ -58,5 +58,3 @@ export async function GET(
     functionLogger.info({ redirect_to: route.url }, 'Short link found redirecting to ');
     redirect(route.url)
 }
-
-export const runtime = 'edge'
