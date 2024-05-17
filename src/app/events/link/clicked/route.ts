@@ -14,7 +14,7 @@ async function handler(request: Request) {
 
     const res = await db
         .update(links)
-        .set({ click_count: sql`${links.click_count} + 1` })
+        .set({ click_count: sql`${links.click_count} + 1`, last_clicked: new Date() })
         .where(eq(links.short_code, data.short_code))
         .returning({ click_count: links.click_count });
 
@@ -28,10 +28,24 @@ async function handler(request: Request) {
         .values({
             short_code: data.short_code,
             ipAddress: data.ipAddress,
-            userAgent: data.userAgent
+            userAgent: data.userAgent,
+            country: data.country,
+            city: data.city,
+            region: data.region,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            device: data.device,
+            device_vendor: data.device_vendor,
+            device_model: data.device_model,
+            browser: data.browser,
+            browser_version: data.browser_version,
+            engine: data.engine,
+            engine_version: data.engine_version,
+            os: data.os,
+            os_version: data.os_version,
         });
 
-    functionLogger.info({ new_click_count: res }, "Click count updated");
+    functionLogger.info({ new_click_count: res }, "Click recorded");
 
     return Response.json({ success: true });
 }
