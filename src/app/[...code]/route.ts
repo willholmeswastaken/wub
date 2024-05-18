@@ -1,5 +1,4 @@
 import { env } from '@/env';
-import { isUaBot } from '@/lib/is-ua-bot';
 import { links } from '@/server/db/schema';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool } from '@neondatabase/serverless';
@@ -11,7 +10,6 @@ import { type NextRequest, userAgent } from 'next/server';
 import * as schema from "@/server/db/schema";
 
 export const dynamic = "force-dynamic";
-
 export const runtime = 'edge';
 
 async function getDb() {
@@ -41,9 +39,10 @@ export async function GET(
         redirect('/')
     }
 
-    if (!isUaBot(request)) {
-        const ua = userAgent(request);
+    const ua = userAgent(request);
+    if (!ua.isBot) {
         const geo = request.geo;
+
         await queueClient.logClick({
             short_code: params.code,
             ipAddress: request.ip ?? '',
@@ -61,7 +60,8 @@ export async function GET(
             engine: ua.engine.name ?? 'unknown',
             engine_version: ua.engine.version ?? 'unknown',
             os: ua.os.name ?? 'unknown',
-            os_version: ua.os.version ?? 'unknown'
+            os_version: ua.os.version ?? 'unknown',
+            cpu_architecture: ua.cpu.architecture ?? 'unknown',
         });
         functionLogger.info('Log click event sent');
     }
