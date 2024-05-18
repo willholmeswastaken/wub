@@ -1,13 +1,24 @@
+import { env } from '@/env';
 import { isUaBot } from '@/lib/is-ua-bot';
-import { db } from '@/server/db';
 import { links } from '@/server/db/schema';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from '@neondatabase/serverless';
 import logger from '@/server/logger';
 import { queueClient } from '@/server/qstash';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation'
 import { type NextRequest, userAgent } from 'next/server';
+import * as schema from "@/server/db/schema";
 
 export const dynamic = "force-dynamic";
+
+export const runtime = 'edge';
+
+async function getDb() {
+    const client = new Pool({ connectionString: env.DATABASE_URL });
+    await client.connect();
+    return drizzle(client, { schema, logger: true });
+}
 
 export async function GET(
     request: NextRequest,
@@ -16,8 +27,10 @@ export async function GET(
     const functionLogger = logger.child({ short_code: params.code });
     functionLogger.info('Incoming short link request');
 
+    const db = await getDb();
+
     const route = await db.query.links.findFirst({
-        where: eq(links.short_code, params.code)
+        where: eq(links.short_code, params.code.toString())
     });
     if (!route) {
         functionLogger.info('Short link not found');
@@ -31,8 +44,6 @@ export async function GET(
     if (!isUaBot(request)) {
         const ua = userAgent(request);
         const geo = request.geo;
-        console.log(ua);
-        console.log(geo);
         await queueClient.logClick({
             short_code: params.code,
             ipAddress: request.ip ?? '',
