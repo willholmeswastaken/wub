@@ -43,6 +43,7 @@ async function handler(request: Request) {
             engine_version: data.engine_version,
             os: data.os,
             os_version: data.os_version,
+            cpu_architecture: data.cpu_architecture,
         });
 
     functionLogger.info({ new_click_count: res }, "Click recorded");
