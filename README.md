@@ -3,9 +3,8 @@ The open-source url shortener.
 
 ## Tech Stack
 1. Vercel - Hosting
-2. Neon Postgres - DB
-3. LogFlare - Additional Logging
-4. Upstash
+2. Neon Postgres & Serverless - DB
+3. Upstash
     1. Redis - Rate limiting
     2. QStash - Serverless queuing
 
