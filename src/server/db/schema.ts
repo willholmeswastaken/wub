@@ -10,7 +10,6 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
-import { browser } from "process";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -56,6 +55,7 @@ export const clicks = createTable("click", {
   engine_version: text("engine_version"),
   os: text("os"),
   os_version: text("os_version"),
+  cpu_architecture: text("cpu_architecture"),
 }, (click) => ({
   shortCodeIdx: index("click_short_code_idx").on(click.short_code)
 }));

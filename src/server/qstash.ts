@@ -21,6 +21,7 @@ export type LogClickEvent = {
     engine_version: string;
     os: string;
     os_version: string;
+    cpu_architecture: string;
 }
 
 export const queueClient = {
