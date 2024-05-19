@@ -19,6 +19,8 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
     };
     const formattedDate = formatDate(createdAt);
 
+    const shortUrl = `${getProjectUrl()}${shortCode}`;
+
     return (
         <div className="w-full bg-white rounded-lg shadow-lg p-4 border-gray-50 hover:shadow-xl duration-200 transition-all hover:cursor-pointer">
             <div className="flex items-center justify-between relative">
@@ -28,10 +30,10 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2 pb-2">
-                            <a href="#" className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">{getProjectUrl()}{shortCode}</a>
+                            <a href={shortUrl} className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">{getProjectUrl()}{shortCode}</a>
                             <CopyButton
                                 isExpired={false}
-                                text={`${getProjectUrl()}${shortCode}`}
+                                text={shortUrl}
                             />
                         </div>
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-sm font-normal text-gray-600">
@@ -44,7 +46,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                             <span className="text-black">-</span>
                             <span>{formattedDate}</span>
                             <span className="text-black">-</span>
-                            <a href="#" className="hover:underline">{url}</a>
+                            <a href={url} className="hover:underline">{url}</a>
                         </div>
                     </div>
                 </div>
