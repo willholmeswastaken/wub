@@ -13,7 +13,7 @@ export default async function Dashboard() {
     const links = await api.link.getUserLinks();
     return (
         <div className="flex flex-col space-y-10 pb-10">
-            <AppHeader />
+            <AppHeader pageTitle="Links" />
             <LinksView initialLinks={links} user={session.user} />
         </div>
     )
