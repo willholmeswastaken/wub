@@ -13,10 +13,10 @@ export default async function Dashboard({ params }: { params: { code: string } }
     const links = await api.link.getClicksFromLast30Days(params.code);
     return (
         <div className="flex flex-col space-y-10 pb-10">
-            <AppHeader pageTitle="Analytics" />
+            <AppHeader pageTitle="Analytics" hideCta />
             <section className="h-full flex-1 mx-auto max-w-4xl w-full flex flex-col space-y-3">
                 <div className="bg-white border border-gray-200 p-5 sm:border-gray-100 sm:p-10 sm:shadow-lg sm:rounded-lg">
-                    <ClicksChart chartData={links} />
+                    <ClicksChart chartData={links.clickRange} totalClicks={links.totalClicks} />
                 </div>
             </section>
         </div>

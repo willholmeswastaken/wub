@@ -69,7 +69,10 @@ export const linkRouter = createTRPCRouter({
           timestamp: true
         }
       });
-      return generateDateArrayFromDays(30, totalClicks);
+      return {
+        clickRange: generateDateArrayFromDays(30, totalClicks),
+        totalClicks: totalClicks.length
+      };
     })
 });
 
