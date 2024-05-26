@@ -31,7 +31,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                     </Avatar>
                     <div className="ml-2 sm:ml-4">
                         <div className="flex max-w-fit flex-wrap items-center gap-x-2 pb-2">
-                            <a href={shortUrl} className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">{getProjectUrl()}{shortCode}</a>
+                            <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">{getProjectUrl()}{shortCode}</span>
                             <CopyButton
                                 isExpired={false}
                                 text={shortUrl}
@@ -47,7 +47,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                             <span className="text-black">-</span>
                             <span>{formattedDate}</span>
                             <span className="text-black">-</span>
-                            <a href={url} className="hover:underline">{url}</a>
+                            <span>{url}</span>
                         </div>
                     </div>
                 </div>
