@@ -10,7 +10,7 @@ import { type User } from "next-auth";
 export function LinksView({ initialLinks, user }: { initialLinks: LinkRouterOutputs['getUserLinks'], user: User }) {
     const { data } = api.link.getUserLinks.useQuery(undefined, { initialData: initialLinks });
     return (
-        <section className="h-full flex-1 mx-auto max-w-2xl w-full px-2 flex flex-col space-y-3">
+        <section className="h-full flex-1 mx-auto max-w-3xl w-full px-2 flex flex-col space-y-3">
             {
                 data?.length === 0
                     ? <div className="flex flex-col justify-center items-center space-y-2">
