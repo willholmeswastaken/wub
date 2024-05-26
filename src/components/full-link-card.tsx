@@ -10,6 +10,7 @@ import { Logo } from "@/components/logo";
 import { type User } from "next-auth";
 import { DeleteLink } from "@/components/delete-link";
 import { useState } from "react";
+import Link from "next/link";
 
 export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shortCode: string, url: string, clicks: number, createdAt: Date, user: User }) {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -22,7 +23,7 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
     const shortUrl = `${getProjectUrl()}${shortCode}`;
 
     return (
-        <div className="w-full bg-white rounded-lg shadow-lg p-4 border-gray-50 hover:shadow-xl duration-200 transition-all hover:cursor-pointer">
+        <Link href={`/analytics/${shortCode}`} className="w-full bg-white rounded-lg shadow-lg p-4 border-gray-50 hover:shadow-xl duration-200 transition-all hover:cursor-pointer">
             <div className="flex items-center justify-between relative">
                 <div className="relative flex shrink items-start">
                     <Avatar>
@@ -69,6 +70,6 @@ export function FullLinkCard({ shortCode, url, clicks, createdAt, user }: { shor
                 </div>
                 <DeleteLink isOpen={isDeleteDialogOpen} setIsOpen={setIsDeleteDialogOpen} shortCode={shortCode} />
             </div>
-        </div>
+        </Link>
     )
 }

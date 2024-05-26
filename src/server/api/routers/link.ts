@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { links } from "@/server/db/schema";
-import { type InferInsertModel, eq, inArray, and, isNotNull, isNull } from "drizzle-orm";
+import { clicks, links } from "@/server/db/schema";
+import { type InferInsertModel, eq, inArray, and, isNotNull, isNull, gte } from "drizzle-orm";
 import { type db } from "@/server/db";
 import logger from "@/server/logger";
 import { protectRoute } from "@/server/rate-limit";
 import { TRPCError, type inferRouterOutputs } from "@trpc/server";
+import { generateDateArrayFromDays } from "@/lib/click-date-range";
 
 export const linkRouter = createTRPCRouter({
   create: protectedProcedure
@@ -34,6 +35,10 @@ export const linkRouter = createTRPCRouter({
   getTempLinks: publicProcedure
     .input(z.array(z.string()))
     .query(async ({ ctx, input }) => {
+      const rateLimited = await protectRoute(ctx.headers.get('x-forwarded-for'));
+      if (rateLimited) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Unable to process request' });
+      }
       const tempLinks = await ctx.db.query.links.findMany({
         where: and(isNull(links.userId), and(inArray(links.short_code, input), isNotNull(links.expires_at)))
       });
@@ -51,6 +56,20 @@ export const linkRouter = createTRPCRouter({
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
       await ctx.db.delete(links).where(and(eq(links.short_code, input), eq(links.userId, ctx.session.user.id)));
+    }),
+  getClicksFromLast30Days: protectedProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) => {
+      const totalClicks = await ctx.db.query.clicks.findMany({
+        where: and(
+          eq(clicks.short_code, input),
+          gte(clicks.timestamp, new Date(new Date().getTime() - (30 * 24 * 60 * 60 * 1000)))
+        ),
+        columns: {
+          timestamp: true
+        }
+      });
+      return generateDateArrayFromDays(30, totalClicks);
     })
 });
 
