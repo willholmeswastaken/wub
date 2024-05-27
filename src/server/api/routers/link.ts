@@ -66,11 +66,21 @@ export const linkRouter = createTRPCRouter({
           gte(clicks.timestamp, new Date(new Date().getTime() - (30 * 24 * 60 * 60 * 1000)))
         ),
         columns: {
-          timestamp: true
+          timestamp: true,
+          country: true
         }
       });
       return {
         clickRange: generateDateArrayFromDays(30, totalClicks),
+        countryClicks: totalClicks.reduce((acc, click) => {
+          if (!click.country) return acc;
+          if (!acc[click.country]) {
+            acc[click.country] = 1;
+          } else {
+            acc[click.country]++;
+          }
+          return acc;
+        }, {} as Record<string, number>),
         totalClicks: totalClicks.length
       };
     })
