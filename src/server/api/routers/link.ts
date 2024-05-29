@@ -67,7 +67,8 @@ export const linkRouter = createTRPCRouter({
         ),
         columns: {
           timestamp: true,
-          country: true
+          country: true,
+          device: true
         }
       });
       return {
@@ -78,6 +79,15 @@ export const linkRouter = createTRPCRouter({
             acc[click.country] = 1;
           } else {
             acc[click.country]++;
+          }
+          return acc;
+        }, {} as Record<string, number>),
+        deviceClicks: totalClicks.reduce((acc, click) => {
+          if (!click.device) return acc;
+          if (!acc[click.device]) {
+            acc[click.device] = 1;
+          } else {
+            acc[click.device]++;
           }
           return acc;
         }, {} as Record<string, number>),

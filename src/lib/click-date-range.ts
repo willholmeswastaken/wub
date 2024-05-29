@@ -9,7 +9,7 @@ export function generateDateArrayFromDays(days: number, totalClicks: { timestamp
     const dates: DateObject[] = [];
     const today = new Date();
 
-    for (let i = 0; i < days; i++) {
+    for (let i = days; i >= 0; i--) {
         const date = subDays(today, i);
         const clicksForDate = totalClicks.filter(click => click.timestamp?.toDateString() === date.toDateString());
         const formattedDate = format(date, 'do MMMM');
