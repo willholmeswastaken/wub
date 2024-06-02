@@ -13,7 +13,8 @@ export default async function Dashboard({ params }: { params: { code: string } }
         redirect("/api/auth/signin?callbackUrl=/dashboard")
     }
     const links = await api.link.getClicksFromLast30Days(params.code);
-    console.log(links.countryClicks);
+    const countryClicks = Object.entries(links.countryClicks).map(([country, clicks]) => ({ country, clicks }));
+    const deviceClicks = Object.entries(links.deviceClicks).map(([device, clicks]) => ({ device, clicks }));
     return (
         <div className="flex flex-col space-y-10 pb-10">
             <AppHeader pageTitle="Analytics" hideCta />
@@ -26,7 +27,8 @@ export default async function Dashboard({ params }: { params: { code: string } }
                         <h2 className="text-2xl text-gray-600">Locations</h2>
                         <div className="flex flex-col space-y-2">
                             {
-                                Object.entries(links.countryClicks).map(([country, clicks]) => (
+                                countryClicks.length > 0
+                                ? countryClicks.map(({ country, clicks }) => (
                                     <div key={country} className="flex justify-between items-start">
                                         <div className="flex flex-row items-start leading-3 space-x-2">
                                             {country !== 'unknown' && <Image alt={country} unoptimized src={`https://flag.vercel.app/m/${country}.svg`} className="h-3 w-5" width={20} height={20} />}
@@ -35,6 +37,7 @@ export default async function Dashboard({ params }: { params: { code: string } }
                                         <span>{clicks}</span>
                                     </div>
                                 ))
+                                : <p className="text-gray-400">No data available</p>
                             }
                         </div>
                     </div>
@@ -42,7 +45,8 @@ export default async function Dashboard({ params }: { params: { code: string } }
                         <h2 className="text-2xl text-gray-600">Devices</h2>
                         <div className="flex flex-col space-y-2">
                             {
-                                Object.entries(links.deviceClicks).map(([device, clicks]) => (
+                                deviceClicks.length > 0
+                                ? deviceClicks.map(({ device, clicks }) => (
                                     <div key={device} className="flex justify-between items-start">
                                         <div className="flex flex-row items-start leading-3 space-x-2">
                                             {device !== 'unknown' && <Image alt={device} unoptimized src={`https://uaparser.js.org/images/types/${device.toLowerCase() === 'desktop' ? 'default' : device}.png`} className="h-4 w-4" width={20} height={20} />}
@@ -51,6 +55,7 @@ export default async function Dashboard({ params }: { params: { code: string } }
                                         <span>{clicks}</span>
                                     </div>
                                 ))
+                                : <p className="text-gray-400">No data available</p>
                             }
                         </div>
                     </div>
