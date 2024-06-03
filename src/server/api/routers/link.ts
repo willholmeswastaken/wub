@@ -69,38 +69,53 @@ export const linkRouter = createTRPCRouter({
           timestamp: true,
           country: true,
           device: true,
-          city: true
+          city: true,
+          browser: true,
+          os: true
         }
+      });
+      const countClicks = totalClicks.reduce((acc, click) => {
+        if (click.country && click.country !== 'unknown') {
+          acc.countryClicks[click.country] = (acc.countryClicks[click.country] ?? 0) + 1;
+        }
+
+        if (click.city && click.city !== 'unknown' && click.country) {
+          if (!acc.cityClicks[click.city]) {
+            acc.cityClicks[click.city] = { clicks: 1, country: click.country };
+          } else {
+            acc.cityClicks[click.city]!.clicks++;
+          }
+        }
+
+        if (click.device) {
+          acc.deviceClicks[click.device] = (acc.deviceClicks[click.device] ?? 0) + 1;
+        }
+
+        if (click.browser) {
+          acc.browserClicks[click.browser] = (acc.browserClicks[click.browser] ?? 0) + 1;
+        }
+
+        if (click.os) {
+          acc.osClicks[click.os] = (acc.osClicks[click.os] ?? 0) + 1;
+        }
+
+        return acc;
+      }, {
+        countryClicks: {},
+        cityClicks: {},
+        deviceClicks: {},
+        browserClicks: {},
+        osClicks: {}
+      } as {
+        countryClicks: Record<string, number>;
+        cityClicks: Record<string, { clicks: number; country: string }>;
+        deviceClicks: Record<string, number>;
+        browserClicks: Record<string, number>;
+        osClicks: Record<string, number>;
       });
       return {
         clickRange: generateDateArrayFromDays(30, totalClicks),
-        countryClicks: totalClicks.reduce((acc, click) => {
-          if (!click.country || click.country === 'unknown') return acc;
-          if (!acc[click.country]) {
-            acc[click.country] = 1;
-          } else {
-            acc[click.country]++;
-          }
-          return acc;
-        }, {} as Record<string, number>),
-        cityClicks: totalClicks.reduce((acc, click) => {
-          if (!click.city || click.city === 'unknown') return acc;
-          if (!acc[click.city]) {
-            acc[click.city] = { clicks: 1, country: click.country! };
-          } else {
-            acc[click.city]!.clicks++;
-          }
-          return acc;
-        }, {} as Record<string, { clicks: number, country: string }>),
-        deviceClicks: totalClicks.reduce((acc, click) => {
-          if (!click.device) return acc;
-          if (!acc[click.device]) {
-            acc[click.device] = 1;
-          } else {
-            acc[click.device]++;
-          }
-          return acc;
-        }, {} as Record<string, number>),
+        countClicks,
         totalClicks: totalClicks.length
       };
     })
