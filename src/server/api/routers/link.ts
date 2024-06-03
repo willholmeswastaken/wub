@@ -92,6 +92,9 @@ export const linkRouter = createTRPCRouter({
         }
 
         if (click.browser) {
+          if (click.browser === 'Mobile Safari') {
+            click.browser = 'Safari';
+          }
           acc.browserClicks[click.browser] = (acc.browserClicks[click.browser] ?? 0) + 1;
         }
 
