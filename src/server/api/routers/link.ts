@@ -68,13 +68,14 @@ export const linkRouter = createTRPCRouter({
         columns: {
           timestamp: true,
           country: true,
-          device: true
+          device: true,
+          city: true
         }
       });
       return {
         clickRange: generateDateArrayFromDays(30, totalClicks),
         countryClicks: totalClicks.reduce((acc, click) => {
-          if (!click.country) return acc;
+          if (!click.country || click.country === 'unknown') return acc;
           if (!acc[click.country]) {
             acc[click.country] = 1;
           } else {
@@ -82,6 +83,15 @@ export const linkRouter = createTRPCRouter({
           }
           return acc;
         }, {} as Record<string, number>),
+        cityClicks: totalClicks.reduce((acc, click) => {
+          if (!click.city || click.city === 'unknown') return acc;
+          if (!acc[click.city]) {
+            acc[click.city] = { clicks: 1, country: click.country! };
+          } else {
+            acc[click.city]!.clicks++;
+          }
+          return acc;
+        }, {} as Record<string, { clicks: number, country: string }>),
         deviceClicks: totalClicks.reduce((acc, click) => {
           if (!click.device) return acc;
           if (!acc[click.device]) {
