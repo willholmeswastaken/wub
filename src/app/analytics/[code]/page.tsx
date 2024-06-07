@@ -99,17 +99,20 @@ export default async function Dashboard({ params }: { params: { code: string } }
                             <TabsContent value="browsers" className="ease-in-out transition-all duration-200 space-y-2">
                                 {
                                     browserClicks.length > 0
-                                        ? browserClicks.map(({ browser, clicks }) => (
-                                            <AnalyticDisplay
-                                                key={browser}
-                                                name={browser}
-                                                clicks={clicks}
-                                                iconUrl={`https://cdnjs.cloudflare.com/ajax/libs/browser-logos/74.1.0/${browser.toLowerCase()}/${browser.toLowerCase()}.png`}
-                                                displayName={browser}
-                                                imageClassName="h-4 w-4"
-                                                infoContainerClassName="leading-4"
-                                            />
-                                        ))
+                                        ? browserClicks.map(({ browser, clicks }) => {
+                                            const targetBrowser = (browser === 'Mobile Safari' ? 'Safari' : browser).toLowerCase();
+                                            return (
+                                                <AnalyticDisplay
+                                                    key={browser}
+                                                    name={browser}
+                                                    clicks={clicks}
+                                                    iconUrl={`https://cdnjs.cloudflare.com/ajax/libs/browser-logos/74.1.0/${targetBrowser}/${targetBrowser}.png`}
+                                                    displayName={browser}
+                                                    imageClassName="h-4 w-4"
+                                                    infoContainerClassName="leading-4"
+                                                />
+                                            )
+                                        })
                                         : <p className="text-gray-400">No data available</p>
                                 }
                             </TabsContent>
