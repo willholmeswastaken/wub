@@ -63,7 +63,7 @@ export function FullLinkCard({
             </Avatar>
             <div className="ml-2 sm:ml-4">
               <div className="flex max-w-fit items-center gap-x-2 pb-2">
-                <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">
+                <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] md:max-w-[360px] xl:max-w-[500px]">
                   {getProjectUrl()}
                   {shortCode}
                 </span>
