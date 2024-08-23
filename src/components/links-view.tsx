@@ -9,10 +9,8 @@ import { type User } from "next-auth";
 
 export function LinksView({
   initialLinks,
-  user,
 }: {
   initialLinks: LinkRouterOutputs["getUserLinks"];
-  user: User;
 }) {
   const { data } = api.link.getUserLinks.useQuery(undefined, {
     initialData: initialLinks,
@@ -35,7 +33,6 @@ export function LinksView({
             url={link.url}
             clicks={link.click_count}
             createdAt={link.created_at}
-            user={user}
           />
         ))
       )}

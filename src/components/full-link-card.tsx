@@ -13,27 +13,22 @@ import {
 import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import { getProjectUrl } from "@/lib/project-url";
 import { Logo } from "@/components/logo";
-import { type User } from "next-auth";
 import { DeleteLink } from "@/components/delete-link";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function FullLinkCard({
   shortCode,
   url,
   clicks,
   createdAt,
-  user,
 }: {
   shortCode: string;
   url: string;
   clicks: number;
   createdAt: Date;
-  user: User;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const { push } = useRouter();
   const formatDate = (date: Date): string => {
     const options: Intl.DateTimeFormatOptions = {
       month: "long",
