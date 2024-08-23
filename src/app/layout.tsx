@@ -6,7 +6,7 @@ import { TRPCReactProvider } from "@/trpc/react";
 import { Header } from "@/components/header";
 import { Toaster } from "sonner";
 import { Footer } from "@/components/footer";
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,19 +28,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${inter.variable}`}>
         <TRPCReactProvider>
-          <>
-            <div className="flex flex-col min-h-[100dvh]">
-              <Header />
-              <main className="flex-1 bg-gray-50">
-                {children}
-              </main>
-            </div>
-            <Toaster />
-          </>
+          <div className="flex min-h-[100dvh] flex-col">
+            <Header />
+            <main className="flex-1 bg-gray-50">{children}</main>
+            <Footer />
+          </div>
+          <Toaster />
         </TRPCReactProvider>
-        <Footer />
         <SpeedInsights />
       </body>
-    </html >
+    </html>
   );
 }
