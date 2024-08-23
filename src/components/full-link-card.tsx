@@ -48,7 +48,7 @@ export function FullLinkCard({
   const hostname = new URL(url).hostname;
 
   return (
-    <div className="flex w-full justify-between rounded-lg border-gray-50 bg-white p-4 shadow-lg transition-all duration-200 hover:cursor-pointer hover:shadow-xl">
+    <div className="col-span-2 flex w-full justify-between space-y-4 rounded-lg border border-gray-200 bg-white p-4 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
       <Link href={`/analytics/${shortCode}`} className="w-full">
         <div className="relative flex items-center justify-between">
           <div className="relative flex shrink items-center">
@@ -62,30 +62,23 @@ export function FullLinkCard({
               </AvatarFallback>
             </Avatar>
             <div className="ml-2 sm:ml-4">
-              <div className="flex max-w-fit flex-wrap items-center gap-x-2 pb-2">
+              <div className="flex max-w-fit items-center gap-x-2 pb-2">
                 <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] sm:text-base md:max-w-[360px] xl:max-w-[500px]">
                   {getProjectUrl()}
                   {shortCode}
                 </span>
                 <CopyButton isExpired={false} text={shortUrl} />
               </div>
-              <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-sm font-normal text-gray-600">
-                <Avatar className="hidden h-4 w-4 sm:block">
-                  <AvatarFallback>
-                    <span>{user.name?.substring(0, 1)}</span>
-                  </AvatarFallback>
-                  <AvatarImage src={user.image ?? ""} />
-                </Avatar>
-                <span className="hidden text-black sm:block">-</span>
-                <span className="text-xs">{formattedDate}</span>
+              <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-xs font-normal text-gray-600">
+                <span>{formattedDate}</span>
                 <span className="text-black">-</span>
-                <span className="text-xs">{url}</span>
+                <span>{url}</span>
               </div>
             </div>
           </div>
         </div>
       </Link>
-      <div className="flex min-w-fit flex-row items-center space-x-1">
+      <div className="flex min-w-fit flex-row items-center space-x-2">
         <ClicksButton clicks={clicks} />
         <DropdownMenu>
           <DropdownMenuTrigger>
