@@ -42,6 +42,11 @@ export function FullLinkCard({
 
   const hostname = new URL(url).hostname;
 
+  const handleCopyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <div className="col-span-2 flex w-full justify-between space-y-4 rounded-lg border border-gray-200 bg-white p-4 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
       <Link href={`/analytics/${shortCode}`} className="w-full">
@@ -62,7 +67,9 @@ export function FullLinkCard({
                   {getProjectUrl()}
                   {shortCode}
                 </span>
-                <CopyButton isExpired={false} text={shortUrl} />
+                <div onClick={handleCopyClick}>
+                  <CopyButton isExpired={false} text={shortUrl} />
+                </div>
               </div>
               <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-xs font-normal text-gray-600">
                 <span>{formattedDate}</span>
