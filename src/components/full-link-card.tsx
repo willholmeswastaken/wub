@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
 import {
@@ -12,10 +11,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import { getProjectUrl } from "@/lib/project-url";
-import { Logo } from "@/components/logo";
 import { DeleteLink } from "@/components/delete-link";
 import { useState } from "react";
 import Link from "next/link";
+import { UrlFavicon } from "./url-favicon";
 
 export function FullLinkCard({
   shortCode,
@@ -40,8 +39,6 @@ export function FullLinkCard({
 
   const shortUrl = `${getProjectUrl()}${shortCode}`;
 
-  const hostname = new URL(url).hostname;
-
   const handleCopyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -52,15 +49,7 @@ export function FullLinkCard({
       <Link href={`/analytics/${shortCode}`} className="w-full">
         <div className="relative flex items-center justify-between">
           <div className="relative flex shrink items-center">
-            <Avatar className="h-6 w-6">
-              <AvatarImage
-                src={`https://icons.duckduckgo.com/ip3/${hostname}.ico`}
-                alt={`${url} website logo`}
-              />
-              <AvatarFallback>
-                <Logo />
-              </AvatarFallback>
-            </Avatar>
+            <UrlFavicon url={url} />
             <div className="ml-2 sm:ml-4">
               <div className="flex max-w-fit items-center gap-x-2 pb-2">
                 <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] md:max-w-[360px] xl:max-w-[500px]">
