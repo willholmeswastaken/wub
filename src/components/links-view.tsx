@@ -5,7 +5,6 @@ import { FullLinkCard } from "@/components/full-link-card";
 import { CreateLink } from "@/components/create-link";
 import { RelaxingGuyIcon } from "@/components/relaxing-guy-icon";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
-import { type User } from "next-auth";
 
 export function LinksView({
   initialLinks,
@@ -16,7 +15,7 @@ export function LinksView({
     initialData: initialLinks,
   });
   return (
-    <section className="mx-auto grid h-full w-full max-w-5xl grid-cols-2 gap-2 px-2">
+    <section className="mx-auto grid h-full w-full max-w-5xl grid-cols-2 gap-2 px-2 pb-10">
       {data?.length === 0 ? (
         <div className="flex flex-col items-center justify-center space-y-2">
           <h2 className="text-center text-2xl text-gray-600">

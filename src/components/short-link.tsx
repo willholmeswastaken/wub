@@ -49,10 +49,12 @@ export default function ShortLink({
     return () => clearInterval(interval);
   }, [calculateExpiry, expiresAt]);
 
+  console.log("expires at", expiresAt, url);
+
   return (
     <Card
       className={cn(
-        "cursor-pointer border-gray-200 shadow-lg transition-[border-color] duration-75 hover:border-black",
+        "relative cursor-pointer border-gray-200 shadow-lg transition-[border-color] duration-75 hover:border-black",
         isExpired && "cursor-not-allowed text-gray-400 line-through",
       )}
     >
@@ -65,47 +67,47 @@ export default function ShortLink({
               <CopyButton isExpired={isExpired} text={shortUrl} />
             </div>
             <CardDescription className="text-xs">{url}</CardDescription>
-            {expiresAt && (
-              <Popover>
-                <PopoverTrigger
-                  asChild
-                  onMouseEnter={(e) => e.currentTarget.click()}
-                  onMouseLeave={(e) => e.currentTarget.click()}
-                >
-                  <div className="absolute -top-5 right-0">
-                    <span className="flex items-center space-x-1 whitespace-nowrap rounded-full border-gray-400 bg-gray-100 px-2 py-px text-xs font-medium text-gray-800 drop-shadow-lg">
-                      {expiry === "Expired" ? (
-                        <>
-                          <LucideTimerOff className="h-4 w-4" />
-                          <p>Expired</p>
-                        </>
-                      ) : (
-                        <>
-                          <LucideTimer className="h-4 w-4" />
-                          <p>Expires in {expiry}</p>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="top" className="w-80">
-                  <div className="flex flex-col">
-                    <span className="text-sm">
-                      To prevent abuse of our systems we auto-disable guest
-                      created short links after 30 minutes. Just simply create
-                      an account below and create as many links as you wish!
-                    </span>
-                    <Button className="mt-2">Create an account</Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
         </div>
         <div className="flex items-center">
           <ClicksButton clicks={clicks} />
         </div>
       </CardHeader>
+      {expiresAt && (
+        <Popover>
+          <PopoverTrigger
+            asChild
+            onMouseEnter={(e) => e.currentTarget.click()}
+            onMouseLeave={(e) => e.currentTarget.click()}
+          >
+            <div className="absolute right-14 top-0 -translate-y-1/2 translate-x-1/2">
+              <span className="flex items-center space-x-1 whitespace-nowrap rounded-full border-gray-400 bg-gray-100 px-2 py-px text-xs font-medium text-gray-800 drop-shadow-lg">
+                {expiry === "Expired" ? (
+                  <>
+                    <LucideTimerOff className="h-4 w-4" />
+                    <p>Expired</p>
+                  </>
+                ) : (
+                  <>
+                    <LucideTimer className="h-4 w-4" />
+                    <p>Expires in {expiry}</p>
+                  </>
+                )}
+              </span>
+            </div>
+          </PopoverTrigger>
+          <PopoverContent align="end" side="top" className="w-80">
+            <div className="flex flex-col">
+              <span className="text-sm">
+                To prevent abuse of our systems we auto-disable guest created
+                short links after 30 minutes. Just simply create an account
+                below and create as many links as you wish!
+              </span>
+              <Button className="mt-2">Create an account</Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
     </Card>
   );
 }
