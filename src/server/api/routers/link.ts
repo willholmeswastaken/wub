@@ -104,6 +104,9 @@ export const linkRouter = createTRPCRouter({
         where: eq(links.short_code, input),
         columns: {
           userId: true,
+          url: true,
+          short_code: true,
+          created_at: true,
         },
       });
       if (link?.userId !== ctx.session.user.id) {
@@ -175,6 +178,7 @@ export const linkRouter = createTRPCRouter({
         },
       );
       return {
+        link,
         clickRange: generateDateArrayFromDays(30, totalClicks),
         countClicks,
         totalClicks: totalClicks.length,

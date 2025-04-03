@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import * as countries from "i18n-iso-countries";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnalyticDisplay } from "@/components/analytic-display";
+import { UrlFavicon } from "@/components/url-favicon";
+import { getProjectUrl } from "@/lib/project-url";
+import { CopyButton } from "@/components/copy-button";
 
 export default async function Dashboard({
   params,
@@ -17,6 +20,7 @@ export default async function Dashboard({
     redirect("/api/auth/signin?callbackUrl=/dashboard");
   }
   const clicks = await api.link.getClicksFromLast30Days(params.code);
+  const shortUrl = `${getProjectUrl()}${params.code}`;
 
   const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
     ([country, clicks]) => ({ country, clicks }),
@@ -39,6 +43,29 @@ export default async function Dashboard({
       <AppHeader pageTitle="Analytics" hideCta />
       <section className="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col space-y-3">
         <div className="border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+          <div className="mb-6 flex items-center justify-between pl-8">
+            <div className="flex items-center space-x-3">
+              <UrlFavicon url={clicks.link.url} />
+              <div className="flex flex-col">
+                <a
+                  href={clicks.link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-gray-900 hover:underline"
+                >
+                  {clicks.link.url}
+                </a>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">{shortUrl}</span>
+                  <CopyButton text={shortUrl} />
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Created{" "}
+              {new Date(clicks.link.created_at).toLocaleDateString("en-GB")}
+            </div>
+          </div>
           <ClicksChart
             chartData={clicks.clickRange}
             totalClicks={clicks.totalClicks}
