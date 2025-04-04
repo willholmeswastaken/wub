@@ -9,6 +9,7 @@ import { AnalyticDisplay } from "@/components/analytic-display";
 import { UrlFavicon } from "@/components/url-favicon";
 import { getProjectUrl } from "@/lib/project-url";
 import { CopyButton } from "@/components/copy-button";
+import { QRCodeButton } from "@/components/qr-code-button";
 
 export default async function Dashboard({
   params,
@@ -57,7 +58,10 @@ export default async function Dashboard({
                 </a>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-500">{shortUrl}</span>
-                  <CopyButton text={shortUrl} />
+                  <div className="flex items-center space-x-1">
+                    <CopyButton text={shortUrl} />
+                    <QRCodeButton url={shortUrl} />
+                  </div>
                 </div>
               </div>
             </div>

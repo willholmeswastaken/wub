@@ -2,6 +2,7 @@
 
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
+import { QRCodeButton } from "@/components/qr-code-button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -56,8 +57,12 @@ export function FullLinkCard({
                   {getProjectUrl()}
                   {shortCode}
                 </span>
-                <div onClick={handleCopyClick}>
+                <div
+                  onClick={handleCopyClick}
+                  className="flex items-center space-x-1"
+                >
                   <CopyButton isExpired={false} text={shortUrl} />
+                  <QRCodeButton url={shortUrl} />
                 </div>
               </div>
               <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-xs font-normal text-gray-600">

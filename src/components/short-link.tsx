@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
 import { UrlFavicon } from "./url-favicon";
+import { QRCodeButton } from "@/components/qr-code-button";
 
 export default function ShortLink({
   url,
@@ -65,6 +66,7 @@ export default function ShortLink({
             <div className="flex flex-row items-center space-x-2">
               <CardTitle className="text-sm">{shortUrl}</CardTitle>
               <CopyButton isExpired={isExpired} text={shortUrl} />
+              <QRCodeButton url={shortUrl} />
             </div>
             <CardDescription className="text-xs">{url}</CardDescription>
           </div>
