@@ -46,13 +46,13 @@ export function FullLinkCard({
   };
 
   return (
-    <div className="col-span-2 flex w-full justify-between space-y-4 rounded-lg border border-gray-200 bg-white p-4 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
+    <div className="col-span-2 flex w-full justify-between rounded-lg border border-gray-200 bg-white p-4 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
       <Link href={`/analytics/${shortCode}`} className="w-full">
         <div className="relative flex items-center justify-between">
-          <div className="relative flex shrink items-center">
+          <div className="relative flex w-full items-center">
             <UrlFavicon url={url} />
-            <div className="ml-2 sm:ml-4">
-              <div className="flex max-w-fit items-center gap-x-2 pb-2">
+            <div className="ml-2 w-full sm:ml-4">
+              <div className="flex max-w-fit items-center gap-x-2 ">
                 <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] md:max-w-[360px] xl:max-w-[500px]">
                   {getProjectUrl()}
                   {shortCode}
@@ -65,39 +65,42 @@ export function FullLinkCard({
                   <QRCodeButton url={shortUrl} />
                 </div>
               </div>
-              <div className="flex max-w-fit flex-wrap items-center gap-x-2 text-xs font-normal text-gray-600">
-                <span>{formattedDate}</span>
-                <span className="text-black">-</span>
-                <span>{url}</span>
+              <div className="flex w-full items-center justify-between text-xs font-normal text-gray-600">
+                <div className="flex max-w-[70%] items-center gap-x-2 overflow-hidden">
+                  <span>{formattedDate}</span>
+                  <span className="text-black">-</span>
+                  <span className="truncate">{url}</span>
+                </div>
+                <div className="ml-auto flex shrink-0 items-center space-x-2">
+                  <ClicksButton clicks={clicks} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <div className="flex flex-row items-center space-x-1 rounded-lg bg-gray-100 p-1.5 text-sm transition-all hover:scale-105 hover:cursor-pointer">
+                        <EllipsisVertical
+                          width={20}
+                          height={20}
+                          className="text-gray-700"
+                        />
+                      </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-40">
+                      <DropdownMenuItem
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                        className="text-red-500 focus:cursor-pointer focus:bg-red-500 focus:text-white"
+                      >
+                        <Trash2Icon className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                        <DropdownMenuShortcut>⇧⌘X</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </Link>
-      <div className="flex min-w-fit flex-row items-center space-x-2">
-        <ClicksButton clicks={clicks} />
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <div className="flex flex-row items-center space-x-1 rounded-lg bg-gray-100 p-1.5 text-sm transition-all hover:scale-105 hover:cursor-pointer">
-              <EllipsisVertical
-                width={20}
-                height={20}
-                className="text-gray-700"
-              />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-40">
-            <DropdownMenuItem
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="text-red-500 focus:cursor-pointer focus:bg-red-500 focus:text-white"
-            >
-              <Trash2Icon className="mr-2 h-4 w-4" />
-              <span>Delete</span>
-              <DropdownMenuShortcut>⇧⌘X</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+
       <DeleteLink
         isOpen={isDeleteDialogOpen}
         setIsOpen={setIsDeleteDialogOpen}
