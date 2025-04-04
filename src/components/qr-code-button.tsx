@@ -17,9 +17,9 @@ interface QRCodeButtonProps {
 
 export function QRCodeButton({ url }: QRCodeButtonProps) {
   const handleDownload = () => {
-    const svg = (document.querySelector("#qr-code svg") as SVGElement)!;
+    const svg = document.querySelector("#qr-code svg");
 
-    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgData = new XMLSerializer().serializeToString(svg!);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
