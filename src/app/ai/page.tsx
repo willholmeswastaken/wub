@@ -3,11 +3,46 @@
 import { useChat } from "@ai-sdk/react";
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
 
 export default function Chat() {
   const [input, setInput] = useState("");
   const { messages, sendMessage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const convertUrlsToMarkdown = (text: string): string => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => `[${url}](${url})`);
+  };
+
+
+  const userMarkdownComponents: Components = {
+    a: ({ children, href, ...props }) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-200 hover:text-blue-100 underline"
+        {...props}
+      >
+        {children}
+      </a>
+    ),
+  };
+
+  const aiMarkdownComponents: Components = {
+    a: ({ children, href, ...props }) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:text-blue-800 underline dark:text-blue-400 dark:hover:text-blue-300"
+        {...props}
+      >
+        {children}
+      </a>
+    ),
+  };
 
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
@@ -18,6 +53,7 @@ export default function Chat() {
       }, 100);
     }
   }, [messages]);
+
   return (
     <div className="mx-auto flex h-[calc(100vh-8rem)] w-full max-w-4xl flex-col">
       <div className="flex-1 space-y-4 overflow-y-auto p-4 pb-32">
@@ -37,7 +73,7 @@ export default function Chat() {
                       return (
                         <div key={`${message.id}-${i}`}>
                           <div className="prose prose-sm prose-headings:text-primary-foreground prose-strong:text-primary-foreground prose-code:text-primary-foreground prose-pre:bg-primary/20 prose-pre:text-primary-foreground max-w-none text-primary-foreground">
-                            <ReactMarkdown>{part.text}</ReactMarkdown>
+                            <ReactMarkdown components={userMarkdownComponents}>{convertUrlsToMarkdown(part.text)}</ReactMarkdown>
                           </div>
                         </div>
                       );
@@ -52,7 +88,7 @@ export default function Chat() {
                       return (
                         <div key={`${message.id}-${i}`}>
                           <div className="prose prose-sm dark:prose-headings:text-gray-100 dark:prose-strong:text-gray-100 dark:prose-code:text-gray-100 max-w-none text-black dark:text-gray-100">
-                            <ReactMarkdown>{part.text}</ReactMarkdown>
+                            <ReactMarkdown components={aiMarkdownComponents}>{convertUrlsToMarkdown(part.text)}</ReactMarkdown>
                           </div>
                         </div>
                       );

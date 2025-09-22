@@ -186,7 +186,7 @@ export const linkRouter = createTRPCRouter({
     }),
 });
 
-async function createShortLink(
+export async function createShortLink(
   database: typeof db,
   url: string,
   userId?: string,

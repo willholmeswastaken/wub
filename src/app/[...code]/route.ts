@@ -13,21 +13,22 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 async function getDb() {
-  const sql = neon(env.DATABASE_URL);
+  const sql = neon(env.DATABASE_URL as string);
   return drizzle(sql, { schema, logger: true });
 }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } },
+  { params }: { params: Promise<{ code: string}> },
 ) {
-  const functionLogger = logger.child({ short_code: params.code });
+  const { code } = await params;
+  const functionLogger = logger.child({ short_code: code });
   functionLogger.info("Incoming short link request");
 
   const db = await getDb();
 
   const route = await db.query.links.findFirst({
-    where: eq(links.short_code, params.code.toString()),
+    where: eq(links.short_code, code.toString()),
   });
   if (!route) {
     functionLogger.info("Short link not found");
@@ -40,17 +41,21 @@ export async function GET(
 
   const ua = userAgent(request);
   if (!ua.isBot) {
-    const geo = request.geo;
+    const headers = request.headers;
+    const ipAddress =
+      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      headers.get("x-real-ip") ??
+      "unknown";
 
     await queueClient.logClick({
-      short_code: params.code,
-      ipAddress: request.ip ?? "",
+      short_code: code,
+      ipAddress: ipAddress,
       userAgent: ua.ua,
-      country: geo?.country ?? "unknown",
-      city: geo?.city ?? "unknown",
-      region: geo?.region ?? "unknown",
-      latitude: geo?.latitude ?? "unknown",
-      longitude: geo?.longitude ?? "unknown",
+      country: headers.get("x-vercel-ip-country") ?? "unknown",
+      city: headers.get("x-vercel-ip-city") ?? "unknown",
+      region: headers.get("x-vercel-ip-country-region") ?? "unknown",
+      latitude: headers.get("x-vercel-ip-latitude") ?? "unknown",
+      longitude: headers.get("x-vercel-ip-longitude") ?? "unknown",
       device: ua.device.type ?? "desktop",
       device_vendor: ua.device.vendor ?? "unknown",
       device_model: ua.device.model ?? "unknown",
