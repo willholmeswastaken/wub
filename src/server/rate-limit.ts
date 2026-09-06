@@ -6,23 +6,19 @@ export const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
   limiter: Ratelimit.slidingWindow(10, "10 s"),
   analytics: true,
-  /**
-   * Optional prefix for the keys used in redis. This is useful if you want to share a redis
-   * instance with other applications and want to avoid key collisions. The default prefix is
-   * "@upstash/ratelimit"
-   */
   prefix: "@upstash/ratelimit",
 });
 
-export async function protectRoute(identifier: string | null) {
+/** Returns true when the request may proceed. Missing IPs are allowed. */
+export async function isRateLimitAllowed(identifier: string | null) {
   if (!identifier || identifier.length === 0) {
-    logger.info("No ip address found to protect route");
+    logger.info("No ip address found; allowing request");
     return true;
   }
   const { success } = await ratelimit.limit(identifier);
   if (!success) {
     logger.info({ identifier }, "Rate limit exceeded");
-    return true;
+    return false;
   }
-  return false;
+  return true;
 }

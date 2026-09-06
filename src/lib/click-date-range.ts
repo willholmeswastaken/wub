@@ -7,18 +7,18 @@ export type DateObject = {
 
 export function generateDateArrayFromDays(
   days: number,
-  totalClicks: { timestamp: Date | null }[],
+  clicksByDay: Record<string, number>,
 ): DateObject[] {
   const dates: DateObject[] = [];
   const today = new Date();
 
   for (let i = days; i >= 0; i--) {
     const date = subDays(today, i);
-    const clicksForDate = totalClicks.filter(
-      (click) => click.timestamp?.toDateString() === date.toDateString(),
-    );
-    const formattedDate = format(date, "do MMMM");
-    dates.push({ date: formattedDate, clicks: clicksForDate.length });
+    const key = format(date, "yyyy-MM-dd");
+    dates.push({
+      date: format(date, "do MMMM"),
+      clicks: clicksByDay[key] ?? 0,
+    });
   }
 
   return dates;
