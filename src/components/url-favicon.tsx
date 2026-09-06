@@ -1,6 +1,7 @@
 "use client";
 
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
+
 import { Logo } from "./logo";
 
 export function UrlFavicon({ url }: { url: string }) {

@@ -1,10 +1,14 @@
-import { z } from "zod";
+import { generateDateArrayFromDays } from "@/lib/click-date-range";
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
+import { type db } from "@/server/db";
 import { clicks, links } from "@/server/db/schema";
+import logger from "@/server/logger";
+import { protectRoute } from "@/server/rate-limit";
+import { TRPCError, type inferRouterOutputs } from "@trpc/server";
 import {
   type InferInsertModel,
   eq,
@@ -14,11 +18,7 @@ import {
   isNull,
   gte,
 } from "drizzle-orm";
-import { type db } from "@/server/db";
-import logger from "@/server/logger";
-import { protectRoute } from "@/server/rate-limit";
-import { TRPCError, type inferRouterOutputs } from "@trpc/server";
-import { generateDateArrayFromDays } from "@/lib/click-date-range";
+import { z } from "zod";
 
 export const linkRouter = createTRPCRouter({
   create: protectedProcedure

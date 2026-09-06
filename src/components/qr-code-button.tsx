@@ -1,8 +1,6 @@
 "use client";
 
-import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
-import { QrCode } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +8,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface QRCodeButtonProps {
   url: string;

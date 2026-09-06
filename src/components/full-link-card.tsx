@@ -1,7 +1,8 @@
 "use client";
 
-import { CopyButton } from "@/components/copy-button";
 import { ClicksButton } from "@/components/clicks-button";
+import { CopyButton } from "@/components/copy-button";
+import { DeleteLink } from "@/components/delete-link";
 import { QRCodeButton } from "@/components/qr-code-button";
 import {
   DropdownMenu,
@@ -10,11 +11,11 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import { getProjectUrl } from "@/lib/project-url";
-import { DeleteLink } from "@/components/delete-link";
-import { useState } from "react";
+import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+
 import { UrlFavicon } from "./url-favicon";
 
 export function FullLinkCard({

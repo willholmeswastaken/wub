@@ -1,15 +1,15 @@
+import { AnalyticDisplay } from "@/components/analytic-display";
 import { AppHeader } from "@/components/app-header";
 import { ClicksChart } from "@/components/clicks-chart";
-import { getServerAuthSession } from "@/server/auth";
-import { api } from "@/trpc/server";
-import { redirect } from "next/navigation";
-import * as countries from "i18n-iso-countries";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AnalyticDisplay } from "@/components/analytic-display";
-import { UrlFavicon } from "@/components/url-favicon";
-import { getProjectUrl } from "@/lib/project-url";
 import { CopyButton } from "@/components/copy-button";
 import { QRCodeButton } from "@/components/qr-code-button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UrlFavicon } from "@/components/url-favicon";
+import { getProjectUrl } from "@/lib/project-url";
+import { getServerAuthSession } from "@/server/auth";
+import { api } from "@/trpc/server";
+import * as countries from "i18n-iso-countries";
+import { redirect } from "next/navigation";
 
 export default async function Dashboard({
   params,

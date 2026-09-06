@@ -1,10 +1,10 @@
 "use client";
 
-import { api } from "@/trpc/react";
-import { FullLinkCard } from "@/components/full-link-card";
 import { CreateLink } from "@/components/create-link";
+import { FullLinkCard } from "@/components/full-link-card";
 import { RelaxingGuyIcon } from "@/components/relaxing-guy-icon";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
+import { api } from "@/trpc/react";
 
 export function LinksView({
   initialLinks,
