@@ -11,7 +11,7 @@ export function AppHeader({
 }) {
   return (
     <section className="border-y border-border bg-card p-10">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           {hideCta && (
             <Link

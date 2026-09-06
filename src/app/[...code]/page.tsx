@@ -1,19 +1,24 @@
 import { ClickService } from "@/server/domain/click-service";
+import { ExpiredLink, NotFound } from "@/server/errors";
 import { runApp } from "@/server/run-app";
 import { geolocation, ipAddress } from "@vercel/functions";
-import { Effect, Exit } from "effect";
-import { redirect } from "next/navigation";
-import { type NextRequest, userAgent } from "next/server";
+import { Cause, Effect, Exit, Option } from "effect";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
+import { userAgent } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ code: string[] }> },
-) {
+export default async function ShortCodePage({
+  params,
+}: {
+  params: Promise<{ code: string[] }>;
+}) {
   const { code } = await params;
   const shortCode = code.join("/");
-  const ua = userAgent(request);
+  const headerStore = await headers();
+  const request = new Request("https://wub.invalid", { headers: headerStore });
+  const ua = userAgent({ headers: headerStore });
   const geo = geolocation(request);
 
   const exit = await runApp(
@@ -47,7 +52,15 @@ export async function GET(
   );
 
   if (Exit.isFailure(exit)) {
-    redirect("/");
+    const failure = Cause.failureOption(exit.cause);
+    if (
+      Option.isSome(failure) &&
+      (failure.value instanceof NotFound ||
+        failure.value instanceof ExpiredLink)
+    ) {
+      notFound();
+    }
+    throw new Error("Unable to resolve short link");
   }
   redirect(exit.value.url);
 }

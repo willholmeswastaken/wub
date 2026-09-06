@@ -1,11 +1,28 @@
 import { BarChartIcon } from "lucide-react";
+import Link from "next/link";
 
-export function ClicksButton({ clicks }: { clicks: number }) {
-  return (
-    <div className="flex h-fit flex-row items-center space-x-1 rounded-lg bg-gray-100 p-1.5 text-sm transition-all hover:scale-105 hover:cursor-pointer">
-      <BarChartIcon width={14} height={14} className="text-gray-700" />
-      <span className="hidden sm:block">{clicks} clicks</span>
+export function ClicksButton({
+  clicks,
+  href,
+}: {
+  clicks: number;
+  href?: string;
+}) {
+  const content = (
+    <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-sm text-muted-foreground">
+      <BarChartIcon className="h-3.5 w-3.5" aria-hidden />
+      <span className="hidden sm:inline">{clicks} clicks</span>
       <span className="sm:hidden">{clicks}</span>
-    </div>
+    </span>
+  );
+
+  if (!href) {
+    return content;
+  }
+
+  return (
+    <Link href={href} className="hover:opacity-80" aria-label="View analytics">
+      {content}
+    </Link>
   );
 }
