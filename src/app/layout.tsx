@@ -1,10 +1,10 @@
 import "@/styles/globals.css";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
+import { AppShell } from "@/components/app-shell";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TRPCReactProvider } from "@/trpc/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,16 +23,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${inter.variable}`}>
-        <TRPCReactProvider>
-          <div className="flex min-h-[100dvh] flex-col">
-            <Header />
-            <main className="flex-1 bg-gray-50">{children}</main>
-            <Footer />
-          </div>
-          <Toaster />
-        </TRPCReactProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TRPCReactProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </TRPCReactProvider>
+        </ThemeProvider>
         <SpeedInsights />
       </body>
     </html>

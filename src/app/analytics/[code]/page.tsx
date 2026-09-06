@@ -44,7 +44,7 @@ export default async function Dashboard({
     <div className="flex flex-col space-y-10 pb-10">
       <AppHeader pageTitle="Analytics" hideCta />
       <section className="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col space-y-3">
-        <div className="border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+        <div className="border border-border bg-card p-5 sm:rounded-lg sm:p-10 sm:shadow-lg">
           <div className="mb-6 flex items-center justify-between pl-8">
             <div className="flex items-center space-x-3">
               <UrlFavicon url={clicks.link.url} />
@@ -53,12 +53,14 @@ export default async function Dashboard({
                   href={clicks.link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-medium text-gray-900 hover:underline"
+                  className="text-sm font-medium text-foreground hover:underline"
                 >
                   {clicks.link.url}
                 </a>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{shortUrl}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {shortUrl}
+                  </span>
                   <div className="flex items-center space-x-1">
                     <CopyButton text={shortUrl} />
                     <QRCodeButton url={shortUrl} />
@@ -66,7 +68,7 @@ export default async function Dashboard({
                 </div>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
               Created{" "}
               {new Date(clicks.link.created_at).toLocaleDateString("en-GB")}
             </div>
@@ -77,10 +79,10 @@ export default async function Dashboard({
           />
         </div>
         <div className="flex w-full flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-          <div className="flex w-full flex-col gap-y-2 border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+          <div className="flex w-full flex-col gap-y-2 border border-border bg-card p-5 sm:rounded-lg sm:p-10 sm:shadow-lg">
             <Tabs defaultValue="countries">
               <div className="flex flex-row justify-between pb-2">
-                <h2 className="text-2xl text-gray-600">Locations</h2>
+                <h2 className="text-2xl text-foreground">Locations</h2>
                 <TabsList>
                   <TabsTrigger value="countries">Countries</TabsTrigger>
                   <TabsTrigger value="cities">Cities</TabsTrigger>
@@ -103,7 +105,7 @@ export default async function Dashboard({
                     />
                   ))
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <p className="text-muted-foreground">No data available</p>
                 )}
               </TabsContent>
               <TabsContent
@@ -121,15 +123,15 @@ export default async function Dashboard({
                     />
                   ))
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <p className="text-muted-foreground">No data available</p>
                 )}
               </TabsContent>
             </Tabs>
           </div>
-          <div className="flex w-full flex-col gap-y-2 border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+          <div className="flex w-full flex-col gap-y-2 border border-border bg-card p-5 sm:rounded-lg sm:p-10 sm:shadow-lg">
             <Tabs defaultValue="devices">
               <div className="flex flex-row justify-between pb-2">
-                <h2 className="text-2xl text-gray-600">Clients</h2>
+                <h2 className="text-2xl text-foreground">Clients</h2>
                 <TabsList>
                   <TabsTrigger value="devices">Devices</TabsTrigger>
                   <TabsTrigger value="browsers">Browsers</TabsTrigger>
@@ -152,7 +154,7 @@ export default async function Dashboard({
                     />
                   ))
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <p className="text-muted-foreground">No data available</p>
                 )}
               </TabsContent>
               <TabsContent
@@ -177,7 +179,7 @@ export default async function Dashboard({
                     );
                   })
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <p className="text-muted-foreground">No data available</p>
                 )}
               </TabsContent>
               <TabsContent
@@ -197,7 +199,7 @@ export default async function Dashboard({
                     />
                   ))
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <p className="text-muted-foreground">No data available</p>
                 )}
               </TabsContent>
             </Tabs>

@@ -36,7 +36,7 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
           <DropdownMenuContent className="w-56">
             <DropdownMenuLabel className="flex flex-col">
               <span>{user.name}</span>
-              <span className="text-xs font-normal text-gray-500">
+              <span className="text-xs font-normal text-muted-foreground">
                 {user.email}
               </span>
             </DropdownMenuLabel>

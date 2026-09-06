@@ -1,8 +1,8 @@
 "use client";
 
 import { CreateLink } from "@/components/create-link";
+import { EmptyState } from "@/components/empty-state";
 import { FullLinkCard } from "@/components/full-link-card";
-import { RelaxingGuyIcon } from "@/components/relaxing-guy-icon";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
 import { api } from "@/trpc/react";
 
@@ -15,15 +15,14 @@ export function LinksView({
     initialData: initialLinks,
   });
   return (
-    <section className="mx-auto grid h-full w-full max-w-5xl grid-cols-2 gap-2 px-2 pb-10">
+    <section className="mx-auto grid h-full w-full max-w-5xl grid-cols-1 gap-2 px-2 pb-10 sm:grid-cols-2">
       {data?.length === 0 ? (
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <h2 className="text-center text-2xl text-gray-600">
-            No links found.
-          </h2>
-          <RelaxingGuyIcon />
+        <EmptyState
+          title="No links found"
+          description="Create your first short link to see it here."
+        >
           <CreateLink />
-        </div>
+        </EmptyState>
       ) : (
         data?.map((link) => (
           <FullLinkCard
