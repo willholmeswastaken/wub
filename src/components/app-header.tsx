@@ -10,18 +10,19 @@ export function AppHeader({
   hideCta?: boolean;
 }) {
   return (
-    <section className="border-y border-gray-200 bg-white p-10">
+    <section className="border-y border-border bg-card p-10">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between">
         <div className="flex items-center gap-4">
           {hideCta && (
             <Link
               href="/dashboard"
-              className="rounded-lg bg-gray-100 p-2 transition-all hover:scale-105"
+              aria-label="Back to dashboard"
+              className="rounded-lg bg-muted p-2 transition-all hover:scale-105"
             >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </Link>
           )}
-          <h1 className="text-2xl text-gray-600">{pageTitle}</h1>
+          <h1 className="text-2xl text-foreground">{pageTitle}</h1>
         </div>
         {!hideCta && <CreateLink />}
       </div>
