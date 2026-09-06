@@ -7,7 +7,7 @@ on:
 
 jobs:
   quality:
-    name: Lint, format, typecheck
+    name: Lint, format, typecheck, test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,3 +16,4 @@ jobs:
       - run: bun run lint
       - run: bun run format:check
       - run: bun run typecheck
+      - run: bun run test
