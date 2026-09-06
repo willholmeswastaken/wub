@@ -13,6 +13,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "start": "next start"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
+    "effect": "3.22.1",
     "i18n-iso-countries": "^7.14.0",
     "lucide-react": "^0.544.0",
     "motion": "^12.23.12",
@@ -63,6 +65,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@effect/vitest": "0.21.4",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.18.1",
     "@types/react": "^19.2.18",
@@ -75,7 +78,8 @@
     "pino-pretty": "^13.1.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.3.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "3.2.4"
   },
   "ct3aMetadata": {
     "initVersion": "7.32.0"
