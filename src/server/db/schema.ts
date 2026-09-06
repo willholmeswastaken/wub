@@ -62,9 +62,7 @@ export const clicks = createTable(
     os_version: text("os_version"),
     cpu_architecture: text("cpu_architecture"),
   },
-  (click) => ({
-    shortCodeIdx: index("click_short_code_idx").on(click.short_code),
-  }),
+  (click) => [index("click_short_code_idx").on(click.short_code)],
 );
 
 export const users = createTable("user", {
@@ -102,12 +100,12 @@ export const accounts = createTable(
     id_token: text("id_token"),
     session_state: varchar("session_state", { length: 255 }),
   },
-  (account) => ({
-    compoundKey: primaryKey({
+  (account) => [
+    primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index("account_userId_idx").on(account.userId),
-  }),
+    index("account_userId_idx").on(account.userId),
+  ],
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -125,9 +123,7 @@ export const sessions = createTable(
       .references(() => users.id),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (session) => ({
-    userIdIdx: index("session_userId_idx").on(session.userId),
-  }),
+  (session) => [index("session_userId_idx").on(session.userId)],
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -141,7 +137,5 @@ export const verificationTokens = createTable(
     token: varchar("token", { length: 255 }).notNull(),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (vt) => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
+  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );

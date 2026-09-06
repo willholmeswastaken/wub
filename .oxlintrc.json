@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  // typeAware is off until the TypeScript upgrade: tsgolint currently rejects `baseUrl`.
+  // tsgolint still rejects `compilerOptions.baseUrl`, which Next.js path aliases need.
   "options": {
     "typeAware": false
   },

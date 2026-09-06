@@ -83,8 +83,8 @@ export default function ShortLink({
             onMouseEnter={(e) => e.currentTarget.click()}
             onMouseLeave={(e) => e.currentTarget.click()}
           >
-            <div className="absolute right-14 top-0 -translate-y-1/2 translate-x-1/2">
-              <span className="flex items-center space-x-1 whitespace-nowrap rounded-full border-gray-400 bg-gray-100 px-2 py-px text-xs font-medium text-gray-800 drop-shadow-lg">
+            <div className="absolute top-0 right-14 translate-x-1/2 -translate-y-1/2">
+              <span className="flex items-center space-x-1 rounded-full border-gray-400 bg-gray-100 px-2 py-px text-xs font-medium whitespace-nowrap text-gray-800 drop-shadow-lg">
                 {expiry === "Expired" ? (
                   <>
                     <LucideTimerOff className="h-4 w-4" />

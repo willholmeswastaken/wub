@@ -1,33 +1,25 @@
-import { env } from "@/env";
+import { db } from "@/server/db";
 import { links } from "@/server/db/schema";
-import * as schema from "@/server/db/schema";
 import logger from "@/server/logger";
 import { queueClient } from "@/server/qstash";
-import { neon } from "@neondatabase/serverless";
+import { geolocation, ipAddress } from "@vercel/functions";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/neon-http";
 import { redirect } from "next/navigation";
 import { type NextRequest, userAgent } from "next/server";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
-
-async function getDb() {
-  const sql = neon(env.DATABASE_URL);
-  return drizzle(sql, { schema, logger: true });
-}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } },
+  { params }: { params: Promise<{ code: string[] }> },
 ) {
-  const functionLogger = logger.child({ short_code: params.code });
+  const { code } = await params;
+  const shortCode = code.join("/");
+  const functionLogger = logger.child({ short_code: shortCode });
   functionLogger.info("Incoming short link request");
 
-  const db = await getDb();
-
   const route = await db.query.links.findFirst({
-    where: eq(links.short_code, params.code.toString()),
+    where: eq(links.short_code, shortCode),
   });
   if (!route) {
     functionLogger.info("Short link not found");
@@ -40,17 +32,17 @@ export async function GET(
 
   const ua = userAgent(request);
   if (!ua.isBot) {
-    const geo = request.geo;
+    const geo = geolocation(request);
 
     await queueClient.logClick({
-      short_code: params.code,
-      ipAddress: request.ip ?? "",
+      short_code: shortCode,
+      ipAddress: ipAddress(request) ?? "",
       userAgent: ua.ua,
-      country: geo?.country ?? "unknown",
-      city: geo?.city ?? "unknown",
-      region: geo?.region ?? "unknown",
-      latitude: geo?.latitude ?? "unknown",
-      longitude: geo?.longitude ?? "unknown",
+      country: geo.country ?? "unknown",
+      city: geo.city ?? "unknown",
+      region: geo.countryRegion ?? "unknown",
+      latitude: geo.latitude ?? "unknown",
+      longitude: geo.longitude ?? "unknown",
       device: ua.device.type ?? "desktop",
       device_vendor: ua.device.vendor ?? "unknown",
       device_model: ua.device.model ?? "unknown",

@@ -13,7 +13,7 @@
     "newlinesBetween": true
   },
   "sortTailwindcss": {
-    "config": "./tailwind.config.ts",
+    "stylesheet": "./src/styles/globals.css",
     "functions": ["cn", "clsx", "cva"]
   },
   "ignorePatterns": [".next/**", "node_modules/**", "coverage/**", "bun.lockb"]
