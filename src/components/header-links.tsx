@@ -1,18 +1,16 @@
 "use client";
 
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut, Settings, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { type Session } from "next-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,9 +27,9 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
       )}
       {user && pathname.toLowerCase() !== "/" && (
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger aria-label="Open account menu">
             <Avatar>
-              <AvatarImage src={user.image ?? ""} />
+              <AvatarImage src={user.image ?? ""} alt="" />
               <AvatarFallback>{user.name?.substring(0, 1)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
@@ -43,24 +41,6 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-                <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link
                 href="/api/auth/signout"
@@ -68,7 +48,6 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
-                <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

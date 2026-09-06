@@ -19,7 +19,7 @@ export default async function Dashboard({
   const { code } = await params;
   const session = await getServerAuthSession();
   if (!session) {
-    redirect("/api/auth/signin?callbackUrl=/dashboard");
+    redirect(`/api/auth/signin?callbackUrl=/analytics/${code}`);
   }
   const clicks = await api.link.getClicksFromLast30Days(code);
   const shortUrl = `${getProjectUrl()}${code}`;
