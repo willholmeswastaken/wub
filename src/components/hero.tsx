@@ -82,7 +82,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
             <h1 className="max-w-2xl text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
               Short Links That Change The World
             </h1>
-            <p className="mx-auto max-w-[525px] text-gray-500 dark:text-gray-400 md:text-xl">
+            <p className="mx-auto max-w-[525px] text-gray-500 md:text-xl dark:text-gray-400">
               Wub is the open-source link shortener that is built to scale.
             </p>
           </div>

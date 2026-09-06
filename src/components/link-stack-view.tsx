@@ -2,7 +2,7 @@
 
 import { useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 import ShortLink from "./short-link";
 

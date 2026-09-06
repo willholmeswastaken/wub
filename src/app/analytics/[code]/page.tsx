@@ -14,14 +14,15 @@ import { redirect } from "next/navigation";
 export default async function Dashboard({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
+  const { code } = await params;
   const session = await getServerAuthSession();
   if (!session) {
     redirect("/api/auth/signin?callbackUrl=/dashboard");
   }
-  const clicks = await api.link.getClicksFromLast30Days(params.code);
-  const shortUrl = `${getProjectUrl()}${params.code}`;
+  const clicks = await api.link.getClicksFromLast30Days(code);
+  const shortUrl = `${getProjectUrl()}${code}`;
 
   const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
     ([country, clicks]) => ({ country, clicks }),
@@ -75,7 +76,7 @@ export default async function Dashboard({
             totalClicks={clicks.totalClicks}
           />
         </div>
-        <div className="flex w-full flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
+        <div className="flex w-full flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
           <div className="flex w-full flex-col gap-y-2 border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
             <Tabs defaultValue="countries">
               <div className="flex flex-row justify-between pb-2">
