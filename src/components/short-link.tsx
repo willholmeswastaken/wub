@@ -1,21 +1,22 @@
 "use client";
 
+import { ClicksButton } from "@/components/clicks-button";
+import { CopyButton } from "@/components/copy-button";
+import { QRCodeButton } from "@/components/qr-code-button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { LucideTimer, LucideTimerOff } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useState } from "react";
 import { Popover, PopoverContent } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { PopoverTrigger } from "@radix-ui/react-popover";
-import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/copy-button";
-import { ClicksButton } from "@/components/clicks-button";
+import { LucideTimer, LucideTimerOff } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
 import { UrlFavicon } from "./url-favicon";
-import { QRCodeButton } from "@/components/qr-code-button";
 
 export default function ShortLink({
   url,

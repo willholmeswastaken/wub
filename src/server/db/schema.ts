@@ -23,43 +23,49 @@ export const links = createTable("link", {
   short_code: varchar("short_code", { length: 8 }).notNull().primaryKey(),
   url: varchar("url", { length: 2048 }).notNull(),
   title: text("title"),
-  userId: varchar("userId", { length: 255 })
-    .references(() => users.id),
-  created_at: timestamp("created_at", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  userId: varchar("userId", { length: 255 }).references(() => users.id),
+  created_at: timestamp("created_at", { mode: "date" })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
   click_count: integer("click_count").notNull().default(0),
   last_clicked: timestamp("last_clicked", { mode: "date" }),
   expires_at: timestamp("expires_at", { mode: "date" }),
 });
 
 export const linksRelations = relations(links, ({ many }) => ({
-  clicks: many(clicks)
+  clicks: many(clicks),
 }));
 
-export const clicks = createTable("click", {
-  id: serial("id").primaryKey(),
-  short_code: text("short_code").notNull(), // Assuming short_code can be of variable length
-  timestamp: timestamp("timestamp", { mode: "date" }).default(sql`CURRENT_TIMESTAMP`),
-  userAgent: text("userAgent"),
-  ipAddress: text("ipAddress"), // IPv6 addresses can be up to 45 characters
-  country: text("country"), // ISO 3166-1 alpha-2 country codes are 2 characters
-  city: text("city"),
-  region: text("region"),
-  latitude: text("latitude"), // Latitude values are typically up to 15 characters
-  longitude: text("longitude"), // Longitude values are typically up to 15 characters
-  device: text("device"),
-  device_vendor: text("device_vendor"),
-  device_model: text("device_model"),
-  browser: text("browser"),
-  browser_version: text("browser_version"),
-  engine: text("engine"),
-  engine_version: text("engine_version"),
-  os: text("os"),
-  os_version: text("os_version"),
-  cpu_architecture: text("cpu_architecture"),
-}, (click) => ({
-  shortCodeIdx: index("click_short_code_idx").on(click.short_code)
-}));
-
+export const clicks = createTable(
+  "click",
+  {
+    id: serial("id").primaryKey(),
+    short_code: text("short_code").notNull(), // Assuming short_code can be of variable length
+    timestamp: timestamp("timestamp", { mode: "date" }).default(
+      sql`CURRENT_TIMESTAMP`,
+    ),
+    userAgent: text("userAgent"),
+    ipAddress: text("ipAddress"), // IPv6 addresses can be up to 45 characters
+    country: text("country"), // ISO 3166-1 alpha-2 country codes are 2 characters
+    city: text("city"),
+    region: text("region"),
+    latitude: text("latitude"), // Latitude values are typically up to 15 characters
+    longitude: text("longitude"), // Longitude values are typically up to 15 characters
+    device: text("device"),
+    device_vendor: text("device_vendor"),
+    device_model: text("device_model"),
+    browser: text("browser"),
+    browser_version: text("browser_version"),
+    engine: text("engine"),
+    engine_version: text("engine_version"),
+    os: text("os"),
+    os_version: text("os_version"),
+    cpu_architecture: text("cpu_architecture"),
+  },
+  (click) => ({
+    shortCodeIdx: index("click_short_code_idx").on(click.short_code),
+  }),
+);
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
@@ -101,7 +107,7 @@ export const accounts = createTable(
       columns: [account.provider, account.providerAccountId],
     }),
     userIdIdx: index("account_userId_idx").on(account.userId),
-  })
+  }),
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -121,7 +127,7 @@ export const sessions = createTable(
   },
   (session) => ({
     userIdIdx: index("session_userId_idx").on(session.userId),
-  })
+  }),
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -137,5 +143,5 @@ export const verificationTokens = createTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  }),
 );

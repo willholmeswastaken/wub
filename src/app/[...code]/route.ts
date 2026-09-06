@@ -1,13 +1,13 @@
 import { env } from "@/env";
 import { links } from "@/server/db/schema";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import * as schema from "@/server/db/schema";
 import logger from "@/server/logger";
 import { queueClient } from "@/server/qstash";
+import { neon } from "@neondatabase/serverless";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/neon-http";
 import { redirect } from "next/navigation";
 import { type NextRequest, userAgent } from "next/server";
-import * as schema from "@/server/db/schema";
 
 export const dynamic = "force-dynamic";
 export const runtime = "edge";

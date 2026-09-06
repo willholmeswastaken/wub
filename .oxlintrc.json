@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // typeAware is off until the TypeScript upgrade: tsgolint currently rejects `baseUrl`.
+  "options": {
+    "typeAware": false
+  },
+  "plugins": ["typescript", "react", "nextjs", "import", "jsx-a11y", "oxc"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2022": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "settings": {
+    "react": {
+      "version": "18.2.0",
+      "linkComponents": [{ "name": "Link", "linkAttribute": "href" }]
+    },
+    "jsx-a11y": {
+      "components": {
+        "Link": "a",
+        "Button": "button"
+      }
+    },
+    "next": {
+      "rootDir": "."
+    }
+  },
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "typescript/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_"
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "warn",
+      {
+        "prefer": "type-imports",
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "react/react-in-jsx-scope": "off",
+    "react/set-state-in-effect": "warn",
+    "import/no-unassigned-import": "off",
+    "jsx-a11y/alt-text": "warn",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/heading-has-content": "warn",
+    "jsx-a11y/label-has-associated-control": "warn",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn",
+    "jsx-a11y/no-noninteractive-tabindex": "warn",
+    "jsx-a11y/no-static-element-interactions": "warn"
+  },
+  "ignorePatterns": [".next/**", "node_modules/**", "coverage/**"]
+}

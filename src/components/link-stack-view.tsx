@@ -1,9 +1,10 @@
 "use client";
 
 import { useLinkStore } from "@/stores/link";
-import ShortLink from "./short-link";
-import { motion } from "framer-motion";
 import { api } from "@/trpc/react";
+import { motion } from "framer-motion";
+
+import ShortLink from "./short-link";
 
 const container = {
   hidden: { opacity: 1 },
