@@ -11,18 +11,11 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
 export const createTable = pgTableCreator((name) => `wub_${name}`);
 
 export const links = createTable("link", {
   short_code: varchar("short_code", { length: 8 }).notNull().primaryKey(),
   url: varchar("url", { length: 2048 }).notNull(),
-  title: text("title"),
   userId: varchar("userId", { length: 255 }).references(() => users.id),
   created_at: timestamp("created_at", { mode: "date" })
     .default(sql`CURRENT_TIMESTAMP`)
@@ -40,17 +33,20 @@ export const clicks = createTable(
   "click",
   {
     id: serial("id").primaryKey(),
-    short_code: text("short_code").notNull(), // Assuming short_code can be of variable length
+    short_code: varchar("short_code", { length: 8 })
+      .notNull()
+      .references(() => links.short_code, { onDelete: "cascade" }),
+    message_id: text("message_id").unique(),
     timestamp: timestamp("timestamp", { mode: "date" }).default(
       sql`CURRENT_TIMESTAMP`,
     ),
     userAgent: text("userAgent"),
-    ipAddress: text("ipAddress"), // IPv6 addresses can be up to 45 characters
-    country: text("country"), // ISO 3166-1 alpha-2 country codes are 2 characters
+    ipAddress: text("ipAddress"),
+    country: text("country"),
     city: text("city"),
     region: text("region"),
-    latitude: text("latitude"), // Latitude values are typically up to 15 characters
-    longitude: text("longitude"), // Longitude values are typically up to 15 characters
+    latitude: text("latitude"),
+    longitude: text("longitude"),
     device: text("device"),
     device_vendor: text("device_vendor"),
     device_model: text("device_model"),
