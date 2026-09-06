@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,25 +17,22 @@ export function CopyButton({
       .then(() => {
         toast.success("Link copied to clipboard");
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error("Failed to copy link to clipboard");
-        console.error(err);
       });
   };
+
   return (
-    <button
-      className={cn(
-        "rounded-full bg-gray-100 p-1.5 transition-all duration-75 hover:scale-105 hover:bg-blue-200 active:scale-95",
-        isExpired && "cursor-not-allowed",
-      )}
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
       disabled={isExpired}
+      aria-label="Copy short link"
       onClick={onCopy}
     >
-      <CopyIcon
-        width={14}
-        height={14}
-        className="text-gray-700 transition-all group-hover:text-blue-800"
-      />
-    </button>
+      <CopyIcon className="h-4 w-4" />
+    </Button>
   );
 }

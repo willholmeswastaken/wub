@@ -11,15 +11,12 @@ import {
 import { QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
-interface QRCodeButtonProps {
-  url: string;
-}
-
-export function QRCodeButton({ url }: QRCodeButtonProps) {
+export function QRCodeButton({ url }: { url: string }) {
   const handleDownload = () => {
     const svg = document.querySelector("#qr-code svg");
+    if (!svg) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg!);
+    const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
@@ -42,11 +39,13 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
     <Dialog>
       <DialogTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8 hover:bg-gray-100"
+          className="h-8 w-8"
+          aria-label="Show QR code"
         >
-          <QrCode className="h-4 w-4 text-gray-600" />
+          <QrCode className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -54,7 +53,7 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
           <DialogTitle>{url}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center space-y-4 py-4">
-          <div id="qr-code">
+          <div id="qr-code" className="rounded-lg bg-white p-3">
             <QRCodeSVG
               value={url}
               size={256}

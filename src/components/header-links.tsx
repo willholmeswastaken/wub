@@ -27,9 +27,14 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
       )}
       {user && pathname.toLowerCase() !== "/" && (
         <DropdownMenu>
-          <DropdownMenuTrigger aria-label="Open account menu">
+          <DropdownMenuTrigger
+            aria-label={`Account menu for ${user.name ?? user.email ?? "signed-in user"}`}
+          >
             <Avatar>
-              <AvatarImage src={user.image ?? ""} alt="" />
+              <AvatarImage
+                src={user.image ?? ""}
+                alt={user.name ?? "Account"}
+              />
               <AvatarFallback>{user.name?.substring(0, 1)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>

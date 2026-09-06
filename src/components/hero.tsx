@@ -1,14 +1,17 @@
 "use client";
 
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { mutationErrorMessage } from "@/lib/mutation-error";
 import { getProjectUrl } from "@/lib/project-url";
 import { parseUrl } from "@/lib/url";
 import { type links } from "@/server/db/schema";
 import { useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
 import copy from "clipboard-copy";
-import { type InferInsertModel } from "drizzle-orm";
+import { type InferSelectModel } from "drizzle-orm";
+import Link from "next/link";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -28,7 +31,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     setValue,
   } = useForm<UrlInput>();
 
-  const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
+  const onShortLinkSuccess = (link: InferSelectModel<typeof links>) => {
     const shortLink = `${getProjectUrl()}${link.short_code}`;
     toast.success("Short link created!", {
       description: shortLink,
@@ -41,7 +44,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     });
     addTempLink({
       url: link.url,
-      clicks: link.click_count!,
+      clicks: link.click_count,
       shortUrl: shortLink,
       expiresAt: link.expires_at,
       shortCode: link.short_code,
@@ -49,23 +52,25 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     setValue("url", "");
   };
 
+  const onError = (error: unknown) => {
+    toast.error(mutationErrorMessage(error, "Unable to create short link"));
+  };
+
   const { mutate: anonMutate, isPending: anonMutatePending } =
     api.link.createAnon.useMutation({
-      onSuccess(link) {
-        onShortLinkSuccess(link);
-      },
+      onSuccess: onShortLinkSuccess,
+      onError,
     });
   const { mutate: loggedInMutate, isPending: loggedInMutatePending } =
     api.link.create.useMutation({
-      onSuccess(link) {
-        onShortLinkSuccess(link);
-      },
+      onSuccess: onShortLinkSuccess,
+      onError,
     });
 
   const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
-    // @ts-expect-error its ok
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    document.activeElement?.blur();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     const parsedUrl = parseUrl(url);
     if (isLoggedIn) {
       loggedInMutate({ url: parsedUrl });
@@ -74,45 +79,67 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
   };
 
+  const isPending = anonMutatePending || loggedInMutatePending;
+
   return (
-    <section className="w-full py-12 md:py-20">
-      <div className="container px-4 md:px-6">
-        <div className="flex flex-col items-center space-y-4 text-center">
-          <div className="space-y-2">
-            <h1 className="max-w-2xl text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
-              Short Links That Change The World
+    <section className="relative overflow-hidden py-16 md:py-24">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.16),transparent_55%)]" />
+      <div className="relative container px-4 md:px-6">
+        <div className="mx-auto flex max-w-2xl flex-col items-center space-y-8 text-center">
+          <div className="space-y-4">
+            <p className="text-sm font-medium tracking-wide text-primary uppercase">
+              Open-source link shortener
+            </p>
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Short links with room to grow
             </h1>
-            <p className="mx-auto max-w-[525px] text-gray-500 md:text-xl dark:text-gray-400">
-              Wub is the open-source link shortener that is built to scale.
+            <p className="mx-auto max-w-xl text-base text-muted-foreground md:text-lg">
+              Paste a URL, get a tracked short link. Guests get 30 minutes. Sign
+              in with GitHub to keep links and see analytics.
             </p>
           </div>
-          <div className="w-full max-w-lg space-y-2">
-            <div className="flex flex-col space-y-6">
-              <form
-                className="flex space-x-2"
-                onSubmit={handleSubmit(onSubmit)}
-              >
+          <form
+            className="w-full space-y-3 text-left"
+            onSubmit={handleSubmit(onSubmit)}
+          >
+            <FormField
+              id="hero-url"
+              label="Destination URL"
+              error={errors.url ? "Please enter a URL" : undefined}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
-                  className="max-w-lg flex-1 text-base"
+                  id="hero-url"
+                  className="flex-1 text-base"
                   placeholder="https://willholmes.dev"
+                  aria-invalid={errors.url ? true : undefined}
+                  aria-describedby={errors.url ? "hero-url-error" : undefined}
                   {...register("url", { required: true })}
                 />
-
-                <Button type="submit" className="w-20">
-                  {anonMutatePending || loggedInMutatePending ? (
-                    <Spinner size="small" className="text-white" />
+                <Button type="submit" className="sm:w-28" disabled={isPending}>
+                  {isPending ? (
+                    <Spinner size="small" className="text-primary-foreground" />
                   ) : (
                     "Shorten"
                   )}
                 </Button>
-              </form>
-              {errors.url && (
-                <span className="pl-1 text-left text-sm text-red-600">
-                  Please enter a url
-                </span>
-              )}
-              <LinkStackView />
-            </div>
+              </div>
+            </FormField>
+            {!isLoggedIn ? (
+              <p className="text-xs text-muted-foreground">
+                Guest links expire after 30 minutes.{" "}
+                <Link
+                  href="/api/auth/signin"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Create an account
+                </Link>{" "}
+                to keep them.
+              </p>
+            ) : null}
+          </form>
+          <div className="w-full">
+            <LinkStackView />
           </div>
         </div>
       </div>

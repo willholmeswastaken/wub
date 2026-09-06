@@ -1,5 +1,6 @@
 "use client";
 
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,8 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { mutationErrorMessage } from "@/lib/mutation-error";
 import { getProjectUrl } from "@/lib/project-url";
 import { useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
@@ -45,6 +46,9 @@ export function DeleteLink({
       deleteLinkFromCache(shortCode);
       setIsOpen(false);
     },
+    onError: (error) => {
+      toast.error(mutationErrorMessage(error, "Unable to delete link"));
+    },
   });
 
   const {
@@ -57,55 +61,51 @@ export function DeleteLink({
 
   const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
     if (url !== expectedDeletionLink) {
-      setError("url", { message: "Url does not match" });
+      setError("url", { message: "URL does not match" });
       return;
     }
     deleteLink.mutate(shortCode);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => setIsOpen((prev) => !prev)}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex flex-col items-center justify-center space-x-2 text-lg font-medium">
-            <div className="rounded-full bg-gray-100 p-2">
+            <div className="rounded-full bg-muted p-2">
               <GlobeIcon className="h-6 w-6" />
             </div>
             <span>Delete {expectedDeletionLink}</span>
           </DialogTitle>
           <DialogDescription className="text-center text-sm">
-            Warning: Deleting this link will remove all of its analytics. This
-            action cannot be undone, proceed with caution.
+            Deleting this link removes its analytics. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <form
-          className="flex w-full flex-col items-start gap-1"
+          className="flex w-full flex-col items-start gap-3"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <Label htmlFor="url" className="text-sm font-normal">
-            To verify, type&nbsp;
-            <span className="font-semibold">{expectedDeletionLink}</span>
-            &nbsp;below
-          </Label>
-          <Input
-            className="col-span-3"
-            {...register("url", { required: true })}
-          />
-          {errors.url && (
-            <span className="pl-1 text-left text-sm text-red-600">
-              {errors.url.message}
-            </span>
-          )}
+          <FormField
+            id="delete-url"
+            label={`Type ${expectedDeletionLink} to confirm`}
+            error={errors.url?.message}
+          >
+            <Input
+              id="delete-url"
+              aria-invalid={errors.url ? true : undefined}
+              {...register("url", { required: true })}
+            />
+          </FormField>
           <DialogFooter className="w-full pt-2">
             <Button
-              variant={"destructive"}
+              variant="destructive"
               type="submit"
               className="w-full"
               disabled={deleteLink.isPending}
             >
               Confirm delete
               <Spinner
-                className="ml-2 h-4 w-4 text-white"
+                className="ml-2 h-4 w-4 text-destructive-foreground"
                 show={deleteLink.isPending}
               />
             </Button>

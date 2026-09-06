@@ -1,5 +1,6 @@
 "use client";
 
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,16 +11,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { mutationErrorMessage } from "@/lib/mutation-error";
 import { getProjectUrl } from "@/lib/project-url";
 import { parseUrl } from "@/lib/url";
 import { type links } from "@/server/db/schema";
 import { api } from "@/trpc/react";
 import copy from "clipboard-copy";
-import { type InferInsertModel } from "drizzle-orm";
+import { type InferSelectModel } from "drizzle-orm";
 import { GlobeIcon } from "lucide-react";
-import { useRef } from "react";
+import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -28,10 +29,10 @@ type UrlInput = {
 };
 
 export function CreateLink() {
-  const dialogTrigger = useRef<HTMLButtonElement | null>(null);
+  const [open, setOpen] = useState(false);
   const utils = api.useUtils();
   const createLinkMutate = api.link.create.useMutation({
-    onSuccess: async (link: InferInsertModel<typeof links>) => {
+    onSuccess: async (link: InferSelectModel<typeof links>) => {
       const shortLink = `${getProjectUrl()}${link.short_code}`;
       toast.success("Short link created!", {
         description: shortLink,
@@ -44,7 +45,10 @@ export function CreateLink() {
       });
       await utils.link.getUserLinks.refetch();
       reset();
-      dialogTrigger.current?.click();
+      setOpen(false);
+    },
+    onError: (error) => {
+      toast.error(mutationErrorMessage(error, "Unable to create short link"));
     },
   });
   const {
@@ -55,41 +59,39 @@ export function CreateLink() {
   } = useForm<UrlInput>();
 
   const onSubmit: SubmitHandler<UrlInput> = ({ url }) => {
-    const parsedUrl = parseUrl(url);
-    createLinkMutate.mutate({ url: parsedUrl });
+    createLinkMutate.mutate({ url: parseUrl(url) });
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild ref={dialogTrigger}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button>Create Link</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-center space-x-2">
-            <div className="rounded-full bg-gray-100 p-2">
+            <div className="rounded-full bg-muted p-2">
               <GlobeIcon className="h-6 w-6" />
             </div>
             <span>Create a new link</span>
           </DialogTitle>
         </DialogHeader>
         <form
-          className="flex w-full flex-col items-start gap-1"
+          className="flex w-full flex-col items-start gap-3"
           onSubmit={handleSubmit(onSubmit)}
         >
-          <Label htmlFor="url" className="text-xs">
-            Destination Url
-          </Label>
-          <Input
-            placeholder="https://willholmes.dev"
-            className="col-span-3"
-            {...register("url", { required: true })}
-          />
-          {errors.url && (
-            <span className="pl-1 text-left text-sm text-red-600">
-              {errors.url.message}
-            </span>
-          )}
+          <FormField
+            id="create-url"
+            label="Destination URL"
+            error={errors.url ? "Please enter a URL" : undefined}
+          >
+            <Input
+              id="create-url"
+              placeholder="https://willholmes.dev"
+              aria-invalid={errors.url ? true : undefined}
+              {...register("url", { required: true })}
+            />
+          </FormField>
           <DialogFooter className="w-full pt-2">
             <Button
               type="submit"
@@ -98,7 +100,7 @@ export function CreateLink() {
             >
               Create Link
               <Spinner
-                className="ml-2 h-4 w-4 text-white"
+                className="ml-2 h-4 w-4 text-primary-foreground"
                 show={createLinkMutate.isPending}
               />
             </Button>
