@@ -8,7 +8,16 @@ import {
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import GithubProvider from "next-auth/providers/github";
+import GithubProviderImport from "next-auth/providers/github";
+
+type GithubProviderFn = typeof GithubProviderImport;
+const githubProviderModule = GithubProviderImport as
+  | GithubProviderFn
+  | { default: GithubProviderFn };
+const GithubProvider =
+  typeof githubProviderModule === "function"
+    ? githubProviderModule
+    : githubProviderModule.default;
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`

@@ -1,8 +1,9 @@
+import { env } from "@/env";
 import { db } from "@/server/db";
 import { clicks, links } from "@/server/db/schema";
 import logger from "@/server/logger";
 import { type LogClickEvent } from "@/server/qstash";
-import { verifySignatureAppRouter } from "@upstash/qstash/dist/nextjs";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { sql, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -52,5 +53,7 @@ async function handler(request: Request) {
   return Response.json({ success: true });
 }
 
-// @ts-expect-error seems to be playing up.
-export const POST = verifySignatureAppRouter(handler);
+export const POST = verifySignatureAppRouter(handler, {
+  currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
+  nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
+});

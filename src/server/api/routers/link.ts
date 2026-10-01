@@ -7,7 +7,7 @@ import {
 import { type db } from "@/server/db";
 import { clicks, links } from "@/server/db/schema";
 import logger from "@/server/logger";
-import { protectRoute } from "@/server/rate-limit";
+import { clientIp, protectRoute } from "@/server/rate-limit";
 import { TRPCError, type inferRouterOutputs } from "@trpc/server";
 import {
   type InferInsertModel,
@@ -28,9 +28,7 @@ export const linkRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const rateLimited = await protectRoute(
-        ctx.headers.get("x-forwarded-for"),
-      );
+      const rateLimited = await protectRoute(clientIp(ctx.headers));
       if (rateLimited) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
@@ -46,9 +44,7 @@ export const linkRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const rateLimited = await protectRoute(
-        ctx.headers.get("x-forwarded-for"),
-      );
+      const rateLimited = await protectRoute(clientIp(ctx.headers));
       if (rateLimited) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
@@ -61,9 +57,7 @@ export const linkRouter = createTRPCRouter({
   getTempLinks: publicProcedure
     .input(z.array(z.string()))
     .query(async ({ ctx, input }) => {
-      const rateLimited = await protectRoute(
-        ctx.headers.get("x-forwarded-for"),
-      );
+      const rateLimited = await protectRoute(clientIp(ctx.headers));
       if (rateLimited) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",

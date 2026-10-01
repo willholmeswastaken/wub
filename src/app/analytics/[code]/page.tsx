@@ -14,14 +14,15 @@ import { redirect } from "next/navigation";
 export default async function Dashboard({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
+  const { code } = await params;
   const session = await getServerAuthSession();
   if (!session) {
     redirect("/api/auth/signin?callbackUrl=/dashboard");
   }
-  const clicks = await api.link.getClicksFromLast30Days(params.code);
-  const shortUrl = `${getProjectUrl()}${params.code}`;
+  const clicks = await api.link.getClicksFromLast30Days(code);
+  const shortUrl = `${getProjectUrl()}${code}`;
 
   const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
     ([country, clicks]) => ({ country, clicks }),
