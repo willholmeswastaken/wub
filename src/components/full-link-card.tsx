@@ -41,11 +41,6 @@ export function FullLinkCard({
 
   const shortUrl = `${getProjectUrl()}${shortCode}`;
 
-  const handleCopyClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
     <div className="col-span-2 flex w-full justify-between rounded-lg border border-gray-200 bg-white p-4 pb-5 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
       <Link href={`/analytics/${shortCode}`} className="w-full">
@@ -58,10 +53,7 @@ export function FullLinkCard({
                   {getProjectUrl()}
                   {shortCode}
                 </span>
-                <div
-                  onClick={handleCopyClick}
-                  className="flex items-center space-x-1"
-                >
+                <div className="flex items-center space-x-1">
                   <CopyButton isExpired={false} text={shortUrl} />
                   <QRCodeButton url={shortUrl} />
                 </div>

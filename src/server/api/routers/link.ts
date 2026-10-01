@@ -74,7 +74,7 @@ export const linkRouter = createTRPCRouter({
     }),
   getUserLinks: protectedProcedure.query(async ({ ctx }) => {
     const userLinks = await ctx.db.query.links.findMany({
-      orderBy: (links, { desc }) => [desc(links.created_at)],
+      orderBy: (link, { desc }) => [desc(link.created_at)],
       where: eq(links.userId, ctx.session.user.id),
     });
     return userLinks;

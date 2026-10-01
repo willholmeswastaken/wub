@@ -51,20 +51,15 @@ const LegendItem = ({
   activeLegend,
 }: LegendItemProps) => {
   const hasOnValueChange = !!onClick;
-  return (
-    <li
-      className={cn(
-        // base
-        "group inline-flex flex-nowrap items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition",
-        hasOnValueChange
-          ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-          : "cursor-default",
-      )}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.(name, color);
-      }}
-    >
+  const itemClassName = cn(
+    // base
+    "group inline-flex flex-nowrap items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 transition",
+    hasOnValueChange
+      ? "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+      : "cursor-default",
+  );
+  const content = (
+    <>
       <span
         className={cn(
           "h-[3px] w-3.5 shrink-0 rounded-full",
@@ -86,6 +81,25 @@ const LegendItem = ({
       >
         {name}
       </p>
+    </>
+  );
+
+  if (!hasOnValueChange) {
+    return <li className={itemClassName}>{content}</li>;
+  }
+
+  return (
+    <li>
+      <button
+        type="button"
+        className={itemClassName}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(name, color);
+        }}
+      >
+        {content}
+      </button>
     </li>
   );
 };
@@ -99,25 +113,21 @@ interface ScrollButtonProps {
 const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
   const Icon = icon;
   const [isPressed, setIsPressed] = React.useState(false);
+  if (disabled && isPressed) {
+    setIsPressed(false);
+  }
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
-    if (isPressed) {
-      intervalRef.current = setInterval(() => {
-        onClick?.();
-      }, 300);
-    } else {
+    if (!isPressed) {
       clearInterval(intervalRef.current!);
+      return;
     }
+    intervalRef.current = setInterval(() => {
+      onClick?.();
+    }, 300);
     return () => clearInterval(intervalRef.current!);
   }, [isPressed, onClick]);
-
-  React.useEffect(() => {
-    if (disabled) {
-      clearInterval(intervalRef.current!);
-      setIsPressed(false);
-    }
-  }, [disabled]);
 
   return (
     <button
@@ -227,29 +237,29 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     return () => clearInterval(intervalRef.current!);
   }, [isKeyDowned, scrollToTest]);
 
-  const keyDown = (e: KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-      e.preventDefault();
-      setIsKeyDowned(e.key);
-    }
-  };
-  const keyUp = (e: KeyboardEvent) => {
-    e.stopPropagation();
-    setIsKeyDowned(null);
-  };
-
   React.useEffect(() => {
-    const scrollable = scrollableRef?.current;
-    if (enableLegendSlider) {
-      checkScroll();
-      scrollable?.addEventListener("keydown", keyDown);
-      scrollable?.addEventListener("keyup", keyUp);
-    }
+    const scrollable = scrollableRef.current;
+    if (!enableLegendSlider || !scrollable) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.stopPropagation();
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        setIsKeyDowned(e.key);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      e.stopPropagation();
+      setIsKeyDowned(null);
+    };
+
+    checkScroll();
+    scrollable.addEventListener("keydown", onKeyDown);
+    scrollable.addEventListener("keyup", onKeyUp);
 
     return () => {
-      scrollable?.removeEventListener("keydown", keyDown);
-      scrollable?.removeEventListener("keyup", keyUp);
+      scrollable.removeEventListener("keydown", onKeyDown);
+      scrollable.removeEventListener("keyup", onKeyUp);
     };
   }, [checkScroll, enableLegendSlider]);
 
@@ -261,7 +271,9 @@ const Legend = React.forwardRef<HTMLOListElement, LegendProps>((props, ref) => {
     >
       <div
         ref={scrollableRef}
-        tabIndex={0}
+        tabIndex={enableLegendSlider ? 0 : undefined}
+        role={enableLegendSlider ? "toolbar" : undefined}
+        aria-label={enableLegendSlider ? "Chart legend" : undefined}
         className={cn(
           "flex h-full",
           enableLegendSlider
@@ -769,7 +781,7 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                     ? 0.3
                     : 1
                 }
-                activeDot={(props: any) => {
+                activeDot={(dotProps: any) => {
                   const {
                     cx: cxCoord,
                     cy: cyCoord,
@@ -778,7 +790,7 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                     strokeLinejoin,
                     strokeWidth,
                     dataKey,
-                  } = props;
+                  } = dotProps;
                   return (
                     <Dot
                       className={cn(
@@ -794,11 +806,11 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                       strokeLinecap={strokeLinecap}
                       strokeLinejoin={strokeLinejoin}
                       strokeWidth={strokeWidth}
-                      onClick={(_, event) => onDotClick(props, event)}
+                      onClick={(_, event) => onDotClick(dotProps, event)}
                     />
                   );
                 }}
-                dot={(props: any) => {
+                dot={(dotProps: any) => {
                   const {
                     stroke,
                     strokeLinecap,
@@ -807,8 +819,8 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                     cx: cxCoord,
                     cy: cyCoord,
                     dataKey,
-                    index,
-                  } = props;
+                    index: dotIndex,
+                  } = dotProps;
 
                   if (
                     (hasOnlyOneValueForKey(data, category) &&
@@ -816,12 +828,12 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                         activeDot ??
                         (activeLegend && activeLegend !== category)
                       )) ||
-                    (activeDot?.index === index &&
+                    (activeDot?.index === dotIndex &&
                       activeDot?.dataKey === category)
                   ) {
                     return (
                       <Dot
-                        key={index}
+                        key={dotIndex}
                         cx={cxCoord}
                         cy={cyCoord}
                         r={5}
@@ -841,7 +853,7 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                       />
                     );
                   }
-                  return <React.Fragment key={index}></React.Fragment>;
+                  return <React.Fragment key={dotIndex}></React.Fragment>;
                 }}
                 key={category}
                 name={category}
@@ -873,9 +885,9 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>(
                     tooltipType="none"
                     strokeWidth={12}
                     connectNulls={connectNulls}
-                    onClick={(props: any, event) => {
+                    onClick={(lineProps: any, event) => {
                       event.stopPropagation();
-                      const { name } = props;
+                      const { name } = lineProps;
                       onCategoryClick(name);
                     }}
                   />

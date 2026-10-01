@@ -45,6 +45,10 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
           variant="ghost"
           size="icon"
           className="h-8 w-8 hover:bg-gray-100"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
         >
           <QrCode className="h-4 w-4 text-gray-600" />
         </Button>

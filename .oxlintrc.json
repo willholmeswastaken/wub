@@ -50,6 +50,7 @@
       }
     ],
     "react/react-in-jsx-scope": "off",
+    "react/no-unstable-nested-components": ["warn", { "allowAsProps": true }],
     "react/set-state-in-effect": "warn",
     "import/no-unassigned-import": "off",
     "jsx-a11y/alt-text": "warn",
