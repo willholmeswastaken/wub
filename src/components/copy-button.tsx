@@ -29,7 +29,11 @@ export function CopyButton({
         isExpired && "cursor-not-allowed",
       )}
       disabled={isExpired}
-      onClick={onCopy}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onCopy();
+      }}
     >
       <CopyIcon
         width={14}

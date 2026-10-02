@@ -7,16 +7,15 @@ export function Footer() {
         © 2024 Wub Technologies. All rights reserved.
       </p>
       <nav className="flex gap-4 sm:ml-auto sm:gap-6">
-        <Link className="text-xs underline-offset-4 hover:underline" href="#">
-          Terms of Service
-        </Link>
-        <Link className="text-xs underline-offset-4 hover:underline" href="#">
-          Privacy Policy
-        </Link>
-        <Link className="text-xs underline-offset-4 hover:underline" href="#">
-          Follow on Twitter
-        </Link>
-        <Link className="text-xs underline-offset-4 hover:underline" href="#">
+        <span className="text-xs text-gray-500">Terms of Service</span>
+        <span className="text-xs text-gray-500">Privacy Policy</span>
+        <span className="text-xs text-gray-500">Follow on Twitter</span>
+        <Link
+          className="text-xs underline-offset-4 hover:underline"
+          href="https://github.com/willholmeswastaken/wub"
+          target="_blank"
+          rel="noreferrer"
+        >
           Star us on Github
         </Link>
       </nav>

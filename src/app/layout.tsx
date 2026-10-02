@@ -2,7 +2,6 @@ import "@/styles/globals.css";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { TRPCReactProvider } from "@/trpc/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 
@@ -33,7 +32,6 @@ export default function RootLayout({
           </div>
           <Toaster />
         </TRPCReactProvider>
-        <SpeedInsights />
       </body>
     </html>
   );

@@ -14,29 +14,30 @@ import { redirect } from "next/navigation";
 export default async function Dashboard({
   params,
 }: {
-  params: { code: string };
+  params: Promise<{ code: string }>;
 }) {
+  const { code } = await params;
   const session = await getServerAuthSession();
   if (!session) {
     redirect("/api/auth/signin?callbackUrl=/dashboard");
   }
-  const clicks = await api.link.getClicksFromLast30Days(params.code);
-  const shortUrl = `${getProjectUrl()}${params.code}`;
+  const clicks = await api.link.getClicksFromLast30Days(code);
+  const shortUrl = `${getProjectUrl()}${code}`;
 
   const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
-    ([country, clicks]) => ({ country, clicks }),
+    ([country, count]) => ({ country, count }),
   );
   const cityClicks = Object.entries(clicks.countClicks.cityClicks).map(
-    ([city, { clicks, country }]) => ({ city, clicks, country }),
+    ([city, { clicks: count, country }]) => ({ city, count, country }),
   );
   const deviceClicks = Object.entries(clicks.countClicks.deviceClicks).map(
-    ([device, clicks]) => ({ device, clicks }),
+    ([device, count]) => ({ device, count }),
   );
   const browserClicks = Object.entries(clicks.countClicks.browserClicks).map(
-    ([browser, clicks]) => ({ browser, clicks }),
+    ([browser, count]) => ({ browser, count }),
   );
   const osClicks = Object.entries(clicks.countClicks.osClicks).map(
-    ([os, clicks]) => ({ os, clicks }),
+    ([os, count]) => ({ os, count }),
   );
 
   return (
@@ -90,11 +91,11 @@ export default async function Dashboard({
                 className="space-y-2 transition-all duration-200 ease-in-out"
               >
                 {countryClicks.length > 0 ? (
-                  countryClicks.map(({ country, clicks }) => (
+                  countryClicks.map(({ country, count }) => (
                     <AnalyticDisplay
                       key={country}
                       name={country}
-                      clicks={clicks}
+                      clicks={count}
                       iconUrl={`https://flag.vercel.app/m/${country}.svg`}
                       displayName={
                         countries.getName(country, "en") ?? "Unknown"
@@ -110,11 +111,11 @@ export default async function Dashboard({
                 className="space-y-2 transition-all duration-200 ease-in-out"
               >
                 {cityClicks.length > 0 ? (
-                  cityClicks.map(({ city, country, clicks }) => (
+                  cityClicks.map(({ city, country, count }) => (
                     <AnalyticDisplay
                       key={city}
                       name={city}
-                      clicks={clicks}
+                      clicks={count}
                       iconUrl={`https://flag.vercel.app/m/${country}.svg`}
                       displayName={city}
                     />
@@ -140,11 +141,11 @@ export default async function Dashboard({
                 className="space-y-2 transition-all duration-200 ease-in-out"
               >
                 {deviceClicks.length > 0 ? (
-                  deviceClicks.map(({ device, clicks }) => (
+                  deviceClicks.map(({ device, count }) => (
                     <AnalyticDisplay
                       key={device}
                       name={device}
-                      clicks={clicks}
+                      clicks={count}
                       iconUrl={`https://uaparser.dev/images/types/${device.toLowerCase() === "desktop" ? "default" : device}.png`}
                       displayName={device}
                       imageClassName="h-4 w-4"
@@ -159,7 +160,7 @@ export default async function Dashboard({
                 className="space-y-2 transition-all duration-200 ease-in-out"
               >
                 {browserClicks.length > 0 ? (
-                  browserClicks.map(({ browser, clicks }) => {
+                  browserClicks.map(({ browser, count }) => {
                     const targetBrowser = (
                       browser === "Mobile Safari" ? "Safari" : browser
                     ).toLowerCase();
@@ -167,7 +168,7 @@ export default async function Dashboard({
                       <AnalyticDisplay
                         key={browser}
                         name={browser}
-                        clicks={clicks}
+                        clicks={count}
                         iconUrl={`https://uaparser.dev/images/browsers/${targetBrowser}.png`}
                         displayName={browser}
                         imageClassName="h-4 w-4"
@@ -184,11 +185,11 @@ export default async function Dashboard({
                 className="space-y-2 transition-all duration-200 ease-in-out"
               >
                 {osClicks.length > 0 ? (
-                  osClicks.map(({ os, clicks }) => (
+                  osClicks.map(({ os, count }) => (
                     <AnalyticDisplay
                       key={os}
                       name={os}
-                      clicks={clicks}
+                      clicks={count}
                       iconUrl={`https://uaparser.dev/images/os/${os.toLowerCase().replace(" ", "")}.png`}
                       displayName={os}
                       imageClassName="h-4 w-4"
