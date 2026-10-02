@@ -16,5 +16,5 @@
     "config": "./tailwind.config.ts",
     "functions": ["cn", "clsx", "cva"]
   },
-  "ignorePatterns": [".next/**", "node_modules/**", "coverage/**", "bun.lockb"]
+  "ignorePatterns": [".next/**", "node_modules/**", "coverage/**", "bun.lock"]
 }
