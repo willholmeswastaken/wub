@@ -1,4 +1,4 @@
-import { authOptions } from "@/server/auth";
+import { getAuthOptions } from "@/server/auth";
 import NextAuthImport from "next-auth";
 
 type NextAuthFn = typeof NextAuthImport;
@@ -8,5 +8,11 @@ const NextAuth =
     ? nextAuthModule
     : nextAuthModule.default;
 
-const handler = NextAuth(authOptions);
+async function handler(
+  request: Request,
+  context: { params: Promise<{ nextauth: string[] }> },
+) {
+  return NextAuth(await getAuthOptions())(request, context);
+}
+
 export { handler as GET, handler as POST };

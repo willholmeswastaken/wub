@@ -2,11 +2,10 @@
 
 import { useProjectUrl } from "@/components/project-url-provider";
 import { ShortenForm } from "@/components/shorten-form";
-import { type links } from "@/server/db/schema";
+import { type LinkRecord } from "@/server/db/types";
 import { useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
 import copy from "clipboard-copy";
-import { type InferInsertModel } from "drizzle-orm";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +18,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
   const anonMutation = api.link.createAnon.useMutation();
   const loggedInMutation = api.link.create.useMutation();
 
-  const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
+  const onShortLinkSuccess = (link: LinkRecord) => {
     const shortLink = `${projectUrl}${link.short_code}`;
     toast.success("Short link created", {
       description: shortLink,
