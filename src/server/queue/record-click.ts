@@ -70,6 +70,7 @@ export const ClickRecorderLive = Layer.succeed(ClickRecorder, {
             os: event.os,
             os_version: event.os_version,
             cpu_architecture: event.cpu_architecture,
+            referrer: event.referrer ?? null,
           }),
         catch: (cause) => new RecordClickError({ cause }),
       });

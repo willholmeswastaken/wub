@@ -62,6 +62,7 @@ export const clicks = createTable(
     os: text("os"),
     os_version: text("os_version"),
     cpu_architecture: text("cpu_architecture"),
+    referrer: text("referrer"),
   },
   (click) => ({
     shortCodeIdx: index("click_short_code_idx").on(click.short_code),

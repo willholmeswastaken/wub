@@ -1,4 +1,10 @@
-import { generateDateArrayFromDays } from "@/lib/click-date-range";
+import {
+  CLICK_RANGES,
+  DEFAULT_CLICK_RANGE,
+  generateClickBuckets,
+  previousRangeStart,
+  rangeStart,
+} from "@/lib/click-date-range";
 import { slugProblem, slugProblemMessage } from "@/lib/slug";
 import {
   createTRPCRouter,
@@ -18,6 +24,7 @@ import {
   isNotNull,
   isNull,
   gte,
+  lt,
   sql,
 } from "drizzle-orm";
 import { z } from "zod";
@@ -213,11 +220,16 @@ export const linkRouter = createTRPCRouter({
           ),
         );
     }),
-  getClicksFromLast30Days: protectedProcedure
-    .input(z.string())
+  getClicks: protectedProcedure
+    .input(
+      z.object({
+        code: z.string(),
+        range: z.enum(CLICK_RANGES).default(DEFAULT_CLICK_RANGE),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const link = await ctx.db.query.links.findFirst({
-        where: eq(links.short_code, input),
+        where: eq(links.short_code, input.code),
         columns: {
           userId: true,
           url: true,
@@ -225,16 +237,16 @@ export const linkRouter = createTRPCRouter({
           created_at: true,
         },
       });
-      if (link?.userId !== ctx.session.user.id) {
+      if (!link || link.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Link not found" });
       }
-      const totalClicks = await ctx.db.query.clicks.findMany({
+
+      const now = new Date();
+      const start = rangeStart(input.range, now);
+      const periodClicks = await ctx.db.query.clicks.findMany({
         where: and(
-          eq(clicks.short_code, input),
-          gte(
-            clicks.timestamp,
-            new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
-          ),
+          eq(clicks.short_code, input.code),
+          gte(clicks.timestamp, start),
         ),
         columns: {
           timestamp: true,
@@ -243,66 +255,67 @@ export const linkRouter = createTRPCRouter({
           city: true,
           browser: true,
           os: true,
+          referrer: true,
         },
       });
-      const countClicks = totalClicks.reduce(
-        (acc, click) => {
-          if (click.country && click.country !== "unknown") {
-            acc.countryClicks[click.country] =
-              (acc.countryClicks[click.country] ?? 0) + 1;
-          }
+      const [previous] = await ctx.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(clicks)
+        .where(
+          and(
+            eq(clicks.short_code, input.code),
+            gte(clicks.timestamp, previousRangeStart(input.range, now)),
+            lt(clicks.timestamp, start),
+          ),
+        );
 
-          if (click.city && click.city !== "unknown" && click.country) {
-            if (!acc.cityClicks[click.city]) {
-              acc.cityClicks[click.city] = {
-                clicks: 1,
-                country: click.country,
-              };
-            } else {
-              acc.cityClicks[click.city]!.clicks++;
-            }
-          }
+      const known = (value: string | null) =>
+        value && value !== "unknown" ? value : null;
+      const cityCountry = new Map<string, string>();
+      for (const click of periodClicks) {
+        if (known(click.city) && known(click.country)) {
+          cityCountry.set(click.city!, click.country!);
+        }
+      }
 
-          if (click.device) {
-            acc.deviceClicks[click.device] =
-              (acc.deviceClicks[click.device] ?? 0) + 1;
-          }
-
-          if (click.browser) {
-            acc.browserClicks[click.browser] =
-              (acc.browserClicks[click.browser] ?? 0) + 1;
-          }
-
-          if (click.os) {
-            acc.osClicks[click.os] = (acc.osClicks[click.os] ?? 0) + 1;
-          }
-
-          return acc;
-        },
-        {
-          countryClicks: {},
-          cityClicks: {},
-          deviceClicks: {},
-          browserClicks: {},
-          osClicks: {},
-        } as {
-          countryClicks: Record<string, number>;
-          cityClicks: Record<string, { clicks: number; country: string }>;
-          deviceClicks: Record<string, number>;
-          browserClicks: Record<string, number>;
-          osClicks: Record<string, number>;
-        },
-      );
       return {
-        link,
-        clickRange: generateDateArrayFromDays(30, totalClicks),
-        countClicks,
-        totalClicks: totalClicks.length,
+        link: {
+          url: link.url,
+          short_code: link.short_code,
+          created_at: link.created_at,
+        },
+        range: input.range,
+        clickRange: generateClickBuckets(input.range, periodClicks, now),
+        totalClicks: periodClicks.length,
+        previousTotalClicks: Number(previous?.count ?? 0),
+        breakdown: {
+          countries: tally(periodClicks.map((click) => known(click.country))),
+          cities: tally(periodClicks.map((click) => known(click.city))).map(
+            (item) => ({ ...item, country: cityCountry.get(item.key) ?? "" }),
+          ),
+          devices: tally(periodClicks.map((click) => click.device)),
+          browsers: tally(periodClicks.map((click) => known(click.browser))),
+          os: tally(periodClicks.map((click) => known(click.os))),
+          referrers: tally(
+            periodClicks.map((click) => click.referrer ?? "direct"),
+          ),
+        },
       };
     }),
 });
 
 const SPARKLINE_DAYS = 7;
+
+function tally(values: Array<string | null>) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (!value) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count);
+}
 
 function lastNDayKeys(count: number) {
   const today = new Date();

@@ -64,6 +64,7 @@ export async function GET(
         os: ua.os.name,
         osVersion: ua.os.version,
         cpuArchitecture: ua.cpu.architecture,
+        referrer: request.headers.get("referer"),
       }),
     );
     functionLogger.info("Log click event sent");

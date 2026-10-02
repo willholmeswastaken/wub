@@ -1,81 +1,122 @@
-import { AnalyticDisplay } from "@/components/analytic-display";
+import { BreakdownCard } from "@/components/breakdown-card";
 import { ClicksChart } from "@/components/clicks-chart";
 import { LinkActions } from "@/components/link-actions";
 import { ProductBar } from "@/components/product-bar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RangePicker } from "@/components/range-picker";
 import { UrlFavicon } from "@/components/url-favicon";
+import { clickRangeLabel, parseClickRange } from "@/lib/click-date-range";
+import { countryName, flagEmoji } from "@/lib/format";
 import { projectUrlFromHeaders } from "@/lib/project-url";
 import { getServerAuthSession } from "@/server/auth";
 import { api } from "@/trpc/server";
+import { TRPCError } from "@trpc/server";
+import {
+  Gamepad2,
+  Globe,
+  HelpCircle,
+  Link2,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Tv,
+  Watch,
+} from "lucide-react";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { type ReactNode } from "react";
 
-const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+const deviceIcons: Record<string, typeof Monitor> = {
+  desktop: Monitor,
+  mobile: Smartphone,
+  tablet: Tablet,
+  console: Gamepad2,
+  smarttv: Tv,
+  wearable: Watch,
+};
 
-function countryDisplayName(code: string) {
-  if (!/^[a-z]{2}$/i.test(code)) return "Unknown";
-  try {
-    return regionNames.of(code) ?? "Unknown";
-  } catch {
-    return "Unknown";
-  }
+function DeviceIcon({ device }: { device: string }) {
+  const Icon = deviceIcons[device.toLowerCase()] ?? HelpCircle;
+  return <Icon className="h-4 w-4" />;
 }
 
-function totalOf(items: { count: number }[]) {
-  return items.reduce((sum, item) => sum + item.count, 0);
+function deviceLabel(device: string) {
+  if (device.toLowerCase() === "smarttv") return "Smart TV";
+  return device.charAt(0).toUpperCase() + device.slice(1);
 }
 
-function EmptyBreakdown() {
+function referrerLabel(referrer: string) {
+  return referrer === "direct" ? "Direct or unknown" : referrer;
+}
+
+function StatTile({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | null;
+  icon?: ReactNode;
+}) {
   return (
-    <p className="py-8 text-center text-sm text-muted-foreground">
-      No clicks yet
-    </p>
+    <div className="min-w-0 rounded-2xl border border-border bg-background p-4">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 flex min-w-0 items-center gap-2 font-semibold">
+        {value ? (
+          <>
+            {icon && <span className="shrink-0">{icon}</span>}
+            <span className="truncate">{value}</span>
+          </>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )}
+      </p>
+    </div>
   );
+}
+
+async function loadClicks(
+  code: string,
+  range: ReturnType<typeof parseClickRange>,
+) {
+  try {
+    return await api.link.getClicks({ code, range });
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === "NOT_FOUND") notFound();
+    throw error;
+  }
 }
 
 export default async function AnalyticsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ range?: string }>;
 }) {
   const { code } = await params;
+  const range = parseClickRange((await searchParams).range);
   const session = await getServerAuthSession();
   if (!session) {
     redirect(`/signin?callbackUrl=/analytics/${code}`);
   }
-  const clicks = await api.link.getClicksFromLast30Days(code);
+  const clicks = await loadClicks(code, range);
   const shortUrl = `${projectUrlFromHeaders(await headers())}${code}`;
+  const { breakdown } = clicks;
 
-  const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
-    ([country, count]) => ({ country, count }),
-  );
-  const cityClicks = Object.entries(clicks.countClicks.cityClicks).map(
-    ([city, { clicks: count, country }]) => ({ city, count, country }),
-  );
-  const deviceClicks = Object.entries(clicks.countClicks.deviceClicks).map(
-    ([device, count]) => ({ device, count }),
-  );
-  const browserClicks = Object.entries(clicks.countClicks.browserClicks).map(
-    ([browser, count]) => ({ browser, count }),
-  );
-  const osClicks = Object.entries(clicks.countClicks.osClicks).map(
-    ([os, count]) => ({ os, count }),
-  );
-
-  const countryTotal = totalOf(countryClicks);
-  const cityTotal = totalOf(cityClicks);
-  const deviceTotal = totalOf(deviceClicks);
-  const browserTotal = totalOf(browserClicks);
-  const osTotal = totalOf(osClicks);
+  const topCountry = breakdown.countries[0];
+  const topReferrer = breakdown.referrers[0];
+  const topDevice = breakdown.devices[0];
 
   return (
-    <div className="pb-8">
+    <div className="pb-12">
       <ProductBar title="Analytics" backHref="/dashboard" />
       <section className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-8">
         <div className="flex items-start gap-4">
-          <UrlFavicon url={clicks.link.url} />
+          <UrlFavicon url={clicks.link.url} className="h-10 w-10" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-semibold">{shortUrl}</h2>
+            <h2 className="truncate text-xl font-semibold">
+              {shortUrl.replace(/^https?:\/\//, "")}
+            </h2>
             <a
               href={clicks.link.url}
               target="_blank"
@@ -86,7 +127,11 @@ export default async function AnalyticsPage({
             </a>
             <p className="mt-1 text-sm text-muted-foreground">
               Created{" "}
-              {new Date(clicks.link.created_at).toLocaleDateString("en-GB")}
+              {new Date(clicks.link.created_at).toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
             </p>
           </div>
         </div>
@@ -95,130 +140,114 @@ export default async function AnalyticsPage({
           shortCode={code}
           url={clicks.link.url}
         />
-        <div className="rounded-2xl border border-border bg-background p-6">
+        <div className="rounded-2xl border border-border bg-background p-5">
+          <div className="mb-4 flex justify-end">
+            <RangePicker code={code} value={range} />
+          </div>
           <ClicksChart
             chartData={clicks.clickRange}
             totalClicks={clicks.totalClicks}
+            previousTotalClicks={clicks.previousTotalClicks}
+            periodLabel={clickRangeLabel[range]}
           />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-background p-6">
-            <Tabs defaultValue="countries">
-              <h2 className="text-xl font-semibold">Locations</h2>
-              <TabsList className="mt-4 h-auto max-w-full flex-wrap justify-start">
-                <TabsTrigger value="countries">Countries</TabsTrigger>
-                <TabsTrigger value="cities">Cities</TabsTrigger>
-              </TabsList>
-              <TabsContent value="countries" className="mt-4">
-                {countryClicks.length > 0 ? (
-                  <div className="space-y-4">
-                    {countryClicks.map(({ country, count }) => (
-                      <AnalyticDisplay
-                        key={country}
-                        name={country}
-                        clicks={count}
-                        total={countryTotal}
-                        iconUrl={`https://flag.vercel.app/m/${country}.svg`}
-                        displayName={countryDisplayName(country)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyBreakdown />
-                )}
-              </TabsContent>
-              <TabsContent value="cities" className="mt-4">
-                {cityClicks.length > 0 ? (
-                  <div className="space-y-4">
-                    {cityClicks.map(({ city, country, count }) => (
-                      <AnalyticDisplay
-                        key={city}
-                        name={city}
-                        clicks={count}
-                        total={cityTotal}
-                        iconUrl={`https://flag.vercel.app/m/${country}.svg`}
-                        displayName={city}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyBreakdown />
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-          <div className="rounded-2xl border border-border bg-background p-6">
-            <Tabs defaultValue="devices">
-              <h2 className="text-xl font-semibold">Clients</h2>
-              <TabsList className="mt-4 h-auto max-w-full flex-wrap justify-start">
-                <TabsTrigger value="devices">Devices</TabsTrigger>
-                <TabsTrigger value="browsers">Browsers</TabsTrigger>
-                <TabsTrigger value="os">OS</TabsTrigger>
-              </TabsList>
-              <TabsContent value="devices" className="mt-4">
-                {deviceClicks.length > 0 ? (
-                  <div className="space-y-4">
-                    {deviceClicks.map(({ device, count }) => (
-                      <AnalyticDisplay
-                        key={device}
-                        name={device}
-                        clicks={count}
-                        total={deviceTotal}
-                        iconUrl={`https://uaparser.dev/images/types/${device.toLowerCase() === "desktop" ? "default" : device}.png`}
-                        displayName={device}
-                        imageClassName="h-4 w-4"
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyBreakdown />
-                )}
-              </TabsContent>
-              <TabsContent value="browsers" className="mt-4">
-                {browserClicks.length > 0 ? (
-                  <div className="space-y-4">
-                    {browserClicks.map(({ browser, count }) => {
-                      const targetBrowser = (
-                        browser === "Mobile Safari" ? "Safari" : browser
-                      ).toLowerCase();
-                      return (
-                        <AnalyticDisplay
-                          key={browser}
-                          name={browser}
-                          clicks={count}
-                          total={browserTotal}
-                          iconUrl={`https://uaparser.dev/images/browsers/${targetBrowser}.png`}
-                          displayName={browser}
-                          imageClassName="h-4 w-4"
-                        />
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <EmptyBreakdown />
-                )}
-              </TabsContent>
-              <TabsContent value="os" className="mt-4">
-                {osClicks.length > 0 ? (
-                  <div className="space-y-4">
-                    {osClicks.map(({ os, count }) => (
-                      <AnalyticDisplay
-                        key={os}
-                        name={os}
-                        clicks={count}
-                        total={osTotal}
-                        iconUrl={`https://uaparser.dev/images/os/${os.toLowerCase().replace(" ", "")}.png`}
-                        displayName={os}
-                        imageClassName="h-4 w-4"
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyBreakdown />
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <StatTile
+            label="Top country"
+            value={topCountry ? countryName(topCountry.key) : null}
+            icon={topCountry ? flagEmoji(topCountry.key) : undefined}
+          />
+          <StatTile
+            label="Top source"
+            value={topReferrer ? referrerLabel(topReferrer.key) : null}
+            icon={<Link2 className="h-4 w-4 text-muted-foreground" />}
+          />
+          <StatTile
+            label="Top device"
+            value={topDevice ? deviceLabel(topDevice.key) : null}
+            icon={
+              topDevice ? (
+                <span className="text-muted-foreground">
+                  <DeviceIcon device={topDevice.key} />
+                </span>
+              ) : undefined
+            }
+          />
+        </div>
+        <BreakdownCard
+          title="Sources"
+          tabs={[
+            {
+              value: "referrers",
+              label: "Referrers",
+              items: breakdown.referrers.map(({ key, count }) => ({
+                key,
+                count,
+                label: referrerLabel(key),
+                icon: <Globe className="h-4 w-4" />,
+              })),
+            },
+          ]}
+        />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <BreakdownCard
+            title="Locations"
+            tabs={[
+              {
+                value: "countries",
+                label: "Countries",
+                items: breakdown.countries.map(({ key, count }) => ({
+                  key,
+                  count,
+                  label: countryName(key),
+                  icon: flagEmoji(key),
+                })),
+              },
+              {
+                value: "cities",
+                label: "Cities",
+                items: breakdown.cities.map(({ key, count, country }) => ({
+                  key,
+                  count,
+                  label: key,
+                  icon: flagEmoji(country),
+                })),
+              },
+            ]}
+          />
+          <BreakdownCard
+            title="Technology"
+            tabs={[
+              {
+                value: "devices",
+                label: "Devices",
+                items: breakdown.devices.map(({ key, count }) => ({
+                  key,
+                  count,
+                  label: deviceLabel(key),
+                  icon: <DeviceIcon device={key} />,
+                })),
+              },
+              {
+                value: "browsers",
+                label: "Browsers",
+                items: breakdown.browsers.map(({ key, count }) => ({
+                  key,
+                  count,
+                  label: key,
+                })),
+              },
+              {
+                value: "os",
+                label: "OS",
+                items: breakdown.os.map(({ key, count }) => ({
+                  key,
+                  count,
+                  label: key,
+                })),
+              },
+            ]}
+          />
         </div>
       </section>
     </div>
