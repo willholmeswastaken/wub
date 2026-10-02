@@ -1,4 +1,5 @@
 import { generateDateArrayFromDays } from "@/lib/click-date-range";
+import { slugProblem, slugProblemMessage } from "@/lib/slug";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -17,6 +18,7 @@ import {
   isNotNull,
   isNull,
   gte,
+  sql,
 } from "drizzle-orm";
 import { z } from "zod";
 
@@ -24,7 +26,8 @@ export const linkRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        url: z.string().url(),
+        url: z.string().url().max(2048),
+        slug: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -35,7 +38,49 @@ export const linkRouter = createTRPCRouter({
           message: "Unable to process request",
         });
       }
-      return await createShortLink(ctx.db, input.url, ctx.session.user.id);
+      if (input.slug) {
+        const problem = await findSlugProblem(ctx.db, input.slug);
+        if (problem) {
+          throw new TRPCError({
+            code: problem === "taken" ? "CONFLICT" : "BAD_REQUEST",
+            message: slugProblemMessage[problem],
+          });
+        }
+      }
+      return await createShortLink(
+        ctx.db,
+        input.url,
+        ctx.session.user.id,
+        input.slug,
+      );
+    }),
+  checkSlug: protectedProcedure
+    .input(z.string().max(64))
+    .query(async ({ ctx, input }) => ({
+      problem: await findSlugProblem(ctx.db, input),
+    })),
+  update: protectedProcedure
+    .input(
+      z.object({
+        shortCode: z.string(),
+        url: z.string().url().max(2048),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await ctx.db
+        .update(links)
+        .set({ url: input.url })
+        .where(
+          and(
+            eq(links.short_code, input.shortCode),
+            eq(links.userId, ctx.session.user.id),
+          ),
+        )
+        .returning({ short_code: links.short_code, url: links.url });
+      if (updated.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Link not found" });
+      }
+      return updated[0]!;
     }),
   createAnon: publicProcedure
     .input(
@@ -114,8 +159,47 @@ export const linkRouter = createTRPCRouter({
     const userLinks = await ctx.db.query.links.findMany({
       orderBy: (link, { desc }) => [desc(link.created_at)],
       where: eq(links.userId, ctx.session.user.id),
+      columns: {
+        short_code: true,
+        url: true,
+        created_at: true,
+        click_count: true,
+        last_clicked: true,
+      },
     });
-    return userLinks;
+    if (userLinks.length === 0) return [];
+
+    const days = lastNDayKeys(SPARKLINE_DAYS);
+    const day = sql`date_trunc('day', ${clicks.timestamp})`;
+    const dailyClicks = await ctx.db
+      .select({
+        short_code: clicks.short_code,
+        day: sql<string>`to_char(${day}, 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(clicks)
+      .innerJoin(links, eq(links.short_code, clicks.short_code))
+      .where(
+        and(
+          eq(links.userId, ctx.session.user.id),
+          gte(clicks.timestamp, new Date(`${days[0]}T00:00:00Z`)),
+        ),
+      )
+      .groupBy(clicks.short_code, day);
+
+    const byCode = new Map<string, Map<string, number>>();
+    for (const row of dailyClicks) {
+      const counts = byCode.get(row.short_code) ?? new Map<string, number>();
+      counts.set(row.day, Number(row.count));
+      byCode.set(row.short_code, counts);
+    }
+
+    return userLinks.map((link) => ({
+      ...link,
+      recentClicks: days.map(
+        (key) => byCode.get(link.short_code)?.get(key) ?? 0,
+      ),
+    }));
   }),
   deleteLink: protectedProcedure
     .input(z.string())
@@ -218,14 +302,36 @@ export const linkRouter = createTRPCRouter({
     }),
 });
 
+const SPARKLINE_DAYS = 7;
+
+function lastNDayKeys(count: number) {
+  const today = new Date();
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - (count - 1 - index));
+    return date.toISOString().slice(0, 10);
+  });
+}
+
+async function findSlugProblem(database: typeof db, slug: string) {
+  const problem = slugProblem(slug);
+  if (problem) return problem;
+  const existing = await database.query.links.findFirst({
+    where: eq(links.short_code, slug),
+    columns: { short_code: true },
+  });
+  return existing ? ("taken" as const) : null;
+}
+
 async function createShortLink(
   database: typeof db,
   url: string,
   userId?: string,
+  slug?: string,
 ): Promise<InferInsertModel<typeof links>> {
   const shortLinkLogger = logger.child({ url, userId });
-  let unique = false;
-  let short_code = "";
+  let unique = !!slug;
+  let short_code = slug ?? "";
 
   while (!unique) {
     short_code = getShortcode();

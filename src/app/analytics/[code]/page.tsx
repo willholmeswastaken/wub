@@ -90,7 +90,11 @@ export default async function AnalyticsPage({
             </p>
           </div>
         </div>
-        <LinkActions shortUrl={shortUrl} shortCode={code} />
+        <LinkActions
+          shortUrl={shortUrl}
+          shortCode={code}
+          url={clicks.link.url}
+        />
         <div className="rounded-2xl border border-border bg-background p-6">
           <ClicksChart
             chartData={clicks.clickRange}
