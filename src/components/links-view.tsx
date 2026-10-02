@@ -181,7 +181,7 @@ export function LinksView({
                   aria-pressed={sort === value}
                   onClick={() => setSort(value)}
                   className={cn(
-                    "flex-1 rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "flex-1 whitespace-nowrap rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     sort === value && "bg-background text-foreground shadow-sm",
                   )}
                 >

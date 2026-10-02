@@ -59,7 +59,7 @@ export function LinkRow({
               isExpired && "line-through",
             )}
           >
-            {shortUrl.replace(/^https?:\/\//, "")}
+            <ShortUrlLabel shortUrl={shortUrl} />
           </p>
           <div className="mt-0.5 flex min-w-0 items-center gap-2">
             {accessory && (
@@ -101,5 +101,19 @@ export function LinkRow({
         {actions}
       </div>
     </div>
+  );
+}
+
+function ShortUrlLabel({ shortUrl }: { shortUrl: string }) {
+  const display = shortUrl.replace(/^https?:\/\//, "");
+  const slash = display.indexOf("/");
+  if (slash === -1) return display;
+  return (
+    <>
+      <span className="hidden font-normal text-muted-foreground sm:inline">
+        {display.slice(0, slash)}
+      </span>
+      {display.slice(slash)}
+    </>
   );
 }
