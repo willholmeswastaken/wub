@@ -22,9 +22,9 @@ const item = {
 };
 
 export default function LinkStackView({
-  highlightCode,
+  excludeCode,
 }: {
-  highlightCode?: string | null;
+  excludeCode?: string | null;
 }) {
   const links = useLinkStore((state) => state.links);
   const sortedLinks = [...links].sort(
@@ -38,32 +38,39 @@ export default function LinkStackView({
       enabled: sortedLinks.length > 0,
     },
   );
-  if (sortedLinks.length === 0) return null;
+  const visibleLinks = sortedLinks.filter(
+    (link) => link.shortCode !== excludeCode,
+  );
+  if (visibleLinks.length === 0) return null;
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="overflow-hidden rounded-2xl border border-border bg-background text-left"
-    >
-      {sortedLinks.map((link, index) => (
-        <motion.div
-          key={link.shortUrl}
-          variants={item}
-          className={index > 0 ? "border-t border-border" : undefined}
-        >
-          <ShortLink
-            url={link.url}
-            clicks={
-              data?.find((tempLink) => tempLink.short_code === link.shortCode)
-                ?.click_count ?? link.clicks
-            }
-            shortUrl={link.shortUrl}
-            expiresAt={link.expiresAt}
-            initiallyCopied={highlightCode === link.shortCode}
-          />
-        </motion.div>
-      ))}
-    </motion.div>
+    <div className="space-y-2 pt-4 text-left">
+      <h2 className="px-1 text-sm font-medium text-muted-foreground">
+        Recent links
+      </h2>
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="overflow-hidden rounded-2xl border border-border bg-background"
+      >
+        {visibleLinks.map((link, index) => (
+          <motion.div
+            key={link.shortUrl}
+            variants={item}
+            className={index > 0 ? "border-t border-border" : undefined}
+          >
+            <ShortLink
+              url={link.url}
+              clicks={
+                data?.find((tempLink) => tempLink.short_code === link.shortCode)
+                  ?.click_count ?? link.clicks
+              }
+              shortUrl={link.shortUrl}
+              expiresAt={link.expiresAt}
+            />
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
   );
 }

@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { QrCode } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { type ReactNode } from "react";
 
 interface QRCodeButtonProps {
   url: string;
+  trigger?: ReactNode;
 }
 
-export function QRCodeButton({ url }: QRCodeButtonProps) {
+export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
   const handleDownload = () => {
     const svg = document.querySelector("#qr-code svg");
     if (!svg) return;
@@ -44,12 +46,14 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button" className="flex flex-col items-center gap-2">
-          <span className={iconButtonClassName()}>
-            <QrCode className="h-4 w-4" />
-          </span>
-          <span className="text-xs text-muted-foreground">QR</span>
-        </button>
+        {trigger ?? (
+          <button type="button" className="flex flex-col items-center gap-2">
+            <span className={iconButtonClassName()}>
+              <QrCode className="h-4 w-4" />
+            </span>
+            <span className="text-xs text-muted-foreground">QR</span>
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md sm:rounded-2xl">
         <DialogHeader>

@@ -15,7 +15,8 @@ const inter = Inter({
 
 export const metadata = {
   title: "Wub - Link Shortener",
-  description: "Short links that change the world.",
+  description:
+    "Paste a long link, get a short one. Free, open source, with click analytics.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 

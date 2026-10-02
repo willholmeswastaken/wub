@@ -1,7 +1,5 @@
 export function parseUrl(url: string) {
-  return url.includes("http://") || url.includes("https://")
-    ? url
-    : `https://${url}`;
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 export function validateDestinationUrl(input: string): string | null {
@@ -17,6 +15,14 @@ export function validateDestinationUrl(input: string): string | null {
     return null;
   } catch {
     return "Enter a valid URL";
+  }
+}
+
+export function hostnameOf(input: string): string | null {
+  try {
+    return new URL(parseUrl(input.trim())).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
   }
 }
 

@@ -1,13 +1,13 @@
 "use client";
 
+import { LinkResultCard } from "@/components/link-result-card";
 import { LinkRow } from "@/components/link-row";
 import { useProjectUrl } from "@/components/project-url-provider";
 import { ShortenForm } from "@/components/shorten-form";
+import { copyToClipboard } from "@/lib/clipboard";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
 import { api } from "@/trpc/react";
-import copy from "clipboard-copy";
 import { useState } from "react";
-import { toast } from "sonner";
 
 function formatCreatedAt(createdAt: Date | string) {
   return new Date(createdAt).toLocaleDateString("en-US", {
@@ -15,6 +15,13 @@ function formatCreatedAt(createdAt: Date | string) {
     day: "numeric",
   });
 }
+
+type Result = {
+  shortCode: string;
+  shortUrl: string;
+  url: string;
+  autoCopied: boolean;
+};
 
 export function LinksView({
   initialLinks,
@@ -24,36 +31,44 @@ export function LinksView({
   const projectUrl = useProjectUrl();
   const utils = api.useUtils();
   const createLink = api.link.create.useMutation();
-  const [justCopiedCode, setJustCopiedCode] = useState<string | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
   const { data } = api.link.getUserLinks.useQuery(undefined, {
     initialData: initialLinks,
   });
 
   return (
-    <section className="mx-auto w-full max-w-[720px] px-4 py-8">
+    <section className="mx-auto w-full max-w-[720px] space-y-4 px-4 py-8">
       <ShortenForm
+        focusOnMount
+        capturePaste
+        shortcuts={{ modK: true }}
         onSubmit={async (url) => {
           const link = await createLink.mutateAsync({ url });
-          const shortLink = `${projectUrl}${link.short_code}`;
-          setJustCopiedCode(link.short_code);
-          toast.success("Short link created", {
-            description: shortLink,
-            action: {
-              label: "Copy link",
-              onClick: () => {
-                void copy(shortLink);
-              },
-            },
+          const shortUrl = `${projectUrl}${link.short_code}`;
+          const autoCopied = await copyToClipboard(shortUrl);
+          setResult({
+            shortCode: link.short_code,
+            shortUrl,
+            url: link.url,
+            autoCopied,
           });
           await utils.link.getUserLinks.invalidate();
         }}
       />
+      {result && (
+        <LinkResultCard
+          key={result.shortCode}
+          shortUrl={result.shortUrl}
+          url={result.url}
+          autoCopied={result.autoCopied}
+        />
+      )}
       {data.length === 0 ? (
         <p className="px-4 py-16 text-center text-sm text-muted-foreground">
           No links yet. Shorten a URL to get started.
         </p>
       ) : (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-background">
+        <div className="overflow-hidden rounded-2xl border border-border bg-background">
           {data.map((link, index) => (
             <div
               key={link.short_code}
@@ -65,7 +80,6 @@ export function LinksView({
                 clicks={link.click_count}
                 subtitle={`${formatCreatedAt(link.created_at)} · ${link.url}`}
                 href={`/analytics/${link.short_code}`}
-                initiallyCopied={justCopiedCode === link.short_code}
               />
             </div>
           ))}
