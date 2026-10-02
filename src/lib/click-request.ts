@@ -1,4 +1,4 @@
-import { type LogClickEvent } from "@/server/qstash";
+import { type LogClickEvent } from "@/server/queue/schema";
 
 type CfGeo = {
   country?: string | null;

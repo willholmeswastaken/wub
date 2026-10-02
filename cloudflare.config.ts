@@ -1,14 +1,15 @@
-import { bindings, defineConfig, defineWorker } from "cf/config";
+import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 
 const secret = () => bindings.secret();
 
 export default defineConfig({
   worker: defineWorker({
     name: "wub",
-    entrypoint: "vinext/server/fetch-handler",
+    entrypoint: "./src/worker.ts",
     compatibilityDate: "2026-10-01",
     compatibilityFlags: ["nodejs_compat"],
     assets: { notFoundHandling: "none" },
+    triggers: [triggers.queue({ name: "wub-log-clicks" })],
     env: {
       ASSETS: bindings.assets(),
       DATABASE_URL: secret(),
@@ -24,6 +25,7 @@ export default defineConfig({
       QSTASH_TOKEN: secret(),
       QSTASH_CURRENT_SIGNING_KEY: secret(),
       QSTASH_NEXT_SIGNING_KEY: secret(),
+      CLICK_QUEUE: bindings.queue({ name: "wub-log-clicks" }),
     },
   }),
 });
