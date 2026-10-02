@@ -37,11 +37,11 @@ export async function GET(
   });
   if (!route) {
     functionLogger.info("Short link not found");
-    redirect("/");
+    redirect("/l/not-found");
   }
   if (route.expires_at && new Date() > route.expires_at) {
     functionLogger.info("Short link expired");
-    redirect("/");
+    redirect("/l/expired");
   }
 
   const ua = userAgent(request);
