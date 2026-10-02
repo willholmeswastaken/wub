@@ -1,9 +1,11 @@
 "use client";
 
+import { iconButtonClassName } from "@/components/icon-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -18,8 +20,9 @@ interface QRCodeButtonProps {
 export function QRCodeButton({ url }: QRCodeButtonProps) {
   const handleDownload = () => {
     const svg = document.querySelector("#qr-code svg");
+    if (!svg) return;
 
-    const svgData = new XMLSerializer().serializeToString(svg!);
+    const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const img = new Image();
@@ -41,23 +44,19 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 hover:bg-gray-100"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
-        >
-          <QrCode className="h-4 w-4 text-gray-600" />
-        </Button>
+        <button type="button" className="flex flex-col items-center gap-2">
+          <span className={iconButtonClassName()}>
+            <QrCode className="h-4 w-4" />
+          </span>
+          <span className="text-xs text-muted-foreground">QR</span>
+        </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md sm:rounded-2xl">
         <DialogHeader>
-          <DialogTitle>{url}</DialogTitle>
+          <DialogTitle>QR code</DialogTitle>
+          <DialogDescription className="break-all">{url}</DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col items-center justify-center space-y-4 py-4">
+        <div className="flex flex-col items-center gap-4">
           <div id="qr-code">
             <QRCodeSVG
               value={url}
@@ -68,7 +67,7 @@ export function QRCodeButton({ url }: QRCodeButtonProps) {
             />
           </div>
           <Button onClick={handleDownload} className="w-full">
-            Download QR Code
+            Download QR code
           </Button>
         </div>
       </DialogContent>

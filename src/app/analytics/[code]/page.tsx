@@ -1,8 +1,7 @@
 import { AnalyticDisplay } from "@/components/analytic-display";
-import { AppHeader } from "@/components/app-header";
 import { ClicksChart } from "@/components/clicks-chart";
-import { CopyButton } from "@/components/copy-button";
-import { QRCodeButton } from "@/components/qr-code-button";
+import { LinkActions } from "@/components/link-actions";
+import { ProductBar } from "@/components/product-bar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlFavicon } from "@/components/url-favicon";
 import { projectUrlFromHeaders } from "@/lib/project-url";
@@ -22,7 +21,19 @@ function countryDisplayName(code: string) {
   }
 }
 
-export default async function Dashboard({
+function totalOf(items: { count: number }[]) {
+  return items.reduce((sum, item) => sum + item.count, 0);
+}
+
+function EmptyBreakdown() {
+  return (
+    <p className="py-8 text-center text-sm text-muted-foreground">
+      No clicks yet
+    </p>
+  );
+}
+
+export default async function AnalyticsPage({
   params,
 }: {
   params: Promise<{ code: string }>;
@@ -51,162 +62,155 @@ export default async function Dashboard({
     ([os, count]) => ({ os, count }),
   );
 
+  const countryTotal = totalOf(countryClicks);
+  const cityTotal = totalOf(cityClicks);
+  const deviceTotal = totalOf(deviceClicks);
+  const browserTotal = totalOf(browserClicks);
+  const osTotal = totalOf(osClicks);
+
   return (
-    <div className="flex flex-col space-y-10 pb-10">
-      <AppHeader pageTitle="Analytics" hideCta />
-      <section className="mx-auto flex h-full w-full max-w-4xl flex-1 flex-col space-y-3">
-        <div className="border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
-          <div className="mb-6 flex items-center justify-between pl-8">
-            <div className="flex items-center space-x-3">
-              <UrlFavicon url={clicks.link.url} />
-              <div className="flex flex-col">
-                <a
-                  href={clicks.link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-gray-900 hover:underline"
-                >
-                  {clicks.link.url}
-                </a>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{shortUrl}</span>
-                  <div className="flex items-center space-x-1">
-                    <CopyButton text={shortUrl} />
-                    <QRCodeButton url={shortUrl} />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500">
+    <div className="pb-8">
+      <ProductBar title="Analytics" backHref="/dashboard" />
+      <section className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-8">
+        <div className="flex items-start gap-4">
+          <UrlFavicon url={clicks.link.url} />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-semibold">{shortUrl}</h2>
+            <a
+              href={clicks.link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 block truncate text-sm text-muted-foreground hover:underline"
+            >
+              {clicks.link.url}
+            </a>
+            <p className="mt-1 text-sm text-muted-foreground">
               Created{" "}
               {new Date(clicks.link.created_at).toLocaleDateString("en-GB")}
-            </div>
+            </p>
           </div>
+        </div>
+        <LinkActions shortUrl={shortUrl} shortCode={code} />
+        <div className="rounded-2xl border border-border bg-background p-6">
           <ClicksChart
             chartData={clicks.clickRange}
             totalClicks={clicks.totalClicks}
           />
         </div>
-        <div className="flex w-full flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
-          <div className="flex w-full flex-col gap-y-2 border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-background p-6">
             <Tabs defaultValue="countries">
-              <div className="flex flex-row justify-between pb-2">
-                <h2 className="text-2xl text-gray-600">Locations</h2>
-                <TabsList>
-                  <TabsTrigger value="countries">Countries</TabsTrigger>
-                  <TabsTrigger value="cities">Cities</TabsTrigger>
-                </TabsList>
-              </div>
-              <TabsContent
-                value="countries"
-                className="space-y-2 transition-all duration-200 ease-in-out"
-              >
+              <h2 className="text-xl font-semibold">Locations</h2>
+              <TabsList className="mt-4 h-auto max-w-full flex-wrap justify-start">
+                <TabsTrigger value="countries">Countries</TabsTrigger>
+                <TabsTrigger value="cities">Cities</TabsTrigger>
+              </TabsList>
+              <TabsContent value="countries" className="mt-4">
                 {countryClicks.length > 0 ? (
-                  countryClicks.map(({ country, count }) => (
-                    <AnalyticDisplay
-                      key={country}
-                      name={country}
-                      clicks={count}
-                      iconUrl={`https://flag.vercel.app/m/${country}.svg`}
-                      displayName={countryDisplayName(country)}
-                    />
-                  ))
+                  <div className="space-y-4">
+                    {countryClicks.map(({ country, count }) => (
+                      <AnalyticDisplay
+                        key={country}
+                        name={country}
+                        clicks={count}
+                        total={countryTotal}
+                        iconUrl={`https://flag.vercel.app/m/${country}.svg`}
+                        displayName={countryDisplayName(country)}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <EmptyBreakdown />
                 )}
               </TabsContent>
-              <TabsContent
-                value="cities"
-                className="space-y-2 transition-all duration-200 ease-in-out"
-              >
+              <TabsContent value="cities" className="mt-4">
                 {cityClicks.length > 0 ? (
-                  cityClicks.map(({ city, country, count }) => (
-                    <AnalyticDisplay
-                      key={city}
-                      name={city}
-                      clicks={count}
-                      iconUrl={`https://flag.vercel.app/m/${country}.svg`}
-                      displayName={city}
-                    />
-                  ))
+                  <div className="space-y-4">
+                    {cityClicks.map(({ city, country, count }) => (
+                      <AnalyticDisplay
+                        key={city}
+                        name={city}
+                        clicks={count}
+                        total={cityTotal}
+                        iconUrl={`https://flag.vercel.app/m/${country}.svg`}
+                        displayName={city}
+                      />
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <EmptyBreakdown />
                 )}
               </TabsContent>
             </Tabs>
           </div>
-          <div className="flex w-full flex-col gap-y-2 border border-gray-200 bg-white p-5 sm:rounded-lg sm:border-gray-100 sm:p-10 sm:shadow-lg">
+          <div className="rounded-2xl border border-border bg-background p-6">
             <Tabs defaultValue="devices">
-              <div className="flex flex-row justify-between pb-2">
-                <h2 className="text-2xl text-gray-600">Clients</h2>
-                <TabsList>
-                  <TabsTrigger value="devices">Devices</TabsTrigger>
-                  <TabsTrigger value="browsers">Browsers</TabsTrigger>
-                  <TabsTrigger value="os">OS</TabsTrigger>
-                </TabsList>
-              </div>
-              <TabsContent
-                value="devices"
-                className="space-y-2 transition-all duration-200 ease-in-out"
-              >
+              <h2 className="text-xl font-semibold">Clients</h2>
+              <TabsList className="mt-4 h-auto max-w-full flex-wrap justify-start">
+                <TabsTrigger value="devices">Devices</TabsTrigger>
+                <TabsTrigger value="browsers">Browsers</TabsTrigger>
+                <TabsTrigger value="os">OS</TabsTrigger>
+              </TabsList>
+              <TabsContent value="devices" className="mt-4">
                 {deviceClicks.length > 0 ? (
-                  deviceClicks.map(({ device, count }) => (
-                    <AnalyticDisplay
-                      key={device}
-                      name={device}
-                      clicks={count}
-                      iconUrl={`https://uaparser.dev/images/types/${device.toLowerCase() === "desktop" ? "default" : device}.png`}
-                      displayName={device}
-                      imageClassName="h-4 w-4"
-                    />
-                  ))
-                ) : (
-                  <p className="text-gray-400">No data available</p>
-                )}
-              </TabsContent>
-              <TabsContent
-                value="browsers"
-                className="space-y-2 transition-all duration-200 ease-in-out"
-              >
-                {browserClicks.length > 0 ? (
-                  browserClicks.map(({ browser, count }) => {
-                    const targetBrowser = (
-                      browser === "Mobile Safari" ? "Safari" : browser
-                    ).toLowerCase();
-                    return (
+                  <div className="space-y-4">
+                    {deviceClicks.map(({ device, count }) => (
                       <AnalyticDisplay
-                        key={browser}
-                        name={browser}
+                        key={device}
+                        name={device}
                         clicks={count}
-                        iconUrl={`https://uaparser.dev/images/browsers/${targetBrowser}.png`}
-                        displayName={browser}
+                        total={deviceTotal}
+                        iconUrl={`https://uaparser.dev/images/types/${device.toLowerCase() === "desktop" ? "default" : device}.png`}
+                        displayName={device}
                         imageClassName="h-4 w-4"
-                        infoContainerClassName="leading-4"
                       />
-                    );
-                  })
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <EmptyBreakdown />
                 )}
               </TabsContent>
-              <TabsContent
-                value="os"
-                className="space-y-2 transition-all duration-200 ease-in-out"
-              >
-                {osClicks.length > 0 ? (
-                  osClicks.map(({ os, count }) => (
-                    <AnalyticDisplay
-                      key={os}
-                      name={os}
-                      clicks={count}
-                      iconUrl={`https://uaparser.dev/images/os/${os.toLowerCase().replace(" ", "")}.png`}
-                      displayName={os}
-                      imageClassName="h-4 w-4"
-                      infoContainerClassName="leading-4"
-                    />
-                  ))
+              <TabsContent value="browsers" className="mt-4">
+                {browserClicks.length > 0 ? (
+                  <div className="space-y-4">
+                    {browserClicks.map(({ browser, count }) => {
+                      const targetBrowser = (
+                        browser === "Mobile Safari" ? "Safari" : browser
+                      ).toLowerCase();
+                      return (
+                        <AnalyticDisplay
+                          key={browser}
+                          name={browser}
+                          clicks={count}
+                          total={browserTotal}
+                          iconUrl={`https://uaparser.dev/images/browsers/${targetBrowser}.png`}
+                          displayName={browser}
+                          imageClassName="h-4 w-4"
+                        />
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <p className="text-gray-400">No data available</p>
+                  <EmptyBreakdown />
+                )}
+              </TabsContent>
+              <TabsContent value="os" className="mt-4">
+                {osClicks.length > 0 ? (
+                  <div className="space-y-4">
+                    {osClicks.map(({ os, count }) => (
+                      <AnalyticDisplay
+                        key={os}
+                        name={os}
+                        clicks={count}
+                        total={osTotal}
+                        iconUrl={`https://uaparser.dev/images/os/${os.toLowerCase().replace(" ", "")}.png`}
+                        displayName={os}
+                        imageClassName="h-4 w-4"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyBreakdown />
                 )}
               </TabsContent>
             </Tabs>

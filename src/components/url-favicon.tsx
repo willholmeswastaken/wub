@@ -1,19 +1,35 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 import { Logo } from "./logo";
 
-export function UrlFavicon({ url }: { url: string }) {
-  const hostname = new URL(url).hostname;
+export function UrlFavicon({
+  url,
+  className,
+}: {
+  url: string;
+  className?: string;
+}) {
+  let hostname = "";
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    hostname = "";
+  }
 
   return (
-    <Avatar className="h-6 w-6 rounded-md">
+    <Avatar className={cn("h-8 w-8 rounded-lg", className)}>
       <AvatarImage
-        src={`https://icons.duckduckgo.com/ip3/${hostname}.ico`}
-        alt={`${url} website logo`}
+        src={
+          hostname
+            ? `https://icons.duckduckgo.com/ip3/${hostname}.ico`
+            : undefined
+        }
+        alt=""
       />
-      <AvatarFallback className="rounded-md">
+      <AvatarFallback className="rounded-lg">
         <Logo />
       </AvatarFallback>
     </Avatar>
