@@ -3,6 +3,7 @@
 import { ClicksButton } from "@/components/clicks-button";
 import { CopyButton } from "@/components/copy-button";
 import { DeleteLink } from "@/components/delete-link";
+import { useProjectUrl } from "@/components/project-url-provider";
 import { QRCodeButton } from "@/components/qr-code-button";
 import {
   DropdownMenu,
@@ -11,7 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu";
-import { getProjectUrl } from "@/lib/project-url";
 import { EllipsisVertical, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -30,6 +30,7 @@ export function FullLinkCard({
   createdAt: Date;
 }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const projectUrl = useProjectUrl();
   const formatDate = (date: Date): string => {
     const options: Intl.DateTimeFormatOptions = {
       month: "long",
@@ -39,7 +40,7 @@ export function FullLinkCard({
   };
   const formattedDate = formatDate(createdAt);
 
-  const shortUrl = `${getProjectUrl()}${shortCode}`;
+  const shortUrl = `${projectUrl}${shortCode}`;
 
   return (
     <div className="col-span-2 flex w-full justify-between rounded-lg border border-gray-200 bg-white p-4 pb-5 transition-all duration-200 hover:cursor-pointer hover:drop-shadow-md lg:col-span-1">
@@ -50,7 +51,7 @@ export function FullLinkCard({
             <div className="flex flex-col">
               <div className="flex items-center gap-x-2">
                 <span className="max-w-[150px] truncate text-sm font-semibold text-blue-800 sm:max-w-[300px] md:max-w-[360px] xl:max-w-[500px]">
-                  {getProjectUrl()}
+                  {projectUrl}
                   {shortCode}
                 </span>
                 <div className="flex items-center space-x-1">

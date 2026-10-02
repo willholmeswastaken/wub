@@ -5,10 +5,11 @@ import { CopyButton } from "@/components/copy-button";
 import { QRCodeButton } from "@/components/qr-code-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UrlFavicon } from "@/components/url-favicon";
-import { getProjectUrl } from "@/lib/project-url";
+import { projectUrlFromHeaders } from "@/lib/project-url";
 import { getServerAuthSession } from "@/server/auth";
 import { api } from "@/trpc/server";
 import * as countries from "i18n-iso-countries";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function Dashboard({
@@ -22,7 +23,7 @@ export default async function Dashboard({
     redirect("/api/auth/signin?callbackUrl=/dashboard");
   }
   const clicks = await api.link.getClicksFromLast30Days(code);
-  const shortUrl = `${getProjectUrl()}${code}`;
+  const shortUrl = `${projectUrlFromHeaders(await headers())}${code}`;
 
   const countryClicks = Object.entries(clicks.countClicks.countryClicks).map(
     ([country, count]) => ({ country, count }),

@@ -1,5 +1,6 @@
 "use client";
 
+import { useProjectUrl } from "@/components/project-url-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { getProjectUrl } from "@/lib/project-url";
 import { parseUrl } from "@/lib/url";
 import { type links } from "@/server/db/schema";
 import { api } from "@/trpc/react";
@@ -29,10 +29,11 @@ type UrlInput = {
 
 export function CreateLink() {
   const dialogTrigger = useRef<HTMLButtonElement | null>(null);
+  const projectUrl = useProjectUrl();
   const utils = api.useUtils();
   const createLinkMutate = api.link.create.useMutation({
     onSuccess: async (link: InferInsertModel<typeof links>) => {
-      const shortLink = `${getProjectUrl()}${link.short_code}`;
+      const shortLink = `${projectUrl}${link.short_code}`;
       toast.success("Short link created!", {
         description: shortLink,
         action: {

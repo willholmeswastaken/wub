@@ -1,5 +1,6 @@
 "use client";
 
+import { useProjectUrl } from "@/components/project-url-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { getProjectUrl } from "@/lib/project-url";
 import { useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
 import { GlobeIcon } from "lucide-react";
@@ -33,7 +33,8 @@ export function DeleteLink({
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
 }) {
-  const expectedDeletionLink = `${getProjectUrl(false)}${shortCode}`;
+  const projectHost = useProjectUrl(false);
+  const expectedDeletionLink = `${projectHost}${shortCode}`;
   const utils = api.useUtils();
   const deleteLinkFromCache = useLinkStore((state) => state.deleteLink);
 

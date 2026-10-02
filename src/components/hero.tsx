@@ -1,8 +1,8 @@
 "use client";
 
+import { useProjectUrl } from "@/components/project-url-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getProjectUrl } from "@/lib/project-url";
 import { parseUrl } from "@/lib/url";
 import { type links } from "@/server/db/schema";
 import { useLinkStore } from "@/stores/link";
@@ -27,9 +27,10 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
     formState: { errors },
     setValue,
   } = useForm<UrlInput>();
+  const projectUrl = useProjectUrl();
 
   const onShortLinkSuccess = (link: InferInsertModel<typeof links>) => {
-    const shortLink = `${getProjectUrl()}${link.short_code}`;
+    const shortLink = `${projectUrl}${link.short_code}`;
     toast.success("Short link created!", {
       description: shortLink,
       action: {
