@@ -8,9 +8,19 @@ import { UrlFavicon } from "@/components/url-favicon";
 import { projectUrlFromHeaders } from "@/lib/project-url";
 import { getServerAuthSession } from "@/server/auth";
 import { api } from "@/trpc/server";
-import * as countries from "i18n-iso-countries";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
+const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
+
+function countryDisplayName(code: string) {
+  if (!/^[a-z]{2}$/i.test(code)) return "Unknown";
+  try {
+    return regionNames.of(code) ?? "Unknown";
+  } catch {
+    return "Unknown";
+  }
+}
 
 export default async function Dashboard({
   params,
@@ -98,9 +108,7 @@ export default async function Dashboard({
                       name={country}
                       clicks={count}
                       iconUrl={`https://flag.vercel.app/m/${country}.svg`}
-                      displayName={
-                        countries.getName(country, "en") ?? "Unknown"
-                      }
+                      displayName={countryDisplayName(country)}
                     />
                   ))
                 ) : (
