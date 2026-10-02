@@ -55,6 +55,10 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   },
+  pages: {
+    signIn: "/signin",
+    error: "/signin",
+  },
   adapter: DrizzleAdapter(db, createTable) as Adapter,
   providers: [
     GithubProvider({

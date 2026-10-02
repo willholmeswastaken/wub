@@ -69,8 +69,46 @@ export const linkRouter = createTRPCRouter({
           isNull(links.userId),
           and(inArray(links.short_code, input), isNotNull(links.expires_at)),
         ),
+        columns: { short_code: true, click_count: true, expires_at: true },
       });
       return tempLinks;
+    }),
+  claim: protectedProcedure
+    .input(
+      z
+        .array(
+          z.object({
+            shortCode: z.string().min(1),
+            claimToken: z.string().min(1),
+          }),
+        )
+        .max(100),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const claimed: string[] = [];
+      for (const { shortCode, claimToken } of input) {
+        const rows = await ctx.db
+          .update(links)
+          .set({
+            userId: ctx.session.user.id,
+            expires_at: null,
+            claim_token: null,
+          })
+          .where(
+            and(
+              eq(links.short_code, shortCode),
+              eq(links.claim_token, claimToken),
+              isNull(links.userId),
+            ),
+          )
+          .returning({ short_code: links.short_code });
+        claimed.push(...rows.map((row) => row.short_code));
+      }
+      logger.info(
+        { userId: ctx.session.user.id, claimed: claimed.length },
+        "Guest links claimed",
+      );
+      return { claimed };
     }),
   getUserLinks: protectedProcedure.query(async ({ ctx }) => {
     const userLinks = await ctx.db.query.links.findMany({
@@ -208,6 +246,7 @@ async function createShortLink(
       expires_at: userId
         ? null
         : new Date(new Date().getTime() + 30 * 60 * 1000),
+      claim_token: userId ? null : crypto.randomUUID(),
       userId,
     })
     .returning();

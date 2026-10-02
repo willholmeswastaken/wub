@@ -30,6 +30,7 @@ export const links = createTable("link", {
   click_count: integer("click_count").notNull().default(0),
   last_clicked: timestamp("last_clicked", { mode: "date" }),
   expires_at: timestamp("expires_at", { mode: "date" }),
+  claim_token: varchar("claim_token", { length: 64 }),
 });
 
 export const linksRelations = relations(links, ({ many }) => ({

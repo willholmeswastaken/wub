@@ -6,6 +6,7 @@ import { useProjectUrl } from "@/components/project-url-provider";
 import { ShortenForm } from "@/components/shorten-form";
 import { copyToClipboard } from "@/lib/clipboard";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
+import { useRecentlyClaimed } from "@/stores/link";
 import { api } from "@/trpc/react";
 import { useState } from "react";
 
@@ -32,6 +33,7 @@ export function LinksView({
   const utils = api.useUtils();
   const createLink = api.link.create.useMutation();
   const [result, setResult] = useState<Result | null>(null);
+  const claimedCodes = useRecentlyClaimed((state) => state.codes);
   const { data } = api.link.getUserLinks.useQuery(undefined, {
     initialData: initialLinks,
   });
@@ -80,6 +82,10 @@ export function LinksView({
                 clicks={link.click_count}
                 subtitle={`${formatCreatedAt(link.created_at)} · ${link.url}`}
                 href={`/analytics/${link.short_code}`}
+                isHighlighted={
+                  claimedCodes.includes(link.short_code) ||
+                  result?.shortCode === link.short_code
+                }
               />
             </div>
           ))}

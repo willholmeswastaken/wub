@@ -13,6 +13,7 @@ export function LinkRow({
   subtitle,
   href,
   isExpired = false,
+  isHighlighted = false,
   initiallyCopied = false,
   accessory,
 }: {
@@ -22,6 +23,7 @@ export function LinkRow({
   subtitle: ReactNode;
   href?: string;
   isExpired?: boolean;
+  isHighlighted?: boolean;
   initiallyCopied?: boolean;
   accessory?: ReactNode;
 }) {
@@ -31,6 +33,7 @@ export function LinkRow({
         "relative flex items-center gap-4 px-4 py-4",
         href && "hover:bg-muted/60",
         isExpired && "text-muted-foreground",
+        isHighlighted && "bg-brand/5",
       )}
     >
       {href && (

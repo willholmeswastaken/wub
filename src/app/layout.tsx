@@ -1,8 +1,10 @@
 import "@/styles/globals.css";
 import { AppChrome } from "@/components/app-chrome";
 import { Footer } from "@/components/footer";
+import { GuestLinkClaimer } from "@/components/guest-link-claimer";
 import { Header } from "@/components/header";
 import { ProjectUrlProvider } from "@/components/project-url-provider";
+import { getServerAuthSession } from "@/server/auth";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
@@ -25,6 +27,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerAuthSession();
   const headerList = await headers();
   const host =
     headerList.get("x-forwarded-host")?.split(",")[0]?.trim() ||
@@ -40,6 +43,7 @@ export default async function RootLayout({
             <AppChrome header={<Header />} footer={<Footer />}>
               {children}
             </AppChrome>
+            {session && <GuestLinkClaimer />}
             <Toaster />
           </TRPCReactProvider>
         </ProjectUrlProvider>

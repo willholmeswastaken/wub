@@ -64,9 +64,9 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {!user && (
+      {!user && pathname !== "/signin" && (
         <Button asChild>
-          <Link href="/api/auth/signin">Sign in</Link>
+          <Link href="/signin">Sign in</Link>
         </Button>
       )}
     </div>

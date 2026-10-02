@@ -41,7 +41,7 @@ export default async function AnalyticsPage({
   const { code } = await params;
   const session = await getServerAuthSession();
   if (!session) {
-    redirect("/api/auth/signin?callbackUrl=/dashboard");
+    redirect(`/signin?callbackUrl=/analytics/${code}`);
   }
   const clicks = await api.link.getClicksFromLast30Days(code);
   const shortUrl = `${projectUrlFromHeaders(await headers())}${code}`;
