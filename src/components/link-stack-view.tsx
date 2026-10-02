@@ -17,42 +17,50 @@ const container = {
 };
 
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
 };
 
-export default function LinkStackView() {
-  const links = useLinkStore((state) =>
-    state.links.sort(
-      (a, b) =>
-        new Date(b.expiresAt ?? 0).getTime() -
-        new Date(a.expiresAt ?? 0).getTime(),
-    ),
+export default function LinkStackView({
+  highlightCode,
+}: {
+  highlightCode?: string | null;
+}) {
+  const links = useLinkStore((state) => state.links);
+  const sortedLinks = [...links].sort(
+    (a, b) =>
+      new Date(b.expiresAt ?? 0).getTime() -
+      new Date(a.expiresAt ?? 0).getTime(),
   );
   const { data } = api.link.getTempLinks.useQuery(
-    links.map((link) => link.shortCode),
+    sortedLinks.map((link) => link.shortCode),
     {
-      enabled: links.length > 0,
+      enabled: sortedLinks.length > 0,
     },
   );
-  if (links.length === 0) return null;
+  if (sortedLinks.length === 0) return null;
   return (
     <motion.div
       variants={container}
       initial="hidden"
       animate="show"
-      className="grid grid-cols-1 gap-3"
+      className="overflow-hidden rounded-2xl border border-border bg-background text-left"
     >
-      {links.map((link) => (
-        <motion.div key={link.shortUrl} variants={item}>
+      {sortedLinks.map((link, index) => (
+        <motion.div
+          key={link.shortUrl}
+          variants={item}
+          className={index > 0 ? "border-t border-border" : undefined}
+        >
           <ShortLink
             url={link.url}
             clicks={
-              data?.find((tl) => tl.short_code === link.shortCode)
+              data?.find((tempLink) => tempLink.short_code === link.shortCode)
                 ?.click_count ?? link.clicks
             }
             shortUrl={link.shortUrl}
             expiresAt={link.expiresAt}
+            initiallyCopied={highlightCode === link.shortCode}
           />
         </motion.div>
       ))}

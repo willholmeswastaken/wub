@@ -1,74 +1,64 @@
 "use client";
 
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, LogOut, Settings, User } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { type Session } from "next-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
   const pathname = usePathname();
+  const onMarketingPage = pathname === "/";
 
   return (
-    <>
-      {user && pathname.toLowerCase() === "/" && (
+    <div className="flex items-center gap-2">
+      {user && onMarketingPage && (
         <Button asChild>
           <Link href="/dashboard">Dashboard</Link>
         </Button>
       )}
-      {user && pathname.toLowerCase() !== "/" && (
+      {user && (
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Avatar>
+          <DropdownMenuTrigger
+            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Account"
+          >
+            <Avatar className="h-9 w-9">
               <AvatarImage src={user.image ?? ""} />
               <AvatarFallback>{user.name?.substring(0, 1)}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
+          <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel className="flex flex-col">
               <span>{user.name}</span>
-              <span className="text-xs font-normal text-gray-500">
+              <span className="text-xs font-normal text-muted-foreground">
                 {user.email}
               </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-                <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+            {onMarketingPage && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard" className="cursor-pointer">
+                  Dashboard
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing</span>
-                <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-                <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
+            )}
             <DropdownMenuItem asChild>
               <Link
                 href="/api/auth/signout"
-                className="flex cursor-pointer items-start justify-start"
+                className="flex cursor-pointer items-center"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
-                <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -76,9 +66,9 @@ export function HeaderLinks({ user }: { user: Session["user"] | undefined }) {
       )}
       {!user && (
         <Button asChild>
-          <Link href="/api/auth/signin">Sign In</Link>
+          <Link href="/api/auth/signin">Sign in</Link>
         </Button>
       )}
-    </>
+    </div>
   );
 }

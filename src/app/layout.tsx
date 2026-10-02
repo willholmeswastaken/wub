@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import { AppChrome } from "@/components/app-chrome";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { ProjectUrlProvider } from "@/components/project-url-provider";
@@ -35,11 +36,9 @@ export default async function RootLayout({
       <body className={`font-sans ${inter.variable}`}>
         <ProjectUrlProvider host={host} protocol={protocol}>
           <TRPCReactProvider>
-            <div className="flex min-h-[100dvh] flex-col">
-              <Header />
-              <main className="flex-1 bg-gray-50">{children}</main>
-              <Footer />
-            </div>
+            <AppChrome header={<Header />} footer={<Footer />}>
+              {children}
+            </AppChrome>
             <Toaster />
           </TRPCReactProvider>
         </ProjectUrlProvider>
