@@ -41,7 +41,8 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
-    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: z.string(),
+    // Optional: Workers Builds does not have this Vercel hostname at build time.
+    NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   },
 
   /**
@@ -68,9 +69,11 @@ export const env = createEnv({
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
-   * useful for Docker builds.
+   * useful for Docker builds. Workers Builds sets WORKERS_CI and only injects secrets at runtime,
+   * so `bun run build` there cannot see them.
    */
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  skipValidation:
+    !!process.env.SKIP_ENV_VALIDATION || process.env.WORKERS_CI === "1",
   /**
    * Makes it so that empty strings are treated as undefined. `SOME_VAR: z.string()` and
    * `SOME_VAR=''` will throw an error.
