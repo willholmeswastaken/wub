@@ -41,7 +41,7 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
-    // Optional: Workers Builds does not have this Vercel hostname at build time.
+    // Optional override. Workers use the request Host header when this is unset.
     NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   },
 
