@@ -26,6 +26,11 @@ export default defineConfig({
       QSTASH_CURRENT_SIGNING_KEY: secret(),
       QSTASH_NEXT_SIGNING_KEY: secret(),
       CLICK_QUEUE: bindings.queue({ name: "wub-log-clicks" }),
+      // Keep in sync with the Upstash sliding window in src/server/rate-limit/upstash.ts.
+      LINK_RATE_LIMITER: bindings.rateLimit({
+        namespace: "1001",
+        simple: { limit: 10, period: 10 },
+      }),
     },
   }),
 });

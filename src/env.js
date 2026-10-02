@@ -17,6 +17,15 @@ const queueProvider =
       : "qstash";
 const qstashRequired = queueProvider === "qstash";
 
+const rateLimitProvider =
+  process.env.RATE_LIMIT_PROVIDER === "upstash" ||
+  process.env.RATE_LIMIT_PROVIDER === "cloudflare"
+    ? process.env.RATE_LIMIT_PROVIDER
+    : isCloudflareWorker()
+      ? "cloudflare"
+      : "upstash";
+const upstashRequired = rateLimitProvider === "upstash";
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -42,8 +51,17 @@ export const env = createEnv({
     GITHUB_CLIENT_SECRET: z.string(),
     LOGFLARE_API_KEY: z.string(),
     LOGFLARE_SOURCE_ID: z.string(),
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
+    UPSTASH_REDIS_REST_URL: upstashRequired
+      ? z.string().url()
+      : z.string().url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: upstashRequired
+      ? z.string()
+      : z.string().optional(),
+    RATE_LIMIT_PROVIDER: z.preprocess(
+      (value) =>
+        value === "upstash" || value === "cloudflare" ? value : undefined,
+      z.enum(["upstash", "cloudflare"]).optional(),
+    ),
     QUEUE_PROVIDER: z.preprocess(
       (value) =>
         value === "qstash" || value === "cloudflare" ? value : undefined,
@@ -85,6 +103,7 @@ export const env = createEnv({
     LOGFLARE_SOURCE_ID: process.env.LOGFLARE_SOURCE_ID,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    RATE_LIMIT_PROVIDER: process.env.RATE_LIMIT_PROVIDER,
     QUEUE_PROVIDER: process.env.QUEUE_PROVIDER,
     QSTASH_URL: process.env.QSTASH_URL,
     QSTASH_TOKEN: process.env.QSTASH_TOKEN,
