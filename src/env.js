@@ -1,6 +1,22 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+function isCloudflareWorker() {
+  return (
+    typeof navigator !== "undefined" &&
+    navigator.userAgent === "Cloudflare-Workers"
+  );
+}
+
+const queueProvider =
+  process.env.QUEUE_PROVIDER === "qstash" ||
+  process.env.QUEUE_PROVIDER === "cloudflare"
+    ? process.env.QUEUE_PROVIDER
+    : isCloudflareWorker()
+      ? "cloudflare"
+      : "qstash";
+const qstashRequired = queueProvider === "qstash";
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
@@ -28,10 +44,19 @@ export const env = createEnv({
     LOGFLARE_SOURCE_ID: z.string(),
     UPSTASH_REDIS_REST_URL: z.string().url(),
     UPSTASH_REDIS_REST_TOKEN: z.string(),
-    QSTASH_URL: z.string().url(),
-    QSTASH_TOKEN: z.string(),
-    QSTASH_CURRENT_SIGNING_KEY: z.string(),
-    QSTASH_NEXT_SIGNING_KEY: z.string(),
+    QUEUE_PROVIDER: z.preprocess(
+      (value) =>
+        value === "qstash" || value === "cloudflare" ? value : undefined,
+      z.enum(["qstash", "cloudflare"]).optional(),
+    ),
+    QSTASH_URL: qstashRequired ? z.string().url() : z.string().url().optional(),
+    QSTASH_TOKEN: qstashRequired ? z.string() : z.string().optional(),
+    QSTASH_CURRENT_SIGNING_KEY: qstashRequired
+      ? z.string()
+      : z.string().optional(),
+    QSTASH_NEXT_SIGNING_KEY: qstashRequired
+      ? z.string()
+      : z.string().optional(),
   },
 
   /**
@@ -60,6 +85,7 @@ export const env = createEnv({
     LOGFLARE_SOURCE_ID: process.env.LOGFLARE_SOURCE_ID,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    QUEUE_PROVIDER: process.env.QUEUE_PROVIDER,
     QSTASH_URL: process.env.QSTASH_URL,
     QSTASH_TOKEN: process.env.QSTASH_TOKEN,
     QSTASH_CURRENT_SIGNING_KEY: process.env.QSTASH_CURRENT_SIGNING_KEY,

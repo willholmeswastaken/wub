@@ -6,7 +6,7 @@ import {
 import { db } from "@/server/db";
 import { links } from "@/server/db/schema";
 import logger from "@/server/logger";
-import { queueClient } from "@/server/qstash";
+import { publishClick } from "@/server/queue/runtime";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { type NextRequest, userAgent } from "next/server";
@@ -48,7 +48,7 @@ export async function GET(
   if (!ua.isBot) {
     const cf = readRequestCf(request);
 
-    await queueClient.logClick(
+    await publishClick(
       buildClickEvent(code, {
         ip: request.ip,
         geo: request.geo,
