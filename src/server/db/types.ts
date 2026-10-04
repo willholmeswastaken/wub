@@ -33,6 +33,37 @@ export type ClickSummary = {
   referrer: string | null;
 };
 
+export type CountItem = {
+  key: string;
+  count: number;
+};
+
+export type CityCount = CountItem & {
+  country: string;
+};
+
+export type ClickBucket = {
+  at: Date;
+  count: number;
+};
+
+export type ClickAnalytics = {
+  buckets: ClickBucket[];
+  total: number;
+  previousTotal: number;
+  countries: CountItem[];
+  cities: CityCount[];
+  devices: CountItem[];
+  browsers: CountItem[];
+  os: CountItem[];
+  referrers: CountItem[];
+};
+
+export type RedirectTarget = {
+  url: string;
+  expiresAt: Date | null;
+};
+
 export type LinkSnapshot = Pick<
   LinkRecord,
   "userId" | "url" | "short_code" | "created_at"

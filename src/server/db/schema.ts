@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
@@ -19,19 +20,25 @@ import { type AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `wub_${name}`);
 
-export const links = createTable("link", {
-  short_code: varchar("short_code", { length: 32 }).notNull().primaryKey(),
-  url: varchar("url", { length: 2048 }).notNull(),
-  title: text("title"),
-  userId: varchar("userId", { length: 255 }).references(() => users.id),
-  created_at: timestamp("created_at", { mode: "date" })
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
-  click_count: integer("click_count").notNull().default(0),
-  last_clicked: timestamp("last_clicked", { mode: "date" }),
-  expires_at: timestamp("expires_at", { mode: "date" }),
-  claim_token: varchar("claim_token", { length: 64 }),
-});
+export const links = createTable(
+  "link",
+  {
+    short_code: varchar("short_code", { length: 32 }).notNull().primaryKey(),
+    url: varchar("url", { length: 2048 }).notNull(),
+    title: text("title"),
+    userId: varchar("userId", { length: 255 }).references(() => users.id),
+    created_at: timestamp("created_at", { mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    click_count: integer("click_count").notNull().default(0),
+    last_clicked: timestamp("last_clicked", { mode: "date" }),
+    expires_at: timestamp("expires_at", { mode: "date" }),
+    claim_token: varchar("claim_token", { length: 64 }),
+  },
+  (link) => ({
+    userIdIdx: index("link_userId_idx").on(link.userId),
+  }),
+);
 
 export const linksRelations = relations(links, ({ many }) => ({
   clicks: many(clicks),
@@ -41,7 +48,8 @@ export const clicks = createTable(
   "click",
   {
     id: serial("id").primaryKey(),
-    short_code: text("short_code").notNull(), // Assuming short_code can be of variable length
+    event_id: varchar("event_id", { length: 64 }),
+    short_code: text("short_code").notNull(),
     timestamp: timestamp("timestamp", { mode: "date" }).default(
       sql`CURRENT_TIMESTAMP`,
     ),
@@ -66,6 +74,11 @@ export const clicks = createTable(
   },
   (click) => ({
     shortCodeIdx: index("click_short_code_idx").on(click.short_code),
+    shortCodeTimestampIdx: index("click_short_code_timestamp_idx").on(
+      click.short_code,
+      click.timestamp,
+    ),
+    eventIdIdx: uniqueIndex("click_event_id_idx").on(click.event_id),
   }),
 );
 

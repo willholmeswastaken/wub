@@ -1,4 +1,6 @@
 import { env } from "@/env";
+import { type ClickRange } from "@/lib/click-date-range";
+import { TRPCError } from "@trpc/server";
 import { Effect, type Layer, ManagedRuntime } from "effect";
 
 import { AppDatabase, type DatabaseError } from "./database";
@@ -45,11 +47,18 @@ export function getDatabaseRuntime() {
   return databaseRuntimePromise;
 }
 
-function run<A>(effect: Effect.Effect<A, DatabaseError, AppDatabase>) {
+function run<A, E>(effect: Effect.Effect<A, E | DatabaseError, AppDatabase>) {
   return getDatabaseRuntime().then((runtime) =>
     runtime.runPromise(
       effect.pipe(
-        Effect.catchTag("DatabaseError", (error) => Effect.die(error.cause)),
+        Effect.catchTag("DatabaseError", () =>
+          Effect.die(
+            new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Something went wrong",
+            }),
+          ),
+        ),
       ),
     ),
   );
@@ -65,6 +74,10 @@ export function getAuthAdapter() {
 
 export function findLinkByCode(code: string) {
   return run(AppDatabase.use((database) => database.findLinkByCode(code)));
+}
+
+export function findRedirectTarget(code: string) {
+  return run(AppDatabase.use((database) => database.findRedirectTarget(code)));
 }
 
 export function listTempLinks(codes: string[]) {
@@ -91,17 +104,9 @@ export function findLinkSnapshot(code: string) {
   return run(AppDatabase.use((database) => database.findLinkSnapshot(code)));
 }
 
-export function listClicksSince(code: string, since: Date) {
+export function clickAnalytics(code: string, range: ClickRange, now?: Date) {
   return run(
-    AppDatabase.use((database) => database.listClicksSince(code, since)),
-  );
-}
-
-export function countClicksBetween(code: string, from: Date, until: Date) {
-  return run(
-    AppDatabase.use((database) =>
-      database.countClicksBetween(code, from, until),
-    ),
+    AppDatabase.use((database) => database.clickAnalytics(code, range, now)),
   );
 }
 
@@ -116,6 +121,10 @@ export function claimGuestLinks(
   return run(
     AppDatabase.use((database) => database.claimGuestLinks(userId, claims)),
   );
+}
+
+export function deleteExpiredGuestLinks() {
+  return run(AppDatabase.use((database) => database.deleteExpiredGuestLinks()));
 }
 
 export type { ClickSummary, LinkRecord, LinkSnapshot };

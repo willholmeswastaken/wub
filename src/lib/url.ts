@@ -1,4 +1,23 @@
 import { slugProblemMessage } from "@/lib/slug";
+import { z } from "zod";
+
+export const destinationUrlSchema = z
+  .string()
+  .max(2048)
+  .refine((value) => destinationUrlIssue(value) === null, "Enter a valid URL");
+
+export function destinationUrlIssue(input: string): string | null {
+  try {
+    const url = new URL(input);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "Enter a valid URL";
+    }
+    if (!url.hostname.includes(".")) return "Enter a valid URL";
+    return null;
+  } catch {
+    return "Enter a valid URL";
+  }
+}
 
 export function parseUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;

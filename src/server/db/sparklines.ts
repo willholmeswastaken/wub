@@ -74,3 +74,26 @@ export function userLinksWithSparklines(
     recentClicks: countClicksByDay(byCode.get(row.short_code) ?? [], days),
   }));
 }
+
+export function userLinksWithSparklineCounts(
+  rows: UserLinkRow[],
+  counts: Array<{ short_code: string; day: string; count: number }>,
+  now = new Date(),
+): UserLink[] {
+  const days = sparklineDayKeys(now);
+  const byCode = new Map<string, Map<string, number>>();
+  for (const count of counts) {
+    const daysForCode = byCode.get(count.short_code) ?? new Map();
+    daysForCode.set(count.day, (daysForCode.get(count.day) ?? 0) + count.count);
+    byCode.set(count.short_code, daysForCode);
+  }
+
+  return rows.map((row) => ({
+    short_code: row.short_code,
+    url: row.url,
+    created_at: asDate(row.created_at),
+    click_count: row.click_count,
+    last_clicked: asDateOrNull(row.last_clicked),
+    recentClicks: days.map((day) => byCode.get(row.short_code)?.get(day) ?? 0),
+  }));
+}

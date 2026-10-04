@@ -1,26 +1,39 @@
+import { type ClickRange } from "@/lib/click-date-range";
+import {
+  queryClickAnalytics,
+  querySparklineCounts,
+} from "@/server/analytics/cloudflare";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
-import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
 
+import { forgetRedirectTarget, rememberRedirectTarget } from "../kv-links";
+import { isUniqueViolation, LinkConflictError } from "./conflicts";
 import {
   AppDatabase,
   ClickNotFoundError,
   DatabaseError,
   RecordClickError,
 } from "./database";
-import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { applyD1Schema } from "./schema-sql";
+import { toLinkRecord, toLinkSnapshot } from "./map";
+import {
+  deleteExpiredGuestLinksOnD1,
+  recordClickOnD1,
+  type ClickStatementDatabase,
+} from "./record-click-sql";
 import * as schema from "./schema.d1";
-import { clicks, links } from "./schema.d1";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
+import { links } from "./schema.d1";
+import { sparklineSince, userLinksWithSparklineCounts } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
-type D1Binding = Parameters<typeof drizzle>[0] & {
-  exec(query: string): Promise<unknown>;
-};
+type D1Binding = Parameters<typeof drizzle>[0] &
+  ClickStatementDatabase & {
+    withSession?(constraint: string): D1Binding;
+    batch(statements: unknown[]): Promise<unknown[]>;
+  };
 
 function getD1Binding(): D1Binding {
   const database = (workersEnv as { DB?: D1Binding }).DB;
@@ -30,52 +43,50 @@ function getD1Binding(): D1Binding {
   return database;
 }
 
-let schemaReady: Promise<void> | undefined;
-
-function ensureSchema() {
-  schemaReady ??= (async () => {
-    try {
-      await applyD1Schema((query) => getD1Binding().exec(query));
-    } catch (cause) {
-      schemaReady = undefined;
-      throw cause;
-    }
-  })();
-  return schemaReady;
-}
-
-function getD1Database() {
-  return drizzle(getD1Binding(), { schema });
+function getD1Database(mode: "read" | "write" = "read") {
+  const binding = getD1Binding();
+  const client =
+    mode === "read" && typeof binding.withSession === "function"
+      ? binding.withSession("first-unconstrained")
+      : binding;
+  return drizzle(client as Parameters<typeof drizzle>[0], { schema });
 }
 
 let authAdapter: Adapter | undefined;
 
 function getAuthAdapter(): Adapter {
-  authAdapter ??= wrapAdapter(createCloudflareAuthAdapter(getD1Database()));
+  authAdapter ??= createCloudflareAuthAdapter(getD1Database("write"));
   return authAdapter;
-}
-
-function wrapAdapter(adapter: Adapter): Adapter {
-  return new Proxy(adapter, {
-    get(target, prop, receiver) {
-      const value: unknown = Reflect.get(target, prop, receiver);
-      if (typeof value !== "function") return value;
-      return (...args: unknown[]) =>
-        ensureSchema().then(() =>
-          (value as (...params: unknown[]) => unknown).apply(target, args),
-        );
-    },
-  });
 }
 
 function attempt<A>(run: () => Promise<A>) {
   return Effect.tryPromise({
-    try: async () => {
-      await ensureSchema();
-      return run();
-    },
+    try: run,
     catch: (cause) => new DatabaseError({ cause }),
   });
+}
+
+function attemptInsert<A>(run: () => Promise<A>) {
+  return Effect.tryPromise({
+    try: run,
+    catch: (cause) =>
+      cause instanceof LinkConflictError ? cause : new DatabaseError({ cause }),
+  });
+}
+
+function redirectTargetOf(row: {
+  url: string;
+  expires_at: Date | number | null;
+}) {
+  return {
+    url: row.url,
+    expiresAt:
+      row.expires_at == null
+        ? null
+        : row.expires_at instanceof Date
+          ? row.expires_at
+          : new Date(row.expires_at),
+  };
 }
 
 export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
@@ -84,10 +95,19 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
   },
   findLinkByCode: (code) =>
     attempt(async () => {
-      const row = await getD1Database().query.links.findFirst({
+      const row = await getD1Database("write").query.links.findFirst({
         where: eq(links.short_code, code),
       });
       return row ? toLinkRecord(row) : null;
+    }),
+  findRedirectTarget: (code) =>
+    attempt(async () => {
+      // Primary, not a replica: a replica miss must not negative-cache a new link.
+      const row = await getD1Database("write").query.links.findFirst({
+        where: eq(links.short_code, code),
+        columns: { url: true, expires_at: true },
+      });
+      return row ? redirectTargetOf(row) : null;
     }),
   listTempLinks: (codes) =>
     attempt(async () => {
@@ -102,8 +122,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
     }),
   listUserLinks: (userId) =>
     attempt(async () => {
-      const database = getD1Database();
-      const rows = await database.query.links.findMany({
+      const rows = await getD1Database().query.links.findMany({
         orderBy: (link, { desc }) => [desc(link.created_at)],
         where: eq(links.userId, userId),
         columns: {
@@ -115,38 +134,51 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         },
       });
       if (rows.length === 0) return [];
-      const activity = await database
-        .select({
-          short_code: clicks.short_code,
-          timestamp: clicks.timestamp,
-        })
-        .from(clicks)
-        .innerJoin(links, eq(links.short_code, clicks.short_code))
-        .where(
-          and(
-            eq(links.userId, userId),
-            gte(clicks.timestamp, sparklineSince()),
-          ),
-        )
-        .all();
-      return userLinksWithSparklines(rows, activity);
+      const counts = await querySparklineCounts(
+        rows.map((row) => row.short_code),
+        sparklineSince(),
+      );
+      return userLinksWithSparklineCounts(rows, counts);
     }),
   updateLinkUrl: (code, userId, url) =>
     attempt(async () => {
-      const rows = await getD1Database()
+      const rows = await getD1Database("write")
         .update(links)
         .set({ url })
         .where(and(eq(links.short_code, code), eq(links.userId, userId)))
-        .returning({ short_code: links.short_code, url: links.url })
+        .returning({
+          short_code: links.short_code,
+          url: links.url,
+          expires_at: links.expires_at,
+        })
         .all();
-      return rows[0] ?? null;
+      const row = rows[0];
+      if (!row) return null;
+      await rememberRedirectTarget({
+        code: row.short_code,
+        ...redirectTargetOf(row),
+      });
+      return { short_code: row.short_code, url: row.url };
     }),
   deleteUserLink: (code, userId) =>
     attempt(async () => {
-      await getD1Database()
-        .delete(links)
-        .where(and(eq(links.short_code, code), eq(links.userId, userId)))
-        .run();
+      const database = getD1Binding();
+      const deleted = await database
+        .prepare(
+          `DELETE FROM wub_link WHERE short_code = ?1 AND "userId" = ?2 RETURNING short_code`,
+        )
+        .bind(code, userId)
+        .all<{ short_code: string }>();
+      if ((deleted.results?.length ?? 0) === 0) return;
+      await database.batch([
+        database
+          .prepare(`DELETE FROM wub_click_event WHERE short_code = ?1`)
+          .bind(code),
+        database
+          .prepare(`DELETE FROM wub_click WHERE short_code = ?1`)
+          .bind(code),
+      ]);
+      await forgetRedirectTarget(code);
     }),
   findLinkSnapshot: (code) =>
     attempt(async () => {
@@ -161,60 +193,43 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
       });
       return row ? toLinkSnapshot(row) : null;
     }),
-  listClicksSince: (code, since) =>
-    attempt(async () => {
-      const rows = await getD1Database().query.clicks.findMany({
-        where: and(eq(clicks.short_code, code), gte(clicks.timestamp, since)),
-        columns: {
-          timestamp: true,
-          country: true,
-          device: true,
-          city: true,
-          browser: true,
-          os: true,
-          referrer: true,
-        },
-      });
-      return rows.map(toClickSummary);
-    }),
-  countClicksBetween: (code, from, until) =>
-    attempt(async () => {
-      const rows = await getD1Database()
-        .select({ count: sql<number>`count(*)` })
-        .from(clicks)
-        .where(
-          and(
-            eq(clicks.short_code, code),
-            gte(clicks.timestamp, from),
-            lt(clicks.timestamp, until),
-          ),
-        )
-        .all();
-      return Number(rows[0]?.count ?? 0);
-    }),
+  clickAnalytics: (code, range: ClickRange, now?: Date) =>
+    attempt(() => queryClickAnalytics(code, range, now)),
   insertLink: (link) =>
-    attempt(async () => {
-      const row = await getD1Database()
-        .insert(links)
-        .values({
-          url: link.url,
-          short_code: link.short_code,
-          expires_at: link.expires_at,
-          userId: link.userId,
-          claim_token: link.claim_token,
-        })
-        .returning()
-        .get();
-      if (!row) {
-        throw new Error("Insert did not return a link");
+    attemptInsert(async () => {
+      try {
+        const row = await getD1Database("write")
+          .insert(links)
+          .values({
+            url: link.url,
+            short_code: link.short_code,
+            expires_at: link.expires_at,
+            userId: link.userId,
+            claim_token: link.claim_token,
+          })
+          .returning()
+          .get();
+        if (!row) {
+          throw new Error("Insert did not return a link");
+        }
+        const record = toLinkRecord(row);
+        await rememberRedirectTarget({
+          code: record.short_code,
+          url: record.url,
+          expiresAt: record.expires_at,
+        });
+        return record;
+      } catch (cause) {
+        if (cause instanceof LinkConflictError) throw cause;
+        if (isUniqueViolation(cause)) throw new LinkConflictError();
+        throw cause;
       }
-      return toLinkRecord(row);
     }),
   claimGuestLinks: (userId, claims) =>
     attempt(async () => {
       const claimed: string[] = [];
       for (const { shortCode, claimToken } of claims) {
-        const rows = await getD1Database()
+        const rows = await getD1Database("write")
           .update(links)
           .set({
             userId,
@@ -228,62 +243,33 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
               isNull(links.userId),
             ),
           )
-          .returning({ short_code: links.short_code })
+          .returning({ short_code: links.short_code, url: links.url })
           .all();
-        claimed.push(...rows.map((row) => row.short_code));
+        for (const row of rows) {
+          claimed.push(row.short_code);
+          await rememberRedirectTarget({
+            code: row.short_code,
+            url: row.url,
+            expiresAt: null,
+          });
+        }
       }
       return claimed;
     }),
+  deleteExpiredGuestLinks: () =>
+    attempt(async () => {
+      const codes = await deleteExpiredGuestLinksOnD1(getD1Binding());
+      await Promise.all(codes.map((code) => forgetRedirectTarget(code)));
+      return codes;
+    }),
   recordClick: (event: LogClickEvent) =>
     Effect.gen(function* () {
-      yield* Effect.tryPromise({
-        try: () => ensureSchema(),
+      const outcome = yield* Effect.tryPromise({
+        try: () => recordClickOnD1(getD1Binding(), event),
         catch: (cause) => new RecordClickError({ cause }),
       });
-      const database = getD1Database();
-      const updated = yield* Effect.tryPromise({
-        try: () =>
-          database
-            .update(links)
-            .set({
-              click_count: sql`${links.click_count} + 1`,
-              last_clicked: new Date(),
-            })
-            .where(eq(links.short_code, event.short_code))
-            .returning({ click_count: links.click_count })
-            .all(),
-        catch: (cause) => new RecordClickError({ cause }),
-      });
-      if (updated.length === 0) {
+      if (outcome === "not_found") {
         return yield* new ClickNotFoundError({ shortCode: event.short_code });
       }
-      yield* Effect.tryPromise({
-        try: () =>
-          database
-            .insert(clicks)
-            .values({
-              short_code: event.short_code,
-              ipAddress: event.ipAddress,
-              userAgent: event.userAgent,
-              country: event.country,
-              city: event.city,
-              region: event.region,
-              latitude: event.latitude,
-              longitude: event.longitude,
-              device: event.device,
-              device_vendor: event.device_vendor,
-              device_model: event.device_model,
-              browser: event.browser,
-              browser_version: event.browser_version,
-              engine: event.engine,
-              engine_version: event.engine_version,
-              os: event.os,
-              os_version: event.os_version,
-              cpu_architecture: event.cpu_architecture,
-              referrer: event.referrer ?? null,
-            })
-            .run(),
-        catch: (cause) => new RecordClickError({ cause }),
-      });
     }),
 });

@@ -63,8 +63,6 @@ export const env = createEnv({
     ),
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),
-    LOGFLARE_API_KEY: z.string(),
-    LOGFLARE_SOURCE_ID: z.string(),
     UPSTASH_REDIS_REST_URL: upstashRequired
       ? z.string().url()
       : z.string().url().optional(),
@@ -114,8 +112,6 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
-    LOGFLARE_API_KEY: process.env.LOGFLARE_API_KEY,
-    LOGFLARE_SOURCE_ID: process.env.LOGFLARE_SOURCE_ID,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     RATE_LIMIT_PROVIDER: process.env.RATE_LIMIT_PROVIDER,

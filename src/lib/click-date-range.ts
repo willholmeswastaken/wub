@@ -39,20 +39,19 @@ export function previousRangeStart(range: ClickRange, now = new Date()) {
   return range === "24h" ? subHours(start, count) : subDays(start, count);
 }
 
-export function generateClickBuckets(
+export function fillClickBuckets(
   range: ClickRange,
-  totalClicks: { timestamp: Date | null }[],
+  counts: { at: Date; count: number }[],
   now = new Date(),
 ): DateObject[] {
   const hourly = range === "24h";
   const keyOf = (date: Date) =>
     (hourly ? startOfHour(date) : startOfDay(date)).getTime();
 
-  const counts = new Map<number, number>();
-  for (const click of totalClicks) {
-    if (!click.timestamp) continue;
-    const key = keyOf(click.timestamp);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
+  const totals = new Map<number, number>();
+  for (const bucket of counts) {
+    const key = keyOf(bucket.at);
+    totals.set(key, (totals.get(key) ?? 0) + bucket.count);
   }
 
   const start = rangeStart(range, now);
@@ -60,7 +59,7 @@ export function generateClickBuckets(
     const date = hourly ? subHours(start, -index) : subDays(start, -index);
     return {
       date: format(date, hourly ? "HH:mm" : "d MMM"),
-      clicks: counts.get(keyOf(date)) ?? 0,
+      clicks: totals.get(keyOf(date)) ?? 0,
     };
   });
 }

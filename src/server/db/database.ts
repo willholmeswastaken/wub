@@ -1,13 +1,16 @@
+import { type ClickRange } from "@/lib/click-date-range";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { Context, Data, type Effect } from "effect";
 import { type Adapter } from "next-auth/adapters";
 
+import { type LinkConflictError } from "./conflicts";
 import {
-  type ClickSummary,
+  type ClickAnalytics,
   type GuestLinkClaim,
   type LinkRecord,
   type LinkSnapshot,
   type NewLink,
+  type RedirectTarget,
   type UpdatedLink,
   type UserLink,
 } from "./types";
@@ -31,6 +34,9 @@ export class AppDatabase extends Context.Service<
     readonly findLinkByCode: (
       code: string,
     ) => Effect.Effect<LinkRecord | null, DatabaseError>;
+    readonly findRedirectTarget: (
+      code: string,
+    ) => Effect.Effect<RedirectTarget | null, DatabaseError>;
     readonly listTempLinks: (
       codes: string[],
     ) => Effect.Effect<LinkRecord[], DatabaseError>;
@@ -49,22 +55,22 @@ export class AppDatabase extends Context.Service<
     readonly findLinkSnapshot: (
       code: string,
     ) => Effect.Effect<LinkSnapshot | null, DatabaseError>;
-    readonly listClicksSince: (
+    readonly clickAnalytics: (
       code: string,
-      since: Date,
-    ) => Effect.Effect<ClickSummary[], DatabaseError>;
-    readonly countClicksBetween: (
-      code: string,
-      from: Date,
-      until: Date,
-    ) => Effect.Effect<number, DatabaseError>;
+      range: ClickRange,
+      now?: Date,
+    ) => Effect.Effect<ClickAnalytics, DatabaseError>;
     readonly insertLink: (
       link: NewLink,
-    ) => Effect.Effect<LinkRecord, DatabaseError>;
+    ) => Effect.Effect<LinkRecord, DatabaseError | LinkConflictError>;
     readonly claimGuestLinks: (
       userId: string,
       claims: readonly GuestLinkClaim[],
     ) => Effect.Effect<string[], DatabaseError>;
+    readonly deleteExpiredGuestLinks: () => Effect.Effect<
+      string[],
+      DatabaseError
+    >;
     readonly recordClick: (
       event: LogClickEvent,
     ) => Effect.Effect<void, ClickNotFoundError | RecordClickError>;

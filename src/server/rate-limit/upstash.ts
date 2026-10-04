@@ -5,9 +5,9 @@ import { Effect, Layer } from "effect";
 
 import { RateLimiter, RateLimitUnavailable } from "./rate-limiter";
 
-let ratelimit: Ratelimit | undefined;
+const limiters = new Map<string, Ratelimit>();
 
-function getRatelimit() {
+function getRatelimit(scope: "create" | "redirect") {
   const url = env.UPSTASH_REDIS_REST_URL;
   const token = env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
@@ -16,21 +16,27 @@ function getRatelimit() {
     );
   }
 
-  // Keep in sync with LINK_RATE_LIMITER in cloudflare.config.ts: 10 requests / 10 seconds.
-  ratelimit ??= new Ratelimit({
+  const existing = limiters.get(scope);
+  if (existing) return existing;
+  // Keep in sync with the Workers rate limit bindings in cloudflare.config.ts.
+  const limiter = new Ratelimit({
     redis: new Redis({ url, token }),
-    limiter: Ratelimit.slidingWindow(10, "10 s"),
+    limiter: Ratelimit.slidingWindow(scope === "redirect" ? 100 : 10, "10 s"),
     analytics: true,
-    prefix: "@upstash/ratelimit",
+    prefix:
+      scope === "redirect"
+        ? "@upstash/ratelimit-redirect"
+        : "@upstash/ratelimit",
   });
-  return ratelimit;
+  limiters.set(scope, limiter);
+  return limiter;
 }
 
 export const UpstashRateLimiterLive = Layer.succeed(RateLimiter, {
-  limit: (identifier: string) =>
+  limit: (identifier, scope) =>
     Effect.tryPromise({
       try: async () => {
-        const { success } = await getRatelimit().limit(identifier);
+        const { success } = await getRatelimit(scope).limit(identifier);
         return { success };
       },
       catch: (cause) => new RateLimitUnavailable({ cause }),

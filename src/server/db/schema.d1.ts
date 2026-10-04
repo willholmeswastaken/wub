@@ -12,19 +12,37 @@ const createTable = sqliteTableCreator((name) => `wub_${name}`);
 
 const now = sql`(unixepoch() * 1000)`;
 
-export const links = createTable("link", {
-  short_code: text("short_code").notNull().primaryKey(),
-  url: text("url").notNull(),
-  title: text("title"),
-  userId: text("userId").references(() => users.id),
-  created_at: integer("created_at", { mode: "timestamp_ms" })
-    .default(now)
-    .notNull(),
-  click_count: integer("click_count").notNull().default(0),
-  last_clicked: integer("last_clicked", { mode: "timestamp_ms" }),
-  expires_at: integer("expires_at", { mode: "timestamp_ms" }),
-  claim_token: text("claim_token"),
-});
+export const links = createTable(
+  "link",
+  {
+    short_code: text("short_code").notNull().primaryKey(),
+    url: text("url").notNull(),
+    title: text("title"),
+    userId: text("userId").references(() => users.id),
+    created_at: integer("created_at", { mode: "timestamp_ms" })
+      .default(now)
+      .notNull(),
+    click_count: integer("click_count").notNull().default(0),
+    last_clicked: integer("last_clicked", { mode: "timestamp_ms" }),
+    expires_at: integer("expires_at", { mode: "timestamp_ms" }),
+    claim_token: text("claim_token"),
+  },
+  (link) => ({
+    userIdIdx: index("link_userId_idx").on(link.userId),
+  }),
+);
+
+export const clickEvents = createTable(
+  "click_event",
+  {
+    event_id: text("event_id").primaryKey(),
+    short_code: text("short_code").notNull(),
+    recorded_at: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (event) => ({
+    shortCodeIdx: index("click_event_short_code_idx").on(event.short_code),
+  }),
+);
 
 export const linksRelations = relations(links, ({ many }) => ({
   clicks: many(clicks),

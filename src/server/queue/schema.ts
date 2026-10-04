@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const logClickEventSchema = z.object({
+  event_id: z.string().uuid(),
   short_code: z.string(),
-  ipAddress: z.string(),
   userAgent: z.string(),
   country: z.string(),
   city: z.string(),
