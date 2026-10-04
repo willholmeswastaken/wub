@@ -42,7 +42,6 @@ export function CopyButton({
       .writeText(text)
       .then(() => {
         showCopied();
-        toast.success("Link copied");
       })
       .catch(() => {
         toast.error("Could not copy that link");

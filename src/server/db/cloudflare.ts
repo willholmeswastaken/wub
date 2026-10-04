@@ -1,6 +1,6 @@
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
-import { and, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
@@ -12,9 +12,10 @@ import {
   RecordClickError,
 } from "./database";
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { D1_BOOTSTRAP_STATEMENTS } from "./schema-sql";
+import { applyD1Schema } from "./schema-sql";
 import * as schema from "./schema.d1";
 import { clicks, links } from "./schema.d1";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] & {
@@ -34,10 +35,7 @@ let schemaReady: Promise<void> | undefined;
 function ensureSchema() {
   schemaReady ??= (async () => {
     try {
-      const binding = getD1Binding();
-      for (const statement of D1_BOOTSTRAP_STATEMENTS) {
-        await binding.exec(statement);
-      }
+      await applyD1Schema((query) => getD1Binding().exec(query));
     } catch (cause) {
       schemaReady = undefined;
       throw cause;
@@ -104,11 +102,44 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
     }),
   listUserLinks: (userId) =>
     attempt(async () => {
-      const rows = await getD1Database().query.links.findMany({
+      const database = getD1Database();
+      const rows = await database.query.links.findMany({
         orderBy: (link, { desc }) => [desc(link.created_at)],
         where: eq(links.userId, userId),
+        columns: {
+          short_code: true,
+          url: true,
+          created_at: true,
+          click_count: true,
+          last_clicked: true,
+        },
       });
-      return rows.map(toLinkRecord);
+      if (rows.length === 0) return [];
+      const activity = await database
+        .select({
+          short_code: clicks.short_code,
+          timestamp: clicks.timestamp,
+        })
+        .from(clicks)
+        .innerJoin(links, eq(links.short_code, clicks.short_code))
+        .where(
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
+        )
+        .all();
+      return userLinksWithSparklines(rows, activity);
+    }),
+  updateLinkUrl: (code, userId, url) =>
+    attempt(async () => {
+      const rows = await getD1Database()
+        .update(links)
+        .set({ url })
+        .where(and(eq(links.short_code, code), eq(links.userId, userId)))
+        .returning({ short_code: links.short_code, url: links.url })
+        .all();
+      return rows[0] ?? null;
     }),
   deleteUserLink: (code, userId) =>
     attempt(async () => {
@@ -141,9 +172,25 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
           city: true,
           browser: true,
           os: true,
+          referrer: true,
         },
       });
       return rows.map(toClickSummary);
+    }),
+  countClicksBetween: (code, from, until) =>
+    attempt(async () => {
+      const rows = await getD1Database()
+        .select({ count: sql<number>`count(*)` })
+        .from(clicks)
+        .where(
+          and(
+            eq(clicks.short_code, code),
+            gte(clicks.timestamp, from),
+            lt(clicks.timestamp, until),
+          ),
+        )
+        .all();
+      return Number(rows[0]?.count ?? 0);
     }),
   insertLink: (link) =>
     attempt(async () => {
@@ -154,6 +201,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
           short_code: link.short_code,
           expires_at: link.expires_at,
           userId: link.userId,
+          claim_token: link.claim_token,
         })
         .returning()
         .get();
@@ -161,6 +209,30 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         throw new Error("Insert did not return a link");
       }
       return toLinkRecord(row);
+    }),
+  claimGuestLinks: (userId, claims) =>
+    attempt(async () => {
+      const claimed: string[] = [];
+      for (const { shortCode, claimToken } of claims) {
+        const rows = await getD1Database()
+          .update(links)
+          .set({
+            userId,
+            expires_at: null,
+            claim_token: null,
+          })
+          .where(
+            and(
+              eq(links.short_code, shortCode),
+              eq(links.claim_token, claimToken),
+              isNull(links.userId),
+            ),
+          )
+          .returning({ short_code: links.short_code })
+          .all();
+        claimed.push(...rows.map((row) => row.short_code));
+      }
+      return claimed;
     }),
   recordClick: (event: LogClickEvent) =>
     Effect.gen(function* () {
@@ -208,6 +280,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
               os: event.os,
               os_version: event.os_version,
               cpu_architecture: event.cpu_architecture,
+              referrer: event.referrer ?? null,
             })
             .run(),
         catch: (cause) => new RecordClickError({ cause }),

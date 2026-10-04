@@ -51,6 +51,10 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     callbacks: {
       session: sessionWithUserId,
     },
+    pages: {
+      signIn: "/signin",
+      error: "/signin",
+    },
     adapter: await getAuthAdapter(),
     providers: [
       GithubProvider({

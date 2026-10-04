@@ -2,7 +2,7 @@ import { env } from "@/env";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { neon } from "@neondatabase/serverless";
-import { and, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
@@ -16,6 +16,7 @@ import {
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
 import * as schema from "./schema";
 import { clicks, createTable, links } from "./schema";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 
 function getNeonDatabase() {
   const databaseUrl = env.DATABASE_URL;
@@ -59,8 +60,38 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
       const rows = await db.query.links.findMany({
         orderBy: (link, { desc }) => [desc(link.created_at)],
         where: eq(links.userId, userId),
+        columns: {
+          short_code: true,
+          url: true,
+          created_at: true,
+          click_count: true,
+          last_clicked: true,
+        },
       });
-      return rows.map(toLinkRecord);
+      if (rows.length === 0) return [];
+      const activity = await db
+        .select({
+          short_code: clicks.short_code,
+          timestamp: clicks.timestamp,
+        })
+        .from(clicks)
+        .innerJoin(links, eq(links.short_code, clicks.short_code))
+        .where(
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
+        );
+      return userLinksWithSparklines(rows, activity);
+    }),
+  updateLinkUrl: (code, userId, url) =>
+    attempt(async () => {
+      const rows = await db
+        .update(links)
+        .set({ url })
+        .where(and(eq(links.short_code, code), eq(links.userId, userId)))
+        .returning({ short_code: links.short_code, url: links.url });
+      return rows[0] ?? null;
     }),
   deleteUserLink: (code, userId) =>
     attempt(async () => {
@@ -92,9 +123,24 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
           city: true,
           browser: true,
           os: true,
+          referrer: true,
         },
       });
       return rows.map(toClickSummary);
+    }),
+  countClicksBetween: (code, from, until) =>
+    attempt(async () => {
+      const rows = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(clicks)
+        .where(
+          and(
+            eq(clicks.short_code, code),
+            gte(clicks.timestamp, from),
+            lt(clicks.timestamp, until),
+          ),
+        );
+      return Number(rows[0]?.count ?? 0);
     }),
   insertLink: (link) =>
     attempt(async () => {
@@ -105,6 +151,7 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
           short_code: link.short_code,
           expires_at: link.expires_at,
           userId: link.userId,
+          claim_token: link.claim_token,
         })
         .returning();
       const row = rows[0];
@@ -112,6 +159,29 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
         throw new Error("Insert did not return a link");
       }
       return toLinkRecord(row);
+    }),
+  claimGuestLinks: (userId, claims) =>
+    attempt(async () => {
+      const claimed: string[] = [];
+      for (const { shortCode, claimToken } of claims) {
+        const rows = await db
+          .update(links)
+          .set({
+            userId,
+            expires_at: null,
+            claim_token: null,
+          })
+          .where(
+            and(
+              eq(links.short_code, shortCode),
+              eq(links.claim_token, claimToken),
+              isNull(links.userId),
+            ),
+          )
+          .returning({ short_code: links.short_code });
+        claimed.push(...rows.map((row) => row.short_code));
+      }
+      return claimed;
     }),
   recordClick: (event: LogClickEvent) =>
     Effect.gen(function* () {
@@ -151,6 +221,7 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
             os: event.os,
             os_version: event.os_version,
             cpu_architecture: event.cpu_architecture,
+            referrer: event.referrer ?? null,
           }),
         catch: (cause) => new RecordClickError({ cause }),
       });

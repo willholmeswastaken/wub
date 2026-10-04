@@ -7,6 +7,7 @@ export type LinkRecord = {
   click_count: number;
   last_clicked: Date | null;
   expires_at: Date | null;
+  claim_token: string | null;
 };
 
 export type NewLink = {
@@ -14,6 +15,12 @@ export type NewLink = {
   url: string;
   userId?: string;
   expires_at: Date | null;
+  claim_token?: string | null;
+};
+
+export type GuestLinkClaim = {
+  shortCode: string;
+  claimToken: string;
 };
 
 export type ClickSummary = {
@@ -23,9 +30,24 @@ export type ClickSummary = {
   city: string | null;
   browser: string | null;
   os: string | null;
+  referrer: string | null;
 };
 
 export type LinkSnapshot = Pick<
   LinkRecord,
   "userId" | "url" | "short_code" | "created_at"
 >;
+
+export type UserLink = {
+  short_code: string;
+  url: string;
+  created_at: Date;
+  click_count: number;
+  last_clicked: Date | null;
+  recentClicks: number[];
+};
+
+export type UpdatedLink = {
+  short_code: string;
+  url: string;
+};

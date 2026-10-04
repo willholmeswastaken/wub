@@ -4,9 +4,12 @@ import { type Adapter } from "next-auth/adapters";
 
 import {
   type ClickSummary,
+  type GuestLinkClaim,
   type LinkRecord,
   type LinkSnapshot,
   type NewLink,
+  type UpdatedLink,
+  type UserLink,
 } from "./types";
 
 export class DatabaseError extends Data.TaggedError("DatabaseError")<{
@@ -33,7 +36,12 @@ export class AppDatabase extends Context.Service<
     ) => Effect.Effect<LinkRecord[], DatabaseError>;
     readonly listUserLinks: (
       userId: string,
-    ) => Effect.Effect<LinkRecord[], DatabaseError>;
+    ) => Effect.Effect<UserLink[], DatabaseError>;
+    readonly updateLinkUrl: (
+      code: string,
+      userId: string,
+      url: string,
+    ) => Effect.Effect<UpdatedLink | null, DatabaseError>;
     readonly deleteUserLink: (
       code: string,
       userId: string,
@@ -45,9 +53,18 @@ export class AppDatabase extends Context.Service<
       code: string,
       since: Date,
     ) => Effect.Effect<ClickSummary[], DatabaseError>;
+    readonly countClicksBetween: (
+      code: string,
+      from: Date,
+      until: Date,
+    ) => Effect.Effect<number, DatabaseError>;
     readonly insertLink: (
       link: NewLink,
     ) => Effect.Effect<LinkRecord, DatabaseError>;
+    readonly claimGuestLinks: (
+      userId: string,
+      claims: readonly GuestLinkClaim[],
+    ) => Effect.Effect<string[], DatabaseError>;
     readonly recordClick: (
       event: LogClickEvent,
     ) => Effect.Effect<void, ClickNotFoundError | RecordClickError>;

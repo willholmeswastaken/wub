@@ -1,4 +1,6 @@
 export {
+  claimGuestLinks,
+  countClicksBetween,
   deleteUserLink,
   findLinkByCode,
   findLinkSnapshot,
@@ -10,5 +12,6 @@ export {
   listClicksSince,
   listTempLinks,
   listUserLinks,
+  updateLinkUrl,
 } from "./runtime";
 export type { ClickSummary, LinkRecord, LinkSnapshot } from "./types";
