@@ -12,10 +12,10 @@ import {
   RecordClickError,
 } from "./database";
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
-import { D1_ADDED_COLUMNS, D1_BOOTSTRAP_STATEMENTS } from "./schema-sql";
+import { applyD1Schema } from "./schema-sql";
 import * as schema from "./schema.d1";
 import { clicks, links } from "./schema.d1";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] & {
@@ -35,18 +35,7 @@ let schemaReady: Promise<void> | undefined;
 function ensureSchema() {
   schemaReady ??= (async () => {
     try {
-      const binding = getD1Binding();
-      for (const statement of D1_BOOTSTRAP_STATEMENTS) {
-        await binding.exec(statement);
-      }
-      for (const statement of D1_ADDED_COLUMNS) {
-        try {
-          await binding.exec(statement);
-        } catch (cause) {
-          const message = cause instanceof Error ? cause.message : String(cause);
-          if (!/duplicate column/i.test(message)) throw cause;
-        }
-      }
+      await applyD1Schema((query) => getD1Binding().exec(query));
     } catch (cause) {
       schemaReady = undefined;
       throw cause;
@@ -134,7 +123,10 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         .from(clicks)
         .innerJoin(links, eq(links.short_code, clicks.short_code))
         .where(
-          and(eq(links.userId, userId), gte(clicks.timestamp, sparklineSince())),
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
         )
         .all();
       return userLinksWithSparklines(rows, activity);

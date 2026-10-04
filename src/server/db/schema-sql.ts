@@ -16,3 +16,17 @@ export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_link" ADD COLUMN "claim_token" text`,
   `ALTER TABLE "wub_click" ADD COLUMN "referrer" text`,
 ];
+
+export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {
+  for (const statement of D1_BOOTSTRAP_STATEMENTS) {
+    await exec(statement);
+  }
+  for (const statement of D1_ADDED_COLUMNS) {
+    try {
+      await exec(statement);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      if (!/duplicate column/i.test(message)) throw cause;
+    }
+  }
+}

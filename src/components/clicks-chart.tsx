@@ -39,7 +39,7 @@ export const ClicksChart = ({
               className={cn(
                 "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-medium",
                 isUp
-                  ? "bg-emerald-500/10 text-emerald-700"
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                   : "bg-destructive/10 text-destructive",
               )}
             >
