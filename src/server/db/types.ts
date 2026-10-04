@@ -30,9 +30,24 @@ export type ClickSummary = {
   city: string | null;
   browser: string | null;
   os: string | null;
+  referrer: string | null;
 };
 
 export type LinkSnapshot = Pick<
   LinkRecord,
   "userId" | "url" | "short_code" | "created_at"
 >;
+
+export type UserLink = {
+  short_code: string;
+  url: string;
+  created_at: Date;
+  click_count: number;
+  last_clicked: Date | null;
+  recentClicks: number[];
+};
+
+export type UpdatedLink = {
+  short_code: string;
+  url: string;
+};

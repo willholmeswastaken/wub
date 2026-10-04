@@ -4,11 +4,12 @@ import { Footer } from "@/components/footer";
 import { GuestLinkClaimer } from "@/components/guest-link-claimer";
 import { Header } from "@/components/header";
 import { ProjectUrlProvider } from "@/components/project-url-provider";
+import { Providers } from "@/components/providers";
+import { Toaster } from "@/components/ui/sonner";
 import { getServerAuthSession } from "@/server/auth";
 import { TRPCReactProvider } from "@/trpc/react";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
-import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,17 +37,19 @@ export default async function RootLayout({
   const protocol = headerList.get("x-forwarded-proto")?.split(",")[0]?.trim();
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${inter.variable}`}>
-        <ProjectUrlProvider host={host} protocol={protocol}>
-          <TRPCReactProvider>
-            <AppChrome header={<Header />} footer={<Footer />}>
-              {children}
-            </AppChrome>
-            {session && <GuestLinkClaimer />}
-            <Toaster />
-          </TRPCReactProvider>
-        </ProjectUrlProvider>
+        <Providers>
+          <ProjectUrlProvider host={host} protocol={protocol}>
+            <TRPCReactProvider>
+              <AppChrome header={<Header />} footer={<Footer />}>
+                {children}
+              </AppChrome>
+              {session && <GuestLinkClaimer />}
+              <Toaster position="bottom-center" />
+            </TRPCReactProvider>
+          </ProjectUrlProvider>
+        </Providers>
       </body>
     </html>
   );

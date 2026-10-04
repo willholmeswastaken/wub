@@ -20,7 +20,7 @@ import { type AdapterAccount } from "next-auth/adapters";
 export const createTable = pgTableCreator((name) => `wub_${name}`);
 
 export const links = createTable("link", {
-  short_code: varchar("short_code", { length: 8 }).notNull().primaryKey(),
+  short_code: varchar("short_code", { length: 32 }).notNull().primaryKey(),
   url: varchar("url", { length: 2048 }).notNull(),
   title: text("title"),
   userId: varchar("userId", { length: 255 }).references(() => users.id),
@@ -62,6 +62,7 @@ export const clicks = createTable(
     os: text("os"),
     os_version: text("os_version"),
     cpu_architecture: text("cpu_architecture"),
+    referrer: text("referrer"),
   },
   (click) => ({
     shortCodeIdx: index("click_short_code_idx").on(click.short_code),

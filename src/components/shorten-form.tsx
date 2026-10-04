@@ -1,9 +1,11 @@
 "use client";
 
+import { SlugField, type SlugStatus } from "@/components/slug-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { UrlFavicon } from "@/components/url-favicon";
+import { slugProblemMessage } from "@/lib/slug";
 import {
   hostnameOf,
   parseUrl,
@@ -11,7 +13,7 @@ import {
   validateDestinationUrl,
 } from "@/lib/url";
 import { cn } from "@/lib/utils";
-import { Link2 } from "lucide-react";
+import { Link2, PencilLine } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -46,9 +48,11 @@ export function ShortenForm({
   capturePaste = false,
   shortcuts = {},
   hint,
+  slugPrefix,
   children,
 }: {
-  onSubmit: (url: string) => Promise<unknown>;
+  onSubmit: (url: string, options: { slug?: string }) => Promise<unknown>;
+  slugPrefix?: string;
   size?: "default" | "lg";
   focusOnMount?: boolean;
   capturePaste?: boolean;
@@ -63,6 +67,11 @@ export function ShortenForm({
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [showSlug, setShowSlug] = useState(false);
+  const [slug, setSlug] = useState("");
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>("empty");
+  const slugBlocked =
+    showSlug && slugStatus !== "empty" && slugStatus !== "available";
 
   const debouncedValue = useDebounced(value, 250);
   const previewHost =
@@ -73,6 +82,14 @@ export function ShortenForm({
   const submit = useCallback(
     async (raw: string) => {
       if (pendingRef.current) return;
+      if (slugBlocked) {
+        setError(
+          slugStatus === "checking"
+            ? "Still checking that short link"
+            : slugProblemMessage[slugStatus],
+        );
+        return;
+      }
       const validationMessage = validateDestinationUrl(raw);
       if (validationMessage) {
         setError(validationMessage);
@@ -84,8 +101,11 @@ export function ShortenForm({
       pendingRef.current = true;
       setIsPending(true);
       try {
-        await onSubmit(parseUrl(raw.trim()));
+        await onSubmit(parseUrl(raw.trim()), {
+          slug: showSlug && slug ? slug : undefined,
+        });
         setValue("");
+        setSlug("");
       } catch (submitError) {
         setError(shortenErrorMessage(submitError));
       } finally {
@@ -94,7 +114,7 @@ export function ShortenForm({
         inputRef.current?.focus();
       }
     },
-    [onSubmit],
+    [onSubmit, slugBlocked, slugStatus, showSlug, slug],
   );
 
   useEffect(() => {
@@ -211,6 +231,27 @@ export function ShortenForm({
           )}
         </Button>
       </div>
+      {slugPrefix &&
+        (showSlug ? (
+          <SlugField
+            prefix={slugPrefix}
+            value={slug}
+            onChange={(next) => {
+              setSlug(next);
+              if (error) setError(null);
+            }}
+            onStatusChange={setSlugStatus}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowSlug(true)}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md px-1 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <PencilLine className="h-3.5 w-3.5" />
+            Customise short link
+          </button>
+        ))}
       {children}
       <p
         id={messageId}

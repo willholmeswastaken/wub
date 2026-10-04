@@ -75,6 +75,12 @@ export function listUserLinks(userId: string) {
   return run(AppDatabase.use((database) => database.listUserLinks(userId)));
 }
 
+export function updateLinkUrl(code: string, userId: string, url: string) {
+  return run(
+    AppDatabase.use((database) => database.updateLinkUrl(code, userId, url)),
+  );
+}
+
 export function deleteUserLink(code: string, userId: string) {
   return run(
     AppDatabase.use((database) => database.deleteUserLink(code, userId)),
@@ -88,6 +94,14 @@ export function findLinkSnapshot(code: string) {
 export function listClicksSince(code: string, since: Date) {
   return run(
     AppDatabase.use((database) => database.listClicksSince(code, since)),
+  );
+}
+
+export function countClicksBetween(code: string, from: Date, until: Date) {
+  return run(
+    AppDatabase.use((database) =>
+      database.countClicksBetween(code, from, until),
+    ),
   );
 }
 
