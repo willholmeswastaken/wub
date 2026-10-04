@@ -4,6 +4,8 @@
  * fetch does not set one, so that lookup was failing and Auth.js inserted a
  * null email into `wub_user`.
  */
+import { Context, Data, Effect, Layer } from "effect";
+
 export const GITHUB_USER_AGENT = "wub";
 
 const GITHUB_EMAILS_URL = "https://api.github.com/user/emails";
@@ -12,6 +14,20 @@ export type GithubEmailAddress = {
   email?: string | null;
   primary?: boolean;
 };
+
+export class GithubEmailError extends Data.TaggedError("GithubEmailError")<{
+  readonly reason: "http" | "missing" | "no_token";
+  readonly cause: unknown;
+}> {}
+
+export class GithubEmails extends Context.Service<
+  GithubEmails,
+  {
+    readonly fetchPrimary: (
+      accessToken: string | undefined,
+    ) => Effect.Effect<string, GithubEmailError>;
+  }
+>()("GithubEmails") {}
 
 export function pickGithubEmail(
   emails: GithubEmailAddress[],
@@ -23,29 +39,75 @@ export function pickGithubEmail(
   return (withAddress.find((entry) => entry.primary) ?? withAddress[0])?.email;
 }
 
-export async function fetchGithubPrimaryEmail(
+export function GithubEmailsLive(fetchImpl: typeof fetch = fetch) {
+  return Layer.succeed(GithubEmails, {
+    fetchPrimary: (accessToken) =>
+      Effect.gen(function* () {
+        if (!accessToken) {
+          return yield* new GithubEmailError({
+            reason: "no_token",
+            cause: new Error("GitHub did not return an access token"),
+          });
+        }
+
+        const response = yield* Effect.tryPromise({
+          try: () =>
+            fetchImpl(GITHUB_EMAILS_URL, {
+              headers: {
+                Accept: "application/vnd.github+json",
+                Authorization: `token ${accessToken}`,
+                "User-Agent": GITHUB_USER_AGENT,
+              },
+            }),
+          catch: (cause) => new GithubEmailError({ reason: "http", cause }),
+        });
+        if (!response.ok) {
+          return yield* new GithubEmailError({
+            reason: "http",
+            cause: new Error(
+              `GitHub email lookup failed with status ${response.status}`,
+            ),
+          });
+        }
+
+        const emails: unknown = yield* Effect.tryPromise({
+          try: () => response.json(),
+          catch: (cause) => new GithubEmailError({ reason: "http", cause }),
+        });
+        const email = Array.isArray(emails)
+          ? pickGithubEmail(emails)
+          : undefined;
+        if (!email) {
+          return yield* new GithubEmailError({
+            reason: "missing",
+            cause: new Error("GitHub account has no email address"),
+          });
+        }
+        return email;
+      }),
+  });
+}
+
+function runGithubEmails<A>(
+  effect: Effect.Effect<A, GithubEmailError, GithubEmails>,
+  fetchImpl: typeof fetch,
+) {
+  return Effect.runPromise(
+    effect.pipe(
+      Effect.provide(GithubEmailsLive(fetchImpl)),
+      Effect.catchTag("GithubEmailError", (error) => Effect.die(error.cause)),
+    ),
+  );
+}
+
+export function fetchGithubPrimaryEmail(
   accessToken: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
-  const response = await fetchImpl(GITHUB_EMAILS_URL, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `token ${accessToken}`,
-      "User-Agent": GITHUB_USER_AGENT,
-    },
-  });
-  if (!response.ok) {
-    throw new Error(
-      `GitHub email lookup failed with status ${response.status}`,
-    );
-  }
-
-  const emails: unknown = await response.json();
-  const email = Array.isArray(emails) ? pickGithubEmail(emails) : undefined;
-  if (!email) {
-    throw new Error("GitHub account has no email address");
-  }
-  return email;
+  return runGithubEmails(
+    GithubEmails.use((github) => github.fetchPrimary(accessToken)),
+    fetchImpl,
+  );
 }
 
 export async function ensureGithubProfileEmail<
@@ -56,11 +118,11 @@ export async function ensureGithubProfileEmail<
   fetchImpl: typeof fetch = fetch,
 ): Promise<Omit<T, "email"> & { email: string }> {
   if (profile.email) return profile as Omit<T, "email"> & { email: string };
-  if (!accessToken) {
-    throw new Error("GitHub did not return an access token");
-  }
   return {
     ...profile,
-    email: await fetchGithubPrimaryEmail(accessToken, fetchImpl),
+    email: await runGithubEmails(
+      GithubEmails.use((github) => github.fetchPrimary(accessToken)),
+      fetchImpl,
+    ),
   };
 }
