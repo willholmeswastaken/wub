@@ -4,20 +4,10 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
-import { type db } from "@/server/db";
-import { clicks, links } from "@/server/db/schema";
+import { findLinkByCode, insertLink, type LinkRecord } from "@/server/db";
 import logger from "@/server/logger";
 import { clientIp, protectRoute } from "@/server/rate-limit";
 import { TRPCError, type inferRouterOutputs } from "@trpc/server";
-import {
-  type InferInsertModel,
-  eq,
-  inArray,
-  and,
-  isNotNull,
-  isNull,
-  gte,
-} from "drizzle-orm";
 import { z } from "zod";
 
 export const linkRouter = createTRPCRouter({
@@ -35,7 +25,7 @@ export const linkRouter = createTRPCRouter({
           message: "Unable to process request",
         });
       }
-      return await createShortLink(ctx.db, input.url, ctx.session.user.id);
+      return await createShortLink(input.url, ctx.session.user.id);
     }),
   createAnon: publicProcedure
     .input(
@@ -51,7 +41,7 @@ export const linkRouter = createTRPCRouter({
           message: "Unable to process request",
         });
       }
-      return await createShortLink(ctx.db, input.url);
+      return await createShortLink(input.url);
     }),
 
   getTempLinks: publicProcedure
@@ -64,14 +54,12 @@ export const linkRouter = createTRPCRouter({
           message: "Unable to process request",
         });
       }
-      const tempLinks = await ctx.db.query.links.findMany({
-        where: and(
-          isNull(links.userId),
-          and(inArray(links.short_code, input), isNotNull(links.expires_at)),
-        ),
-        columns: { short_code: true, click_count: true, expires_at: true },
-      });
-      return tempLinks;
+      const tempLinks = await ctx.db.listTempLinks(input);
+      return tempLinks.map(({ short_code, click_count, expires_at }) => ({
+        short_code,
+        click_count,
+        expires_at,
+      }));
     }),
   claim: protectedProcedure
     .input(
@@ -85,25 +73,7 @@ export const linkRouter = createTRPCRouter({
         .max(100),
     )
     .mutation(async ({ ctx, input }) => {
-      const claimed: string[] = [];
-      for (const { shortCode, claimToken } of input) {
-        const rows = await ctx.db
-          .update(links)
-          .set({
-            userId: ctx.session.user.id,
-            expires_at: null,
-            claim_token: null,
-          })
-          .where(
-            and(
-              eq(links.short_code, shortCode),
-              eq(links.claim_token, claimToken),
-              isNull(links.userId),
-            ),
-          )
-          .returning({ short_code: links.short_code });
-        claimed.push(...rows.map((row) => row.short_code));
-      }
+      const claimed = await ctx.db.claimGuestLinks(ctx.session.user.id, input);
       logger.info(
         { userId: ctx.session.user.id, claimed: claimed.length },
         "Guest links claimed",
@@ -111,56 +81,24 @@ export const linkRouter = createTRPCRouter({
       return { claimed };
     }),
   getUserLinks: protectedProcedure.query(async ({ ctx }) => {
-    const userLinks = await ctx.db.query.links.findMany({
-      orderBy: (link, { desc }) => [desc(link.created_at)],
-      where: eq(links.userId, ctx.session.user.id),
-    });
-    return userLinks;
+    return ctx.db.listUserLinks(ctx.session.user.id);
   }),
   deleteLink: protectedProcedure
     .input(z.string())
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(links)
-        .where(
-          and(
-            eq(links.short_code, input),
-            eq(links.userId, ctx.session.user.id),
-          ),
-        );
+      await ctx.db.deleteUserLink(input, ctx.session.user.id);
     }),
   getClicksFromLast30Days: protectedProcedure
     .input(z.string())
     .query(async ({ ctx, input }) => {
-      const link = await ctx.db.query.links.findFirst({
-        where: eq(links.short_code, input),
-        columns: {
-          userId: true,
-          url: true,
-          short_code: true,
-          created_at: true,
-        },
-      });
+      const link = await ctx.db.findLinkSnapshot(input);
       if (link?.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Link not found" });
       }
-      const totalClicks = await ctx.db.query.clicks.findMany({
-        where: and(
-          eq(clicks.short_code, input),
-          gte(
-            clicks.timestamp,
-            new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
-          ),
-        ),
-        columns: {
-          timestamp: true,
-          country: true,
-          device: true,
-          city: true,
-          browser: true,
-          os: true,
-        },
-      });
+      const totalClicks = await ctx.db.listClicksSince(
+        input,
+        new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000),
+      );
       const countClicks = totalClicks.reduce(
         (acc, click) => {
           if (click.country && click.country !== "unknown") {
@@ -219,10 +157,9 @@ export const linkRouter = createTRPCRouter({
 });
 
 async function createShortLink(
-  database: typeof db,
   url: string,
   userId?: string,
-): Promise<InferInsertModel<typeof links>> {
+): Promise<LinkRecord> {
   const shortLinkLogger = logger.child({ url, userId });
   let unique = false;
   let short_code = "";
@@ -230,29 +167,22 @@ async function createShortLink(
   while (!unique) {
     short_code = getShortcode();
 
-    const existingLink = await database.query.links.findFirst({
-      where: eq(links.short_code, short_code),
-    });
+    const existingLink = await findLinkByCode(short_code);
     if (!existingLink) {
       unique = true;
       shortLinkLogger.info({ short_code }, "Unique short code found");
     }
   }
-  const link = await database
-    .insert(links)
-    .values({
-      url,
-      short_code,
-      expires_at: userId
-        ? null
-        : new Date(new Date().getTime() + 30 * 60 * 1000),
-      claim_token: userId ? null : crypto.randomUUID(),
-      userId,
-    })
-    .returning();
+  const link = await insertLink({
+    url,
+    short_code,
+    expires_at: userId ? null : new Date(new Date().getTime() + 30 * 60 * 1000),
+    claim_token: userId ? null : crypto.randomUUID(),
+    userId,
+  });
 
   shortLinkLogger.info({ short_code }, "Short link created in database");
-  return link[0]!;
+  return link;
 }
 
 export type LinkRouterOutputs = inferRouterOutputs<typeof linkRouter>;

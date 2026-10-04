@@ -1,6 +1,5 @@
 import { env } from "@/env";
-import { recordClickOutcome } from "@/server/queue/record-click";
-import { clickRecorderRuntime } from "@/server/queue/runtime";
+import { recordClick } from "@/server/queue/runtime";
 import { logClickEventSchema, type LogClickEvent } from "@/server/queue/schema";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextResponse } from "next/server";
@@ -12,9 +11,7 @@ async function handler(request: Request) {
   }
 
   const data: LogClickEvent = parsed.data;
-  const outcome = await clickRecorderRuntime.runPromise(
-    recordClickOutcome(data),
-  );
+  const outcome = await recordClick(data);
 
   if (outcome === "not_found") {
     return new NextResponse("Bad Request", { status: 400 });
