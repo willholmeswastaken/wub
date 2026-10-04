@@ -8,7 +8,7 @@
  */
 
 import { getServerAuthSession } from "@/server/auth";
-import { db } from "@/server/db";
+import * as db from "@/server/db";
 import { initTRPC, TRPCError } from "@trpc/server";
 import { SuperJSON } from "superjson";
 import { ZodError } from "zod";

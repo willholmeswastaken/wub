@@ -2,17 +2,23 @@ import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 
 const secret = () => bindings.secret();
 
+// Workers Builds sets this to the connected Worker. cf keeps an explicit name
+// instead, so the deploy name check fails when the dashboard Worker differs.
+const workerName = process.env.WRANGLER_CI_OVERRIDE_NAME || "wub";
+
 export default defineConfig({
   worker: defineWorker({
-    name: "wub",
+    name: workerName,
     entrypoint: "./src/worker.ts",
     compatibilityDate: "2026-10-01",
     compatibilityFlags: ["nodejs_compat"],
     assets: { notFoundHandling: "none" },
+    observability: { enabled: true },
     triggers: [triggers.queue({ name: "wub-log-clicks" })],
     env: {
       ASSETS: bindings.assets(),
-      DATABASE_URL: secret(),
+      DATABASE_PROVIDER: bindings.text("cloudflare"),
+      DB: bindings.d1({ name: "wub" }),
       NEXTAUTH_SECRET: secret(),
       NEXTAUTH_URL: secret(),
       GITHUB_CLIENT_ID: secret(),
