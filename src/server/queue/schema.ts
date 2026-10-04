@@ -19,6 +19,7 @@ export const logClickEventSchema = z.object({
   os: z.string(),
   os_version: z.string(),
   cpu_architecture: z.string(),
+  referrer: z.string().optional(),
 });
 
 export type LogClickEvent = z.infer<typeof logClickEventSchema>;

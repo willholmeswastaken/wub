@@ -1,44 +1,40 @@
-import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { percentOf } from "@/lib/format";
+import { type ReactNode } from "react";
 
 export function AnalyticDisplay({
-  name,
-  iconUrl,
-  displayName,
+  icon,
+  label,
   clicks,
   total,
-  imageClassName,
 }: {
-  name: string;
-  iconUrl: string;
-  displayName: string;
+  icon?: ReactNode;
+  label: string;
   clicks: number;
   total: number;
-  imageClassName?: string;
 }) {
   const share = total > 0 ? Math.min(100, (clicks / total) * 100) : 0;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-sm">
-        <div className="flex min-w-0 items-center gap-2">
-          <Image
-            alt={name}
-            src={iconUrl}
-            className={cn("h-3 w-5 shrink-0", imageClassName)}
-            width={20}
-            height={20}
-          />
-          <span className="truncate capitalize">{displayName}</span>
-        </div>
-        <span className="shrink-0 tabular-nums">{clicks}</span>
+    <div className="relative flex h-9 items-center gap-3 overflow-hidden rounded-lg px-3 text-sm">
+      <div
+        className="absolute inset-y-0 left-0 rounded-lg bg-brand/10"
+        style={{ width: `${share}%` }}
+        aria-hidden
+      />
+      <div className="relative flex min-w-0 flex-1 items-center gap-2">
+        {icon && (
+          <span className="flex w-5 shrink-0 justify-center text-muted-foreground">
+            {icon}
+          </span>
+        )}
+        <span className="truncate">{label}</span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-foreground"
-          style={{ width: `${share}%` }}
-        />
-      </div>
+      <span className="relative shrink-0 tabular-nums">
+        {clicks.toLocaleString()}
+      </span>
+      <span className="relative w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+        {percentOf(clicks, total)}
+      </span>
     </div>
   );
 }

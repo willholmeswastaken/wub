@@ -7,6 +7,7 @@ import {
   type ClickSummary,
   type LinkRecord,
   type LinkSnapshot,
+  type GuestLinkClaim,
   type NewLink,
 } from "./types";
 
@@ -74,6 +75,12 @@ export function listUserLinks(userId: string) {
   return run(AppDatabase.use((database) => database.listUserLinks(userId)));
 }
 
+export function updateLinkUrl(code: string, userId: string, url: string) {
+  return run(
+    AppDatabase.use((database) => database.updateLinkUrl(code, userId, url)),
+  );
+}
+
 export function deleteUserLink(code: string, userId: string) {
   return run(
     AppDatabase.use((database) => database.deleteUserLink(code, userId)),
@@ -90,8 +97,25 @@ export function listClicksSince(code: string, since: Date) {
   );
 }
 
+export function countClicksBetween(code: string, from: Date, until: Date) {
+  return run(
+    AppDatabase.use((database) =>
+      database.countClicksBetween(code, from, until),
+    ),
+  );
+}
+
 export function insertLink(link: NewLink) {
   return run(AppDatabase.use((database) => database.insertLink(link)));
+}
+
+export function claimGuestLinks(
+  userId: string,
+  claims: readonly GuestLinkClaim[],
+) {
+  return run(
+    AppDatabase.use((database) => database.claimGuestLinks(userId, claims)),
+  );
 }
 
 export type { ClickSummary, LinkRecord, LinkSnapshot };

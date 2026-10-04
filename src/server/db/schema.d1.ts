@@ -23,6 +23,7 @@ export const links = createTable("link", {
   click_count: integer("click_count").notNull().default(0),
   last_clicked: integer("last_clicked", { mode: "timestamp_ms" }),
   expires_at: integer("expires_at", { mode: "timestamp_ms" }),
+  claim_token: text("claim_token"),
 });
 
 export const linksRelations = relations(links, ({ many }) => ({
@@ -52,6 +53,7 @@ export const clicks = createTable(
     os: text("os"),
     os_version: text("os_version"),
     cpu_architecture: text("cpu_architecture"),
+    referrer: text("referrer"),
   },
   (click) => ({
     shortCodeIdx: index("click_short_code_idx").on(click.short_code),

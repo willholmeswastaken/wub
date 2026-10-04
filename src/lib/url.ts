@@ -1,3 +1,5 @@
+import { slugProblemMessage } from "@/lib/slug";
+
 export function parseUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
@@ -31,6 +33,7 @@ export function shortenErrorMessage(error: unknown): string {
     error && typeof error === "object" && "message" in error
       ? String((error as { message: unknown }).message)
       : "";
+  if (Object.values(slugProblemMessage).includes(message)) return message;
   const normalized = message.toLowerCase();
   if (
     normalized.includes("too many") ||

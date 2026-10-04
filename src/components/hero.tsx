@@ -11,13 +11,43 @@ import Link from "next/link";
 import { useState } from "react";
 
 import LinkStackView from "./link-stack-view";
+import { formatCountdown, useCountdown } from "./short-link";
 
 type Result = {
   shortCode: string;
   shortUrl: string;
   url: string;
   autoCopied: boolean;
+  expiresAt: Date | null;
 };
+
+function KeepForeverPitch({ expiresAt }: { expiresAt: Date }) {
+  const remaining = useCountdown(expiresAt);
+  const expired = remaining !== null && remaining <= 0;
+  return (
+    <Link
+      href="/signin?callbackUrl=/dashboard"
+      className="flex items-center justify-between gap-4 border-t border-border bg-brand/5 px-5 py-3 text-sm hover:bg-brand/10"
+    >
+      <span className="text-muted-foreground">
+        {expired ? (
+          "This link has expired."
+        ) : (
+          <>
+            Expires in{" "}
+            <span className="font-medium tabular-nums text-foreground">
+              {formatCountdown(remaining ?? 0)}
+            </span>
+          </>
+        )}
+      </span>
+      <span className="inline-flex items-center gap-1 font-medium text-brand">
+        Keep it forever
+        <ArrowRight className="h-4 w-4" />
+      </span>
+    </Link>
+  );
+}
 
 export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
   const addTempLink = useLinkStore((state) => state.addLink);
@@ -39,6 +69,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
         shortUrl,
         expiresAt: link.expires_at,
         shortCode: link.short_code,
+        claimToken: link.claim_token,
       });
     }
     setResult({
@@ -46,6 +77,7 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
       shortUrl,
       url: link.url,
       autoCopied,
+      expiresAt: link.expires_at ?? null,
     });
   };
 
@@ -87,6 +119,8 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
                       See it in your dashboard
                       <ArrowRight className="h-4 w-4" />
                     </Link>
+                  ) : result.expiresAt ? (
+                    <KeepForeverPitch expiresAt={result.expiresAt} />
                   ) : null
                 }
               />

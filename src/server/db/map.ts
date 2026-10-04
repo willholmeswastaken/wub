@@ -9,6 +9,7 @@ type LinkRow = {
   click_count: number;
   last_clicked: Date | number | null;
   expires_at: Date | number | null;
+  claim_token?: string | null;
 };
 
 type ClickRow = {
@@ -18,6 +19,7 @@ type ClickRow = {
   city: string | null;
   browser: string | null;
   os: string | null;
+  referrer?: string | null;
 };
 
 function asDate(value: Date | number): Date {
@@ -39,6 +41,7 @@ export function toLinkRecord(row: LinkRow): LinkRecord {
     click_count: row.click_count,
     last_clicked: asDateOrNull(row.last_clicked),
     expires_at: asDateOrNull(row.expires_at),
+    claim_token: row.claim_token ?? null,
   };
 }
 
@@ -57,5 +60,6 @@ export function toClickSummary(row: ClickRow): ClickSummary {
     city: row.city,
     browser: row.browser,
     os: row.os,
+    referrer: row.referrer ?? null,
   };
 }
