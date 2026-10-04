@@ -1,14 +1,17 @@
 import { expect, test } from "bun:test";
 
+import { previousRangeStart, rangeStart } from "@/lib/click-date-range";
 import {
   CLICK_BLOB_FIELDS,
   clickDataPoint,
 } from "@/server/analytics/datapoint";
 import {
   analyticsFromRows,
-  clickAnalyticsQuery,
+  clickAnalyticsQueries,
   previousTotalQuery,
+  sparklineDayKey,
   sparklineQuery,
+  withIsoBucketKeys,
 } from "@/server/analytics/query";
 import { type LogClickEvent } from "@/server/queue/schema";
 
@@ -56,28 +59,63 @@ test("click datapoints keep a stable blob order and index by short code", () => 
   ]);
 });
 
-test("analytics SQL counts sampled rows for one link", () => {
-  const query = clickAnalyticsQuery(
-    "docs",
-    "7d",
-    new Date("2026-10-04T12:00:00Z"),
+test("analytics SQL uses the Analytics SQL API dialect", () => {
+  const now = new Date("2026-10-04T12:00:00Z");
+  const queries = clickAnalyticsQueries("docs", "7d", now);
+  expect(queries).toHaveLength(7);
+  for (const query of queries) {
+    expect(query.params.code).toBe("docs");
+    expect(query.params.start).toBe(rangeStart("7d", now).toISOString());
+    expectSqlApi(query.query);
+    expect(query.query).toContain("COUNT(*)");
+    expect(query.query).toContain("timestamp >= $start");
+  }
+  expect(queries.some((query) => query.query.includes("UNION"))).toBe(false);
+  expect(queries[0]?.query).toContain(
+    "toUnixTimestamp(toStartOfDay(timestamp))",
   );
-  expect(query.query).toContain("SUM(_sample_interval)");
-  expect(query.query).toContain("index1 = $code");
-  expect(query.params.code).toBe("docs");
-  const previous = previousTotalQuery(
-    "docs",
-    "7d",
-    new Date("2026-10-04T12:00:00Z"),
+  const hourly = clickAnalyticsQueries("docs", "24h", now);
+  expect(hourly[0]?.query).toContain(
+    "toUnixTimestamp(toStartOfHour(timestamp))",
   );
-  expect(previous.query).toContain("SUM(_sample_interval)");
+
+  const previous = previousTotalQuery("docs", "7d", now);
+  expectSqlApi(previous.query);
+  expect(previous.query).toContain("COUNT(*)");
+  expect(previous.params.start).toBe(
+    previousRangeStart("7d", now).toISOString(),
+  );
+
   const sparkline = sparklineQuery(
     ["docs", "blog"],
     new Date("2026-09-28T00:00:00Z"),
   );
+  expectSqlApi(sparkline.query);
+  expect(sparkline.query).toContain("COUNT(*)");
+  expect(sparkline.query).toContain("toUnixTimestamp(toStartOfDay(timestamp))");
   expect(sparkline.query).toContain("index1 IN ($code0, $code1)");
+  expect(sparkline.params.start).toBe("2026-09-28T00:00:00.000Z");
   expect(sparkline.params.code1).toBe("blog");
 });
+
+test("sparkline days and buckets convert unix seconds to UTC", () => {
+  const start = Date.parse("2026-10-04T00:00:00.000Z") / 1000;
+  expect(sparklineDayKey(start)).toBe("2026-10-04");
+  expect(sparklineDayKey(String(start))).toBe("2026-10-04");
+  const rows = withIsoBucketKeys([
+    { kind: "bucket", key: start, extra: "", clicks: 4 },
+    { kind: "country", key: "US", extra: "", clicks: 4 },
+  ]);
+  expect(rows[0]?.key).toBe("2026-10-04T00:00:00.000Z");
+  expect(rows[1]?.key).toBe("US");
+});
+
+function expectSqlApi(query: string) {
+  expect(query.includes("toString(")).toBe(false);
+  expect(query.includes("toDateTime(")).toBe(false);
+  expect(query.includes("_sample_interval")).toBe(false);
+  expect(query.includes("UNION")).toBe(false);
+}
 
 test("analytics rows fill the dashboard breakdown shape", () => {
   const analytics = analyticsFromRows(

@@ -26,66 +26,102 @@ export type AnalyticsQuery = {
   params: Record<string, string>;
 };
 
-function windowSql(bucket: "hour" | "day") {
-  const bucketFn = bucket === "hour" ? "toStartOfHour" : "toStartOfDay";
-  return `
-    SELECT 'bucket' AS kind, toString(${bucketFn}(timestamp)) AS key, '' AS extra, SUM(_sample_interval) AS clicks
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-    GROUP BY ${bucketFn}(timestamp)
-    UNION ALL
-    SELECT 'country', blob1, '', SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob1 != '' AND blob1 != 'unknown'
-    GROUP BY blob1
-    UNION ALL
-    SELECT 'city', blob2, blob1, SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob2 != '' AND blob2 != 'unknown'
-    GROUP BY blob2, blob1
-    UNION ALL
-    SELECT 'device', blob3, '', SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob3 != '' AND blob3 != 'unknown'
-    GROUP BY blob3
-    UNION ALL
-    SELECT 'browser', blob4, '', SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob4 != '' AND blob4 != 'unknown'
-    GROUP BY blob4
-    UNION ALL
-    SELECT 'os', blob5, '', SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob5 != '' AND blob5 != 'unknown'
-    GROUP BY blob5
-    UNION ALL
-    SELECT 'referrer', blob6, '', SUM(_sample_interval)
-    FROM ${CLICK_DATASET}
-    WHERE index1 = $code AND timestamp >= toDateTime($start) AND timestamp < toDateTime($until)
-      AND blob6 != ''
-    GROUP BY blob6
-  `;
+// The Workers binding speaks the Analytics SQL API, not the older Analytics
+// Engine SQL dialect. That API rejects toString, toDateTime, UNION, and
+// _sample_interval. COUNT(*) is already sample-weighted, and a timestamp
+// parameter is an ISO string compared directly.
+
+const BREAKDOWNS = [
+  {
+    kind: "country",
+    key: "blob1",
+    extra: "''",
+    filter: "blob1 != '' AND blob1 != 'unknown'",
+    groupBy: "blob1",
+  },
+  {
+    kind: "city",
+    key: "blob2",
+    extra: "blob1",
+    filter: "blob2 != '' AND blob2 != 'unknown'",
+    groupBy: "blob2, blob1",
+  },
+  {
+    kind: "device",
+    key: "blob3",
+    extra: "''",
+    filter: "blob3 != '' AND blob3 != 'unknown'",
+    groupBy: "blob3",
+  },
+  {
+    kind: "browser",
+    key: "blob4",
+    extra: "''",
+    filter: "blob4 != '' AND blob4 != 'unknown'",
+    groupBy: "blob4",
+  },
+  {
+    kind: "os",
+    key: "blob5",
+    extra: "''",
+    filter: "blob5 != '' AND blob5 != 'unknown'",
+    groupBy: "blob5",
+  },
+  {
+    kind: "referrer",
+    key: "blob6",
+    extra: "''",
+    filter: "blob6 != ''",
+    groupBy: "blob6",
+  },
+] as const;
+
+function linkWindow(code: string, start: Date, until: Date) {
+  return {
+    code,
+    start: start.toISOString(),
+    until: until.toISOString(),
+  };
 }
 
-export function clickAnalyticsQuery(
+export function clickAnalyticsQueries(
   code: string,
   range: ClickRange,
   now = new Date(),
-): AnalyticsQuery {
-  const start = rangeStart(range, now);
-  return {
-    query: windowSql(range === "24h" ? "hour" : "day"),
-    params: {
-      code,
-      start: start.toISOString(),
-      until: now.toISOString(),
+): AnalyticsQuery[] {
+  const params = linkWindow(code, rangeStart(range, now), now);
+  const bucketFn = range === "24h" ? "toStartOfHour" : "toStartOfDay";
+  const fromClause = `
+    FROM ${CLICK_DATASET}
+    WHERE index1 = $code
+      AND timestamp >= $start
+      AND timestamp < $until
+  `;
+  return [
+    {
+      query: `
+        SELECT 'bucket' AS kind,
+          toUnixTimestamp(${bucketFn}(timestamp)) AS key,
+          '' AS extra,
+          COUNT(*) AS clicks
+        ${fromClause}
+        GROUP BY key
+      `,
+      params,
     },
-  };
+    ...BREAKDOWNS.map((breakdown) => ({
+      query: `
+        SELECT '${breakdown.kind}' AS kind,
+          ${breakdown.key} AS key,
+          ${breakdown.extra} AS extra,
+          COUNT(*) AS clicks
+        ${fromClause}
+          AND ${breakdown.filter}
+        GROUP BY ${breakdown.groupBy}
+      `,
+      params,
+    })),
+  ];
 }
 
 export function previousTotalQuery(
@@ -95,17 +131,17 @@ export function previousTotalQuery(
 ): AnalyticsQuery {
   return {
     query: `
-      SELECT SUM(_sample_interval) AS clicks
+      SELECT COUNT(*) AS clicks
       FROM ${CLICK_DATASET}
       WHERE index1 = $code
-        AND timestamp >= toDateTime($start)
-        AND timestamp < toDateTime($until)
+        AND timestamp >= $start
+        AND timestamp < $until
     `,
-    params: {
+    params: linkWindow(
       code,
-      start: previousRangeStart(range, now).toISOString(),
-      until: rangeStart(range, now).toISOString(),
-    },
+      previousRangeStart(range, now),
+      rangeStart(range, now),
+    ),
   };
 }
 
@@ -121,14 +157,38 @@ export function sparklineQuery(
   });
   return {
     query: `
-      SELECT index1 AS short_code, toString(toDate(timestamp)) AS day, SUM(_sample_interval) AS clicks
+      SELECT index1 AS short_code,
+        toUnixTimestamp(toStartOfDay(timestamp)) AS bucket_day,
+        COUNT(*) AS clicks
       FROM ${CLICK_DATASET}
-      WHERE timestamp >= toDateTime($start)
+      WHERE timestamp >= $start
         AND index1 IN (${names.join(", ")})
-      GROUP BY short_code, day
+      GROUP BY index1, bucket_day
     `,
     params,
   };
+}
+
+export function unixSecondsToIso(value: number | string): string {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return String(value);
+  const milliseconds =
+    Math.abs(numeric) > 10_000_000_000 ? numeric : numeric * 1000;
+  return new Date(milliseconds).toISOString();
+}
+
+export function sparklineDayKey(value: number | string): string {
+  return unixSecondsToIso(value).slice(0, 10);
+}
+
+export function withIsoBucketKeys(
+  rows: Array<Omit<AnalyticsRow, "key"> & { key: number | string }>,
+): AnalyticsRow[] {
+  return rows.map((row) =>
+    row.kind === "bucket"
+      ? { ...row, key: unixSecondsToIso(row.key) }
+      : { ...row, key: String(row.key) },
+  );
 }
 
 function asCount(value: number | string) {

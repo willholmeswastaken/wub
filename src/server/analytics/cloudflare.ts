@@ -1,13 +1,16 @@
 import { type ClickRange } from "@/lib/click-date-range";
 import { type ClickAnalytics } from "@/server/db/types";
+import logger from "@/server/logger";
 import { env as workersEnv } from "cloudflare:workers";
 
 import { clickDataPoint, type ClickDataPoint } from "./datapoint";
 import {
   analyticsFromRows,
-  clickAnalyticsQuery,
+  clickAnalyticsQueries,
   previousTotalQuery,
+  sparklineDayKey,
   sparklineQuery,
+  withIsoBucketKeys,
   type AnalyticsQuery,
   type AnalyticsRow,
 } from "./query";
@@ -48,33 +51,61 @@ export async function queryClickAnalytics(
   range: ClickRange,
   now = new Date(),
 ): Promise<ClickAnalytics> {
-  const [rows, previous] = await Promise.all([
-    runQuery<AnalyticsRow>(clickAnalyticsQuery(code, range, now)),
+  const queries = clickAnalyticsQueries(code, range, now);
+  const [groups, previous] = await Promise.all([
+    Promise.all(
+      queries.map((query) =>
+        runQuery<Omit<AnalyticsRow, "key"> & { key: number | string }>(query),
+      ),
+    ),
     runQuery<{ clicks: number | string | null }>(
       previousTotalQuery(code, range, now),
     ),
   ]);
   const previousTotal = Number(previous[0]?.clicks ?? 0);
   return analyticsFromRows(
-    rows,
+    withIsoBucketKeys(groups.flat()),
     Number.isFinite(previousTotal) ? previousTotal : 0,
   );
 }
+
+const SPARKLINE_CODE_CHUNK = 40;
 
 export async function querySparklineCounts(
   codes: readonly string[],
   since: Date,
 ) {
   if (codes.length === 0) return [];
-  return runQuery<{
-    short_code: string;
-    day: string;
-    clicks: number | string;
-  }>(sparklineQuery(codes, since)).then((rows) =>
-    rows.map((row) => ({
+  try {
+    const groups = await Promise.all(
+      chunk(codes, SPARKLINE_CODE_CHUNK).map((chunkCodes) =>
+        runQuery<{
+          short_code: string;
+          bucket_day: number | string;
+          clicks: number | string;
+        }>(sparklineQuery(chunkCodes, since)),
+      ),
+    );
+    return groups.flat().map((row) => ({
       short_code: row.short_code,
-      day: row.day,
+      day: sparklineDayKey(row.bucket_day),
       count: Number(row.clicks) || 0,
-    })),
-  );
+    }));
+  } catch (cause) {
+    // A sparkline is decoration on the links page. A missing dataset or a
+    // rejected query must not turn /dashboard into an error page.
+    logger.info(
+      { message: cause instanceof Error ? cause.message : "sparkline" },
+      "Sparkline query failed",
+    );
+    return [];
+  }
+}
+
+function chunk<T>(items: readonly T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
 }
