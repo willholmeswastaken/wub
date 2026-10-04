@@ -13,6 +13,7 @@ export default defineConfig({
     compatibilityDate: "2026-10-01",
     compatibilityFlags: ["nodejs_compat"],
     assets: { notFoundHandling: "none" },
+    observability: { enabled: true },
     triggers: [triggers.queue({ name: "wub-log-clicks" })],
     env: {
       ASSETS: bindings.assets(),
