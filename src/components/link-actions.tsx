@@ -1,39 +1,60 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
-import { DeleteLink } from "@/components/delete-link";
+import { EditLinkDialog } from "@/components/edit-link-dialog";
 import { iconButtonClassName } from "@/components/icon-button";
 import { QRCodeButton } from "@/components/qr-code-button";
-import { Trash2 } from "lucide-react";
+import { useScheduleDelete } from "@/lib/pending-deletes";
+import { Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LinkActions({
   shortUrl,
   shortCode,
+  url,
 }: {
   shortUrl: string;
   shortCode: string;
+  url: string;
 }) {
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const scheduleDelete = useScheduleDelete();
+  const router = useRouter();
 
   return (
-    <div className="flex items-start gap-8">
+    <div className="flex items-start gap-6">
       <CopyButton text={shortUrl} labeled />
       <QRCodeButton url={shortUrl} />
       <button
         type="button"
         className="flex flex-col items-center gap-2"
-        onClick={() => setIsDeleteOpen(true)}
+        onClick={() => setIsEditOpen(true)}
+      >
+        <span className={iconButtonClassName()}>
+          <Pencil className="h-4 w-4" />
+        </span>
+        <span className="text-xs text-muted-foreground">Edit</span>
+      </button>
+      <button
+        type="button"
+        className="flex flex-col items-center gap-2"
+        onClick={() => {
+          scheduleDelete(shortCode, shortUrl.replace(/^https?:\/\//, ""));
+          router.push("/dashboard");
+        }}
       >
         <span className={iconButtonClassName("text-destructive")}>
           <Trash2 className="h-4 w-4" />
         </span>
         <span className="text-xs text-muted-foreground">Delete</span>
       </button>
-      <DeleteLink
+      <EditLinkDialog
         shortCode={shortCode}
-        isOpen={isDeleteOpen}
-        setIsOpen={setIsDeleteOpen}
+        shortUrl={shortUrl}
+        url={url}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
       />
     </div>
   );

@@ -28,6 +28,7 @@ export function UrlFavicon({
             : undefined
         }
         alt=""
+        className="dark:bg-white dark:p-0.5"
       />
       <AvatarFallback className="rounded-lg">
         <Logo />

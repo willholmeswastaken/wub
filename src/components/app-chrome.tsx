@@ -18,8 +18,8 @@ export function AppChrome({
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      {!isProduct && header}
-      <main className="flex-1 bg-muted/40">{children}</main>
+      {header}
+      <main className="flex flex-1 flex-col bg-muted/40">{children}</main>
       {!isProduct && footer}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { CopyButton } from "@/components/copy-button";
+import { Sparkline } from "@/components/sparkline";
 import { UrlFavicon } from "@/components/url-favicon";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -13,8 +14,11 @@ export function LinkRow({
   subtitle,
   href,
   isExpired = false,
+  isHighlighted = false,
   initiallyCopied = false,
   accessory,
+  sparkline,
+  actions,
 }: {
   url: string;
   shortUrl: string;
@@ -22,15 +26,20 @@ export function LinkRow({
   subtitle: ReactNode;
   href?: string;
   isExpired?: boolean;
+  isHighlighted?: boolean;
   initiallyCopied?: boolean;
   accessory?: ReactNode;
+  sparkline?: number[];
+  actions?: ReactNode;
 }) {
   return (
     <div
       className={cn(
-        "relative flex items-center gap-4 px-4 py-4",
+        "group relative flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4",
         href && "hover:bg-muted/60",
         isExpired && "text-muted-foreground",
+        isHighlighted &&
+          "bg-brand/10 shadow-[inset_3px_0_0_hsl(var(--brand))] hover:bg-brand/10",
       )}
     >
       {href && (
@@ -41,7 +50,7 @@ export function LinkRow({
           <span className="sr-only">View analytics for {shortUrl}</span>
         </Link>
       )}
-      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center gap-4">
+      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center gap-3">
         <UrlFavicon url={url} />
         <div className="min-w-0 flex-1">
           <p
@@ -50,9 +59,9 @@ export function LinkRow({
               isExpired && "line-through",
             )}
           >
-            {shortUrl}
+            <ShortUrlLabel shortUrl={shortUrl} />
           </p>
-          <div className="mt-1 flex min-w-0 items-center gap-2">
+          <div className="mt-0.5 flex min-w-0 items-center gap-2">
             {accessory && (
               <div className="pointer-events-auto relative z-10 shrink-0">
                 {accessory}
@@ -69,17 +78,42 @@ export function LinkRow({
           </div>
         </div>
       </div>
-      <div className="pointer-events-none relative shrink-0 text-right">
-        <p className="text-sm font-semibold tabular-nums">{clicks}</p>
-        <p className="text-xs text-muted-foreground">clicks</p>
+      {sparkline && (
+        <Sparkline
+          values={sparkline}
+          className="pointer-events-none relative hidden sm:block"
+        />
+      )}
+      <div className="pointer-events-none relative w-12 shrink-0 text-right">
+        <p className="text-sm font-semibold tabular-nums">
+          {clicks.toLocaleString()}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {clicks === 1 ? "click" : "clicks"}
+        </p>
       </div>
-      <div className="relative z-10">
+      <div className="relative z-10 flex items-center gap-1">
         <CopyButton
           text={shortUrl}
           isExpired={isExpired}
           initiallyCopied={initiallyCopied}
         />
+        {actions}
       </div>
     </div>
+  );
+}
+
+function ShortUrlLabel({ shortUrl }: { shortUrl: string }) {
+  const display = shortUrl.replace(/^https?:\/\//, "");
+  const slash = display.indexOf("/");
+  if (slash === -1) return display;
+  return (
+    <>
+      <span className="hidden font-normal text-muted-foreground sm:inline">
+        {display.slice(0, slash)}
+      </span>
+      {display.slice(slash)}
+    </>
   );
 }

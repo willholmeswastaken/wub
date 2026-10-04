@@ -3,11 +3,9 @@ import {
   readRequestCf,
   shortCodeFromParam,
 } from "@/lib/click-request";
-import { db } from "@/server/db";
-import { links } from "@/server/db/schema";
+import { findLinkByCode } from "@/server/db";
 import logger from "@/server/logger";
 import { publishClick } from "@/server/queue/runtime";
-import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { type NextRequest, userAgent } from "next/server";
 
@@ -32,16 +30,14 @@ export async function GET(
   const functionLogger = logger.child({ short_code: code });
   functionLogger.info("Incoming short link request");
 
-  const route = await db.query.links.findFirst({
-    where: eq(links.short_code, code),
-  });
+  const route = await findLinkByCode(code);
   if (!route) {
     functionLogger.info("Short link not found");
-    redirect("/");
+    redirect("/l/not-found");
   }
   if (route.expires_at && new Date() > route.expires_at) {
     functionLogger.info("Short link expired");
-    redirect("/");
+    redirect("/l/expired");
   }
 
   const ua = userAgent(request);
@@ -64,6 +60,7 @@ export async function GET(
         os: ua.os.name,
         osVersion: ua.os.version,
         cpuArchitecture: ua.cpu.architecture,
+        referrer: request.headers.get("referer"),
       }),
     );
     functionLogger.info("Log click event sent");

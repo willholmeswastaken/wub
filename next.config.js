@@ -5,27 +5,6 @@
 await import("./src/env.js");
 
 /** @type {import("next").NextConfig} */
-const config = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "flag.vercel.app",
-      },
-      {
-        protocol: "https",
-        hostname: "uaparser.dev",
-      },
-      {
-        protocol: "https",
-        hostname: "cdnjs.cloudflare.com",
-      },
-      {
-        protocol: "https",
-        hostname: "app.dub.co",
-      },
-    ],
-  },
-};
+const config = {};
 
 export default config;

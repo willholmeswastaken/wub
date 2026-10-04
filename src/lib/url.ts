@@ -1,7 +1,7 @@
+import { slugProblemMessage } from "@/lib/slug";
+
 export function parseUrl(url: string) {
-  return url.includes("http://") || url.includes("https://")
-    ? url
-    : `https://${url}`;
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 export function validateDestinationUrl(input: string): string | null {
@@ -20,11 +20,20 @@ export function validateDestinationUrl(input: string): string | null {
   }
 }
 
+export function hostnameOf(input: string): string | null {
+  try {
+    return new URL(parseUrl(input.trim())).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export function shortenErrorMessage(error: unknown): string {
   const message =
     error && typeof error === "object" && "message" in error
       ? String((error as { message: unknown }).message)
       : "";
+  if (Object.values(slugProblemMessage).includes(message)) return message;
   const normalized = message.toLowerCase();
   if (
     normalized.includes("too many") ||
