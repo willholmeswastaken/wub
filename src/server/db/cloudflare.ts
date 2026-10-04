@@ -24,7 +24,6 @@ import {
   recordClickOnD1,
   type ClickStatementDatabase,
 } from "./record-click-sql";
-import { applyD1Schema } from "./schema-sql";
 import * as schema from "./schema.d1";
 import { links } from "./schema.d1";
 import { sparklineSince, userLinksWithSparklineCounts } from "./sparklines";
@@ -32,7 +31,6 @@ import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] &
   ClickStatementDatabase & {
-    exec(query: string): Promise<unknown>;
     withSession?(constraint: string): D1Binding;
     batch(statements: unknown[]): Promise<unknown[]>;
   };
@@ -43,18 +41,6 @@ function getD1Binding(): D1Binding {
     throw new Error("DB binding is missing");
   }
   return database;
-}
-
-let schemaReady: Promise<void> | undefined;
-
-function ensureSchema() {
-  schemaReady ??= applyD1Schema((query) => getD1Binding().exec(query)).catch(
-    (cause: unknown) => {
-      schemaReady = undefined;
-      throw cause;
-    },
-  );
-  return schemaReady;
 }
 
 function getD1Database(mode: "read" | "write" = "read") {
@@ -69,41 +55,20 @@ function getD1Database(mode: "read" | "write" = "read") {
 let authAdapter: Adapter | undefined;
 
 function getAuthAdapter(): Adapter {
-  authAdapter ??= wrapAdapter(
-    createCloudflareAuthAdapter(getD1Database("write")),
-  );
+  authAdapter ??= createCloudflareAuthAdapter(getD1Database("write"));
   return authAdapter;
-}
-
-function wrapAdapter(adapter: Adapter): Adapter {
-  return new Proxy(adapter, {
-    get(target, prop, receiver) {
-      const value: unknown = Reflect.get(target, prop, receiver);
-      if (typeof value !== "function") return value;
-      return (...args: unknown[]) =>
-        ensureSchema().then(() =>
-          (value as (...params: unknown[]) => unknown).apply(target, args),
-        );
-    },
-  });
 }
 
 function attempt<A>(run: () => Promise<A>) {
   return Effect.tryPromise({
-    try: async () => {
-      await ensureSchema();
-      return run();
-    },
+    try: run,
     catch: (cause) => new DatabaseError({ cause }),
   });
 }
 
 function attemptInsert<A>(run: () => Promise<A>) {
   return Effect.tryPromise({
-    try: async () => {
-      await ensureSchema();
-      return run();
-    },
+    try: run,
     catch: (cause) =>
       cause instanceof LinkConflictError ? cause : new DatabaseError({ cause }),
   });
@@ -300,10 +265,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
   recordClick: (event: LogClickEvent) =>
     Effect.gen(function* () {
       const outcome = yield* Effect.tryPromise({
-        try: async () => {
-          await ensureSchema();
-          return recordClickOnD1(getD1Binding(), event);
-        },
+        try: () => recordClickOnD1(getD1Binding(), event),
         catch: (cause) => new RecordClickError({ cause }),
       });
       if (outcome === "not_found") {
