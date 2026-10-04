@@ -1,0 +1,55 @@
+import { spawnSync } from "node:child_process";
+
+import { databaseIdFromList } from "./d1-database-id.js";
+
+const databaseName = "wub";
+const migrationsDir = "migrations/d1";
+
+const databaseId = resolveDatabaseId();
+run("cf", ["d1", "migrations", "apply", databaseId, "--dir", migrationsDir]);
+
+const deployEnv = { ...process.env };
+delete deployEnv.WRANGLER_CI_MATCH_TAG;
+run("cf", ["deploy", "--prebuilt", "--mode", "production"], deployEnv);
+
+function resolveDatabaseId() {
+  const configured = process.env.D1_DATABASE_ID?.trim();
+  if (configured) return configured;
+
+  const listed = spawnSync("cf", ["d1", "list", "--name", databaseName], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  if (listed.status !== 0) {
+    if (listed.error) console.error(listed.error.message);
+    exitWith(listed.status);
+  }
+  try {
+    return databaseIdFromList(JSON.parse(listed.stdout), databaseName);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    process.exit(1);
+  }
+}
+
+/**
+ * @param {string} command
+ * @param {string[]} args
+ * @param {NodeJS.ProcessEnv} [commandEnv]
+ */
+function run(command, args, commandEnv) {
+  const result = spawnSync(command, args, {
+    stdio: "inherit",
+    env: commandEnv,
+  });
+  if (result.status !== 0) {
+    if (result.error) console.error(result.error.message);
+    exitWith(result.status);
+  }
+}
+
+/** @param {number | null} status */
+function exitWith(status) {
+  process.exit(status ?? 1);
+}

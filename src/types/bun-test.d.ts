@@ -1,4 +1,5 @@
 declare module "bun:test" {
+  export function describe(name: string, fn: () => unknown): void;
   export function test(name: string, fn: () => unknown): void;
   export function expect(value: unknown): {
     toBe(expected: unknown): void;
@@ -7,6 +8,7 @@ declare module "bun:test" {
     toMatch(expected: RegExp | string): void;
     toContain(expected: unknown): void;
     toBeNull(): void;
+    toThrow(expected?: RegExp | string): void;
     resolves: {
       toEqual(expected: unknown): Promise<void>;
       toBe(expected: unknown): Promise<void>;
