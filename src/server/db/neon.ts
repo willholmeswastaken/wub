@@ -2,7 +2,7 @@ import { env } from "@/env";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { neon } from "@neondatabase/serverless";
-import { and, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/neon-http";
 import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
@@ -14,9 +14,9 @@ import {
   RecordClickError,
 } from "./database";
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import * as schema from "./schema";
 import { clicks, createTable, links } from "./schema";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 
 function getNeonDatabase() {
   const databaseUrl = env.DATABASE_URL;
@@ -77,7 +77,10 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
         .from(clicks)
         .innerJoin(links, eq(links.short_code, clicks.short_code))
         .where(
-          and(eq(links.userId, userId), gte(clicks.timestamp, sparklineSince())),
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
         );
       return userLinksWithSparklines(rows, activity);
     }),
@@ -120,9 +123,24 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
           city: true,
           browser: true,
           os: true,
+          referrer: true,
         },
       });
       return rows.map(toClickSummary);
+    }),
+  countClicksBetween: (code, from, until) =>
+    attempt(async () => {
+      const rows = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(clicks)
+        .where(
+          and(
+            eq(clicks.short_code, code),
+            gte(clicks.timestamp, from),
+            lt(clicks.timestamp, until),
+          ),
+        );
+      return Number(rows[0]?.count ?? 0);
     }),
   insertLink: (link) =>
     attempt(async () => {
@@ -203,6 +221,7 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
             os: event.os,
             os_version: event.os_version,
             cpu_architecture: event.cpu_architecture,
+            referrer: event.referrer ?? null,
           }),
         catch: (cause) => new RecordClickError({ cause }),
       });

@@ -30,6 +30,7 @@ export type ClickSummary = {
   city: string | null;
   browser: string | null;
   os: string | null;
+  referrer: string | null;
 };
 
 export type LinkSnapshot = Pick<

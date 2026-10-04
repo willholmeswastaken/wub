@@ -1,5 +1,6 @@
 export {
   claimGuestLinks,
+  countClicksBetween,
   deleteUserLink,
   findLinkByCode,
   findLinkSnapshot,

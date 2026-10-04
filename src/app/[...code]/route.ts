@@ -33,11 +33,11 @@ export async function GET(
   const route = await findLinkByCode(code);
   if (!route) {
     functionLogger.info("Short link not found");
-    redirect("/");
+    redirect("/l/not-found");
   }
   if (route.expires_at && new Date() > route.expires_at) {
     functionLogger.info("Short link expired");
-    redirect("/");
+    redirect("/l/expired");
   }
 
   const ua = userAgent(request);
@@ -60,6 +60,7 @@ export async function GET(
         os: ua.os.name,
         osVersion: ua.os.version,
         cpuArchitecture: ua.cpu.architecture,
+        referrer: request.headers.get("referer"),
       }),
     );
     functionLogger.info("Log click event sent");

@@ -1,6 +1,6 @@
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
-import { and, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
@@ -12,10 +12,10 @@ import {
   RecordClickError,
 } from "./database";
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
-import { D1_ADDED_COLUMNS, D1_BOOTSTRAP_STATEMENTS } from "./schema-sql";
+import { applyD1Schema } from "./schema-sql";
 import * as schema from "./schema.d1";
 import { clicks, links } from "./schema.d1";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] & {
@@ -35,18 +35,7 @@ let schemaReady: Promise<void> | undefined;
 function ensureSchema() {
   schemaReady ??= (async () => {
     try {
-      const binding = getD1Binding();
-      for (const statement of D1_BOOTSTRAP_STATEMENTS) {
-        await binding.exec(statement);
-      }
-      for (const statement of D1_ADDED_COLUMNS) {
-        try {
-          await binding.exec(statement);
-        } catch (cause) {
-          const message = cause instanceof Error ? cause.message : String(cause);
-          if (!/duplicate column/i.test(message)) throw cause;
-        }
-      }
+      await applyD1Schema((query) => getD1Binding().exec(query));
     } catch (cause) {
       schemaReady = undefined;
       throw cause;
@@ -134,7 +123,10 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         .from(clicks)
         .innerJoin(links, eq(links.short_code, clicks.short_code))
         .where(
-          and(eq(links.userId, userId), gte(clicks.timestamp, sparklineSince())),
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
         )
         .all();
       return userLinksWithSparklines(rows, activity);
@@ -180,9 +172,25 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
           city: true,
           browser: true,
           os: true,
+          referrer: true,
         },
       });
       return rows.map(toClickSummary);
+    }),
+  countClicksBetween: (code, from, until) =>
+    attempt(async () => {
+      const rows = await getD1Database()
+        .select({ count: sql<number>`count(*)` })
+        .from(clicks)
+        .where(
+          and(
+            eq(clicks.short_code, code),
+            gte(clicks.timestamp, from),
+            lt(clicks.timestamp, until),
+          ),
+        )
+        .all();
+      return Number(rows[0]?.count ?? 0);
     }),
   insertLink: (link) =>
     attempt(async () => {
@@ -272,6 +280,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
               os: event.os,
               os_version: event.os_version,
               cpu_architecture: event.cpu_architecture,
+              referrer: event.referrer ?? null,
             })
             .run(),
         catch: (cause) => new RecordClickError({ cause }),

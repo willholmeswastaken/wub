@@ -91,9 +91,11 @@ function EditLinkForm({
     <form onSubmit={onSubmit} noValidate className="grid gap-4">
       <DialogHeader>
         <DialogTitle>Edit destination</DialogTitle>
-        <DialogDescription className="break-all">
-          {shortUrl.replace(/^https?:\/\//, "")} will send people here. Your
-          analytics are kept.
+        <DialogDescription>
+          <span className="break-all font-medium text-foreground">
+            {shortUrl.replace(/^https?:\/\//, "")}
+          </span>{" "}
+          will send people here. Your analytics are kept.
         </DialogDescription>
       </DialogHeader>
       <div>

@@ -33,7 +33,17 @@ export type ClickVisitor = {
   os?: string | null;
   osVersion?: string | null;
   cpuArchitecture?: string | null;
+  referrer?: string | null;
 };
+
+export function referrerHost(referrer: string | null | undefined) {
+  if (!referrer) return "direct";
+  try {
+    return new URL(referrer).hostname.replace(/^www\./, "") || "direct";
+  } catch {
+    return "direct";
+  }
+}
 
 function geoValue(...values: Array<string | null | undefined>) {
   for (const value of values) {
@@ -78,5 +88,6 @@ export function buildClickEvent(
     os: geoValue(visitor.os),
     os_version: geoValue(visitor.osVersion),
     cpu_architecture: geoValue(visitor.cpuArchitecture),
+    referrer: referrerHost(visitor.referrer),
   };
 }

@@ -97,6 +97,14 @@ export function listClicksSince(code: string, since: Date) {
   );
 }
 
+export function countClicksBetween(code: string, from: Date, until: Date) {
+  return run(
+    AppDatabase.use((database) =>
+      database.countClicksBetween(code, from, until),
+    ),
+  );
+}
+
 export function insertLink(link: NewLink) {
   return run(AppDatabase.use((database) => database.insertLink(link)));
 }

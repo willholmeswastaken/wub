@@ -19,6 +19,7 @@ type ClickRow = {
   city: string | null;
   browser: string | null;
   os: string | null;
+  referrer?: string | null;
 };
 
 function asDate(value: Date | number): Date {
@@ -59,5 +60,6 @@ export function toClickSummary(row: ClickRow): ClickSummary {
     city: row.city,
     browser: row.browser,
     os: row.os,
+    referrer: row.referrer ?? null,
   };
 }

@@ -53,6 +53,11 @@ export class AppDatabase extends Context.Service<
       code: string,
       since: Date,
     ) => Effect.Effect<ClickSummary[], DatabaseError>;
+    readonly countClicksBetween: (
+      code: string,
+      from: Date,
+      until: Date,
+    ) => Effect.Effect<number, DatabaseError>;
     readonly insertLink: (
       link: NewLink,
     ) => Effect.Effect<LinkRecord, DatabaseError>;
