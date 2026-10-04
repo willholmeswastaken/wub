@@ -22,7 +22,7 @@ describe("patchQueueProducerSource", () => {
     const patched = patchQueueProducerSource(source);
 
     expect(patched).toContain(QUEUE_PRODUCER_OMIT_UNDEFINED_DELAY);
-    expect(patched).not.toContain(QUEUE_PRODUCER_WITH_UNDEFINED_DELAY);
+    expect(patched.includes(QUEUE_PRODUCER_WITH_UNDEFINED_DELAY)).toBe(false);
 
     const producer = new Function(
       "t",
