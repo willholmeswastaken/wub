@@ -3,6 +3,9 @@ declare module "cloudflare:workers" {
     CLICK_QUEUE: {
       send(body: unknown): Promise<unknown>;
     };
+    LINK_RATE_LIMITER: {
+      limit(options: { key: string }): Promise<{ success: boolean }>;
+    };
     DB: {
       exec(query: string): Promise<unknown>;
       prepare(query: string): unknown;
