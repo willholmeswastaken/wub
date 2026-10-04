@@ -44,9 +44,7 @@ export function countClicksByDay(
   const counts = new Map<string, number>();
   for (const timestamp of timestamps) {
     if (timestamp == null) continue;
-    const key = (
-      timestamp instanceof Date ? timestamp : new Date(timestamp)
-    )
+    const key = (timestamp instanceof Date ? timestamp : new Date(timestamp))
       .toISOString()
       .slice(0, 10);
     counts.set(key, (counts.get(key) ?? 0) + 1);

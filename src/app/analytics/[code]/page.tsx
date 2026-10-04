@@ -1,16 +1,16 @@
 import { BreakdownCard } from "@/components/breakdown-card";
 import { ClicksChart } from "@/components/clicks-chart";
 import { LinkActions } from "@/components/link-actions";
-import { ProductBar } from "@/components/product-bar";
 import { RangePicker } from "@/components/range-picker";
 import { UrlFavicon } from "@/components/url-favicon";
 import { clickRangeLabel, parseClickRange } from "@/lib/click-date-range";
-import { countryName, flagEmoji } from "@/lib/format";
+import { countryName, flagEmoji, formatDate } from "@/lib/format";
 import { projectUrlFromHeaders } from "@/lib/project-url";
 import { getServerAuthSession } from "@/server/auth";
 import { api } from "@/trpc/server";
 import { TRPCError } from "@trpc/server";
 import {
+  ArrowLeft,
   Gamepad2,
   Globe,
   HelpCircle,
@@ -22,6 +22,7 @@ import {
   Watch,
 } from "lucide-react";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { type ReactNode } from "react";
 
@@ -109,14 +110,20 @@ export default async function AnalyticsPage({
 
   return (
     <div className="pb-12">
-      <ProductBar title="Analytics" backHref="/dashboard" />
       <section className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-8">
+        <Link
+          href="/dashboard"
+          className="-mb-2 inline-flex w-fit items-center gap-1 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          All links
+        </Link>
         <div className="flex items-start gap-4">
           <UrlFavicon url={clicks.link.url} className="h-10 w-10" />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-semibold">
+            <h1 className="truncate text-xl font-semibold">
               {shortUrl.replace(/^https?:\/\//, "")}
-            </h2>
+            </h1>
             <a
               href={clicks.link.url}
               target="_blank"
@@ -126,12 +133,7 @@ export default async function AnalyticsPage({
               {clicks.link.url}
             </a>
             <p className="mt-1 text-sm text-muted-foreground">
-              Created{" "}
-              {new Date(clicks.link.created_at).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
+              Created {formatDate(clicks.link.created_at)}
             </p>
           </div>
         </div>

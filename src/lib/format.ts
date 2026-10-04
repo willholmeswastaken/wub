@@ -8,10 +8,19 @@ export function relativeTime(input: Date | string, now = new Date()) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString("en-GB", {
+  return formatDate(date, {
+    withYear: date.getFullYear() !== now.getFullYear(),
+  });
+}
+
+export function formatDate(
+  input: Date | string,
+  { withYear = true }: { withYear?: boolean } = {},
+) {
+  return new Date(input).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
-    ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
+    ...(withYear ? { year: "numeric" } : {}),
   });
 }
 

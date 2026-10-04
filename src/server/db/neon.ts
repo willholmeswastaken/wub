@@ -14,9 +14,9 @@ import {
   RecordClickError,
 } from "./database";
 import { toClickSummary, toLinkRecord, toLinkSnapshot } from "./map";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import * as schema from "./schema";
 import { clicks, createTable, links } from "./schema";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 
 function getNeonDatabase() {
   const databaseUrl = env.DATABASE_URL;
@@ -77,7 +77,10 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
         .from(clicks)
         .innerJoin(links, eq(links.short_code, clicks.short_code))
         .where(
-          and(eq(links.userId, userId), gte(clicks.timestamp, sparklineSince())),
+          and(
+            eq(links.userId, userId),
+            gte(clicks.timestamp, sparklineSince()),
+          ),
         );
       return userLinksWithSparklines(rows, activity);
     }),

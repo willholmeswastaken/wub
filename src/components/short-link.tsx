@@ -52,7 +52,8 @@ export default function ShortLink({
       <span
         className={cn(
           "inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-foreground",
-          isEndingSoon && "bg-amber-100 text-amber-900",
+          isEndingSoon &&
+            "bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300",
         )}
       >
         {isExpired ? (
