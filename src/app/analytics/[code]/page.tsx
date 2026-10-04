@@ -118,7 +118,7 @@ export default async function AnalyticsPage({
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4 w-4" />
-          Links
+          Linkz
         </Link>
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-5">
