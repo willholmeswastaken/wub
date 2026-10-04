@@ -70,8 +70,8 @@ export function buildClickEvent(
   const geo = visitor.geo;
 
   return {
+    event_id: crypto.randomUUID(),
     short_code: code,
-    ipAddress: geoValue(visitor.ip),
     userAgent: visitor.userAgent,
     country: geoValue(cf?.country, geo?.country),
     city: geoValue(cf?.city, geo?.city),

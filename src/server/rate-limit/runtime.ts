@@ -2,7 +2,7 @@ import { env } from "@/env";
 import { ManagedRuntime } from "effect";
 
 import { type RateLimitProvider, resolveRateLimitProvider } from "./provider";
-import { RateLimiter } from "./rate-limiter";
+import { RateLimiter, type RateLimitScope } from "./rate-limiter";
 
 type RateLimiterRuntime = ManagedRuntime.ManagedRuntime<RateLimiter, never>;
 
@@ -24,9 +24,12 @@ export async function getRateLimiterRuntime(): Promise<RateLimiterRuntime> {
   return rateLimiterRuntimePromise;
 }
 
-export async function limitByIdentifier(identifier: string) {
+export async function limitByIdentifier(
+  identifier: string,
+  scope: RateLimitScope = "create",
+) {
   const runtime = await getRateLimiterRuntime();
   return runtime.runPromise(
-    RateLimiter.use((limiter) => limiter.limit(identifier)),
+    RateLimiter.use((limiter) => limiter.limit(identifier, scope)),
   );
 }

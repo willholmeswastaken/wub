@@ -8,6 +8,9 @@ export const D1_BOOTSTRAP_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS "wub_link" ("short_code" text PRIMARY KEY NOT NULL, "url" text NOT NULL, "title" text, "userId" text, "created_at" integer DEFAULT (unixepoch() * 1000) NOT NULL, "click_count" integer DEFAULT 0 NOT NULL, "last_clicked" integer, "expires_at" integer, "claim_token" text, FOREIGN KEY ("userId") REFERENCES "wub_user"("id"))`,
   `CREATE TABLE IF NOT EXISTS "wub_click" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "short_code" text NOT NULL, "timestamp" integer DEFAULT (unixepoch() * 1000), "userAgent" text, "ipAddress" text, "country" text, "city" text, "region" text, "latitude" text, "longitude" text, "device" text, "device_vendor" text, "device_model" text, "browser" text, "browser_version" text, "engine" text, "engine_version" text, "os" text, "os_version" text, "cpu_architecture" text, "referrer" text)`,
   `CREATE INDEX IF NOT EXISTS "click_short_code_idx" ON "wub_click" ("short_code")`,
+  `CREATE INDEX IF NOT EXISTS "link_userId_idx" ON "wub_link" ("userId")`,
+  `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS "click_event_short_code_idx" ON "wub_click_event" ("short_code")`,
 ];
 
 // CREATE TABLE IF NOT EXISTS does not add columns to a database that already

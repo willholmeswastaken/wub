@@ -14,7 +14,7 @@ async function handler(request: Request) {
   const outcome = await recordClick(data);
 
   if (outcome === "not_found") {
-    return new NextResponse("Bad Request", { status: 400 });
+    return Response.json({ success: true, outcome: "not_found" });
   }
 
   return Response.json({ success: true });

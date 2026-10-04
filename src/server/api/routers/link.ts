@@ -1,17 +1,18 @@
 import {
   CLICK_RANGES,
   DEFAULT_CLICK_RANGE,
-  generateClickBuckets,
-  previousRangeStart,
-  rangeStart,
+  fillClickBuckets,
 } from "@/lib/click-date-range";
+import { getShortcode } from "@/lib/short-code";
 import { slugProblem, slugProblemMessage } from "@/lib/slug";
+import { destinationUrlSchema } from "@/lib/url";
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
 import { findLinkByCode, insertLink, type LinkRecord } from "@/server/db";
+import { isLinkConflictError } from "@/server/db/conflicts";
 import logger from "@/server/logger";
 import { clientIp, protectRoute } from "@/server/rate-limit";
 import { TRPCError, type inferRouterOutputs } from "@trpc/server";
@@ -21,7 +22,7 @@ export const linkRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        url: z.string().url().max(2048),
+        url: destinationUrlSchema,
         slug: z.string().optional(),
       }),
     )
@@ -34,10 +35,10 @@ export const linkRouter = createTRPCRouter({
         });
       }
       if (input.slug) {
-        const problem = await findSlugProblem(input.slug);
+        const problem = slugProblem(input.slug);
         if (problem) {
           throw new TRPCError({
-            code: problem === "taken" ? "CONFLICT" : "BAD_REQUEST",
+            code: "BAD_REQUEST",
             message: slugProblemMessage[problem],
           });
         }
@@ -53,7 +54,7 @@ export const linkRouter = createTRPCRouter({
     .input(
       z.object({
         shortCode: z.string(),
-        url: z.string().url().max(2048),
+        url: destinationUrlSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -70,7 +71,7 @@ export const linkRouter = createTRPCRouter({
   createAnon: publicProcedure
     .input(
       z.object({
-        url: z.string().url(),
+        url: destinationUrlSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -85,7 +86,7 @@ export const linkRouter = createTRPCRouter({
     }),
 
   getTempLinks: publicProcedure
-    .input(z.array(z.string()))
+    .input(z.array(z.string()).max(100))
     .query(async ({ ctx, input }) => {
       const rateLimited = await protectRoute(clientIp(ctx.headers));
       if (rateLimited) {
@@ -141,23 +142,7 @@ export const linkRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Link not found" });
       }
 
-      const now = new Date();
-      const start = rangeStart(input.range, now);
-      const periodClicks = await ctx.db.listClicksSince(input.code, start);
-      const previousTotalClicks = await ctx.db.countClicksBetween(
-        input.code,
-        previousRangeStart(input.range, now),
-        start,
-      );
-
-      const known = (value: string | null) =>
-        value && value !== "unknown" ? value : null;
-      const cityCountry = new Map<string, string>();
-      for (const click of periodClicks) {
-        if (known(click.city) && known(click.country)) {
-          cityCountry.set(click.city!, click.country!);
-        }
-      }
+      const analytics = await ctx.db.clickAnalytics(input.code, input.range);
 
       return {
         link: {
@@ -166,35 +151,20 @@ export const linkRouter = createTRPCRouter({
           created_at: link.created_at,
         },
         range: input.range,
-        clickRange: generateClickBuckets(input.range, periodClicks, now),
-        totalClicks: periodClicks.length,
-        previousTotalClicks,
+        clickRange: fillClickBuckets(input.range, analytics.buckets),
+        totalClicks: analytics.total,
+        previousTotalClicks: analytics.previousTotal,
         breakdown: {
-          countries: tally(periodClicks.map((click) => known(click.country))),
-          cities: tally(periodClicks.map((click) => known(click.city))).map(
-            (item) => ({ ...item, country: cityCountry.get(item.key) ?? "" }),
-          ),
-          devices: tally(periodClicks.map((click) => click.device)),
-          browsers: tally(periodClicks.map((click) => known(click.browser))),
-          os: tally(periodClicks.map((click) => known(click.os))),
-          referrers: tally(
-            periodClicks.map((click) => click.referrer ?? "direct"),
-          ),
+          countries: analytics.countries,
+          cities: analytics.cities,
+          devices: analytics.devices,
+          browsers: analytics.browsers,
+          os: analytics.os,
+          referrers: analytics.referrers,
         },
       };
     }),
 });
-
-function tally(values: Array<string | null>) {
-  const counts = new Map<string, number>();
-  for (const value of values) {
-    if (!value) continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count);
-}
 
 async function findSlugProblem(slug: string) {
   const problem = slugProblem(slug);
@@ -208,40 +178,37 @@ async function createShortLink(
   userId?: string,
   slug?: string,
 ): Promise<LinkRecord> {
-  const shortLinkLogger = logger.child({ url, userId });
-  let unique = !!slug;
-  let short_code = slug ?? "";
+  const shortLinkLogger = logger.child({ userId });
+  const expires_at = userId ? null : new Date(Date.now() + 30 * 60 * 1000);
+  const claim_token = userId ? null : crypto.randomUUID();
 
-  while (!unique) {
-    short_code = getShortcode();
-
-    const existingLink = await findLinkByCode(short_code);
-    if (!existingLink) {
-      unique = true;
-      shortLinkLogger.info({ short_code }, "Unique short code found");
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const short_code = slug ?? getShortcode();
+    try {
+      const link = await insertLink({
+        url,
+        short_code,
+        expires_at,
+        claim_token,
+        userId,
+      });
+      shortLinkLogger.info({ short_code }, "Short link created in database");
+      return link;
+    } catch (error) {
+      if (!isLinkConflictError(error)) throw error;
+      if (slug) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: slugProblemMessage.taken,
+        });
+      }
     }
   }
-  const link = await insertLink({
-    url,
-    short_code,
-    expires_at: userId ? null : new Date(new Date().getTime() + 30 * 60 * 1000),
-    claim_token: userId ? null : crypto.randomUUID(),
-    userId,
-  });
 
-  shortLinkLogger.info({ short_code }, "Short link created in database");
-  return link;
+  throw new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "Could not allocate a short code",
+  });
 }
 
 export type LinkRouterOutputs = inferRouterOutputs<typeof linkRouter>;
-
-function getShortcode() {
-  const characters =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const charactersLength = characters.length;
-  let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-}
