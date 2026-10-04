@@ -12,7 +12,8 @@ export default defineConfig({
     triggers: [triggers.queue({ name: "wub-log-clicks" })],
     env: {
       ASSETS: bindings.assets(),
-      DATABASE_URL: secret(),
+      DATABASE_PROVIDER: bindings.text("cloudflare"),
+      DB: bindings.d1({ name: "wub" }),
       NEXTAUTH_SECRET: secret(),
       NEXTAUTH_URL: secret(),
       GITHUB_CLIENT_ID: secret(),

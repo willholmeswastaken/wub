@@ -7,6 +7,7 @@
     "build": "vinext build",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "test": "bun test",
     "dev": "vinext dev | pino-pretty -c -l",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -70,6 +71,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^2.0.0-beta.sha-52b0dc0e9",
+    "@cloudflare/workers-types": "^5.20261002.1",
     "@types/node": "^20.11.20",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
