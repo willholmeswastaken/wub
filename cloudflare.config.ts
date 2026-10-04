@@ -1,10 +1,20 @@
 import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 
+import { findKvNamespaceId } from "./scripts/find-kv-namespace.js";
+import { linksKvTitle } from "./scripts/kv-namespace-id.js";
+
 const secret = () => bindings.secret();
 
 // Workers Builds sets this to the connected Worker. cf keeps an explicit name
 // instead, so the deploy name check fails when the dashboard Worker differs.
 const workerName = process.env.WRANGLER_CI_OVERRIDE_NAME || "wub";
+const linksKvId =
+  process.env.LINKS_KV_ID?.trim() ||
+  findKvNamespaceId({
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    title: linksKvTitle(workerName),
+  });
 
 export default defineConfig({
   worker: defineWorker({
@@ -28,7 +38,7 @@ export default defineConfig({
       ASSETS: bindings.assets(),
       DATABASE_PROVIDER: bindings.text("cloudflare"),
       DB: bindings.d1({ name: "wub" }),
-      LINKS: bindings.kv(),
+      LINKS: bindings.kv(linksKvId ? { id: linksKvId } : {}),
       CLICK_ANALYTICS: bindings.analyticsEngineDataset({ name: "wub_clicks" }),
       ANALYTICS: bindings.analyticsSQL(),
       NEXTAUTH_SECRET: secret(),
