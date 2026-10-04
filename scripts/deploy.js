@@ -1,10 +1,15 @@
 import { spawnSync } from "node:child_process";
 
 import { databaseIdFromList } from "./d1-database-id.js";
+import { patchInstalledCfQueueProducer } from "./patch-cf-queue-producer.js";
 import { patchBuildOutputD1 } from "./patch-d1-binding.js";
 
 const databaseName = "wub";
 const migrationsDir = "migrations/d1";
+
+// The dashboard producer includes `delivery_delay: undefined` when the API
+// omitted it. Strict mode aborts on that, and the printed diff is only `{}`.
+patchInstalledCfQueueProducer();
 
 const databaseId = resolveDatabaseId();
 // The build output is what `cf deploy --prebuilt` uploads. Rewrite its D1
