@@ -179,57 +179,86 @@ export function ShortenForm({
       </label>
       <div
         className={cn(
-          "flex flex-col gap-2 sm:flex-row sm:items-center",
-          isLarge &&
-            "rounded-2xl border border-border bg-background p-2 shadow-sm transition-shadow focus-within:shadow-md sm:gap-2",
+          "flex flex-col gap-2",
+          isLarge
+            ? "slip gap-3 p-3 focus-within:border-brand sm:p-4"
+            : "sm:flex-row sm:items-center",
         )}
       >
-        <div className="relative min-w-0 flex-1">
-          <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center">
-            {previewHost ? (
-              <UrlFavicon
-                url={`https://${previewHost}`}
-                className="h-5 w-5 rounded"
+        {isLarge && (
+          <div className="flex items-start justify-between gap-3 px-1">
+            <p className="eyebrow pt-2">Destination slip</p>
+            <span
+              aria-hidden
+              className="flex h-[4.6rem] w-[4.6rem] shrink-0 rotate-12 items-center justify-center rounded-full border-2 border-dashed border-brand text-brand"
+            >
+              <span className="flex h-[3.45rem] w-[3.45rem] flex-col items-center justify-center rounded-full border-2 border-brand text-center leading-none">
+                <span className="font-mono text-[8px] uppercase tracking-[0.16em]">
+                  paste
+                </span>
+                <span className="mt-0.5 font-display text-lg italic tracking-normal">
+                  ready
+                </span>
+              </span>
+            </span>
+          </div>
+        )}
+        <div
+          className={cn(
+            "min-w-0 gap-2",
+            isLarge ? "flex flex-col sm:flex-row sm:items-center" : "contents",
+          )}
+        >
+          <div className="relative min-w-0 flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center">
+              {previewHost ? (
+                <UrlFavicon
+                  url={`https://${previewHost}`}
+                  className="h-5 w-5 rounded"
+                />
+              ) : (
+                <Link2 className="h-5 w-5 text-muted-foreground" />
+              )}
+            </span>
+            <Input
+              ref={inputRef}
+              id={inputId}
+              value={value}
+              type="url"
+              inputMode="url"
+              placeholder="Paste a long link"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={!!error}
+              aria-describedby={message ? messageId : undefined}
+              className={cn(
+                "pl-11",
+                isLarge &&
+                  "h-12 border-0 bg-transparent text-lg shadow-none focus-visible:ring-0 sm:h-14",
+              )}
+              onChange={(event) => {
+                setValue(event.target.value);
+                if (error) setError(null);
+              }}
+            />
+          </div>
+          <Button
+            type="submit"
+            className={cn("w-full sm:w-auto", isLarge && "h-12 px-8 sm:h-14")}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <Spinner
+                size="small"
+                className="h-4 w-4 text-primary-foreground"
               />
             ) : (
-              <Link2 className="h-5 w-5 text-muted-foreground" />
+              "Shorten"
             )}
-          </span>
-          <Input
-            ref={inputRef}
-            id={inputId}
-            value={value}
-            type="url"
-            inputMode="url"
-            placeholder="Paste a long link"
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="off"
-            spellCheck={false}
-            aria-invalid={!!error}
-            aria-describedby={message ? messageId : undefined}
-            className={cn(
-              "pl-11",
-              isLarge &&
-                "h-12 border-0 text-lg shadow-none focus-visible:ring-0 sm:h-14",
-            )}
-            onChange={(event) => {
-              setValue(event.target.value);
-              if (error) setError(null);
-            }}
-          />
+          </Button>
         </div>
-        <Button
-          type="submit"
-          className={cn("w-full sm:w-auto", isLarge && "h-12 px-8 sm:h-14")}
-          disabled={isPending}
-        >
-          {isPending ? (
-            <Spinner size="small" className="h-4 w-4 text-primary-foreground" />
-          ) : (
-            "Shorten"
-          )}
-        </Button>
       </div>
       {slugPrefix &&
         (showSlug ? (

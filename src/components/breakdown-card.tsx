@@ -64,7 +64,7 @@ export function BreakdownCard({
   tabs: BreakdownTab[];
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-background p-5">
+    <div className="rounded-sm border border-foreground/15 bg-card p-5">
       <Tabs defaultValue={tabs[0]?.value}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold">{title}</h2>

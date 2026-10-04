@@ -19,7 +19,7 @@ export function AppChrome({
   return (
     <div className="flex min-h-[100dvh] flex-col">
       {header}
-      <main className="flex flex-1 flex-col bg-muted/40">{children}</main>
+      <main className="flex flex-1 flex-col">{children}</main>
       {!isProduct && footer}
     </div>
   );

@@ -53,7 +53,7 @@ export function LinkResultCard({
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="w-full overflow-hidden rounded-2xl border border-border bg-background text-left shadow-sm"
+      className="slip w-full overflow-hidden text-left"
     >
       <div className="p-5">
         <p
@@ -72,7 +72,7 @@ export function LinkResultCard({
         <button
           type="button"
           onClick={() => void onCopy()}
-          className="mt-2 block max-w-full break-all text-left text-2xl font-semibold tracking-tight hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-3xl"
+          className="mt-2 block max-w-full break-all text-left font-display text-3xl font-medium italic leading-none tracking-tight hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-4xl"
         >
           {displayUrl(shortUrl)}
         </button>

@@ -202,7 +202,7 @@ export function LinksView({
               </button>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-border bg-background">
+            <div className="overflow-hidden rounded-sm border border-foreground/15 bg-card">
               {visibleLinks.map((link, index) => {
                 const shortUrl = `${projectUrl}${link.short_code}`;
                 return (
@@ -246,14 +246,16 @@ function EmptyState({ projectUrl }: { projectUrl: string }) {
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
         <Link2 className="h-6 w-6" />
       </div>
-      <h2 className="mt-4 font-semibold">Your links live here</h2>
+      <h2 className="mt-4 font-display text-3xl font-medium leading-none">
+        Your links live here
+      </h2>
       <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
         Paste a long link anywhere on this page to shorten it. Each one gets a
         row like this, with clicks over the last week:
       </p>
       <div
         aria-hidden
-        className="pointer-events-none mx-auto mt-6 max-w-md select-none overflow-hidden rounded-2xl border border-border bg-background text-left opacity-80"
+        className="pointer-events-none mx-auto mt-6 max-w-md select-none overflow-hidden rounded-sm border border-foreground/15 bg-card text-left opacity-80"
       >
         <LinkRow
           url="https://github.com"

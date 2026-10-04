@@ -12,27 +12,30 @@ export function VisitorNotice({
   description: string;
 }) {
   return (
-    <section className="flex flex-1 items-center justify-center px-4 py-20 md:py-28">
-      <div className="w-full max-w-md text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+    <section className="flex flex-1 items-center px-4 py-20 md:py-28">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="flex h-16 w-16 rotate-[-8deg] items-center justify-center rounded-full border-2 border-dashed border-brand text-brand">
           {icon}
         </div>
-        <h1 className="mt-6 text-balance text-2xl font-semibold tracking-tight sm:text-3xl">
+        <h1 className="mt-6 max-w-[14ch] font-display text-[clamp(2.4rem,5vw,3.8rem)] font-medium leading-[0.92] tracking-[-0.03em]">
           {title}
         </h1>
-        <p className="mx-auto mt-3 max-w-sm text-balance text-muted-foreground">
+        <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
           {description}
         </p>
-        <p className="mt-6 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
           If someone sent you this link, ask them for a new one.
         </p>
-        <div className="mt-10 rounded-2xl border border-border bg-background p-5 text-left">
-          <p className="text-sm font-medium">Need short links of your own?</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className="slip mt-10 max-w-md p-5">
+          <p className="eyebrow">Still here</p>
+          <p className="mt-3 font-display text-2xl font-medium leading-none">
+            Need short links of your own?
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             Wub is free and open source. Paste a link and get a short one in
             seconds.
           </p>
-          <Button asChild size="sm" className="mt-4">
+          <Button asChild size="sm" className="mt-5">
             <Link href="/">Create a short link</Link>
           </Button>
         </div>

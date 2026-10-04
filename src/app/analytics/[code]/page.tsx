@@ -59,7 +59,7 @@ function StatTile({
   icon?: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-border bg-background p-4">
+    <div className="min-w-0 rounded-sm border border-foreground/15 bg-card p-4">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-1 flex min-w-0 items-center gap-2 font-semibold">
         {value ? (
@@ -121,7 +121,7 @@ export default async function AnalyticsPage({
         <div className="flex items-start gap-4">
           <UrlFavicon url={clicks.link.url} className="h-10 w-10" />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-semibold">
+            <h1 className="truncate font-display text-3xl font-medium italic leading-none">
               {shortUrl.replace(/^https?:\/\//, "")}
             </h1>
             <a
@@ -142,7 +142,7 @@ export default async function AnalyticsPage({
           shortCode={code}
           url={clicks.link.url}
         />
-        <div className="rounded-2xl border border-border bg-background p-5">
+        <div className="rounded-sm border border-foreground/15 bg-card p-5">
           <div className="mb-4 flex justify-end">
             <RangePicker code={code} value={range} />
           </div>

@@ -8,12 +8,27 @@ import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { getServerAuthSession } from "@/server/auth";
 import { TRPCReactProvider } from "@/trpc/react";
-import { Inter } from "next/font/google";
+import { Fraunces, IBM_Plex_Mono, Onest } from "next/font/google";
 import { headers } from "next/headers";
 
-const inter = Inter({
+const sans = Onest({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+});
+
+const display = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata = {
@@ -38,7 +53,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${inter.variable}`}>
+      <body
+        className={`font-sans ${sans.variable} ${display.variable} ${mono.variable}`}
+      >
         <Providers>
           <ProjectUrlProvider host={host} protocol={protocol}>
             <TRPCReactProvider>

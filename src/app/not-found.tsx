@@ -3,16 +3,18 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <section className="flex flex-1 items-center justify-center px-4 py-24">
-      <div className="max-w-sm text-center">
-        <p className="text-sm font-medium text-brand">404</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          We couldn&apos;t find that page
+    <section className="flex flex-1 items-center px-4 py-20 md:py-28">
+      <div className="mx-auto w-full max-w-xl">
+        <p className="font-display text-[clamp(5rem,14vw,8rem)] italic leading-none text-brand">
+          404
+        </p>
+        <h1 className="mt-2 max-w-[12ch] font-display text-4xl font-medium leading-[0.95] tracking-[-0.03em] sm:text-5xl">
+          This page left no mark.
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-4 max-w-sm text-muted-foreground">
           It may have been deleted, or it belongs to a different account.
         </p>
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/dashboard">Go to your links</Link>
           </Button>

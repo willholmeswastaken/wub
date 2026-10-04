@@ -1,6 +1,5 @@
 "use client";
 
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useClaimableLinks, useHydrated } from "@/stores/link";
@@ -32,56 +31,63 @@ export function SignInPanel({
     : null;
 
   return (
-    <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-24">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8 shadow-sm">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-          <Logo />
+    <section className="flex flex-1 items-center px-4 py-16 md:py-24">
+      <div className="mx-auto grid w-full max-w-5xl items-end gap-10 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-16">
+        <div>
+          <p className="eyebrow">Account</p>
+          <h1 className="mt-4 max-w-[10ch] font-display text-[clamp(3rem,6vw,5.4rem)] font-medium leading-[0.88] tracking-[-0.04em]">
+            Sign in. <span className="italic text-brand">Keep the mark.</span>
+          </h1>
+          <p className="mt-5 max-w-sm text-base leading-relaxed text-muted-foreground">
+            GitHub is the only key. Your links stay, and you can see who clicks
+            them.
+          </p>
         </div>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          Sign in to Wub
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Keep your links forever and see who clicks them.
-        </p>
-        {linkCount > 0 && (
-          <p className="mt-6 flex items-start gap-2 rounded-xl bg-brand/5 p-3 text-sm">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-            <span>
-              Your {linkCount === 1 ? "link" : `${linkCount} links`} from this
-              browser will be saved to your account.
-            </span>
-          </p>
-        )}
-        {errorMessage && (
-          <p
-            role="alert"
-            className="mt-6 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {errorMessage}
-          </p>
-        )}
-        <Button
-          className="mt-6 w-full"
-          disabled={isPending}
-          onClick={() => {
-            setIsPending(true);
-            void signIn("github", { callbackUrl }).catch(() =>
-              setIsPending(false),
-            );
-          }}
-        >
-          {isPending ? (
-            <Spinner size="small" className="h-4 w-4 text-primary-foreground" />
-          ) : (
-            <>
-              <Github className="mr-2 h-4 w-4" />
-              Continue with GitHub
-            </>
+        <div className="slip p-6 sm:p-8">
+          <p className="eyebrow">Clerk&apos;s window</p>
+          {linkCount > 0 && (
+            <p className="mt-5 flex items-start gap-2 border border-foreground/10 bg-brand/[0.06] p-3 text-sm">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+              <span>
+                Your {linkCount === 1 ? "link" : `${linkCount} links`} from this
+                browser will be saved to your account.
+              </span>
+            </p>
           )}
-        </Button>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
-          We only use your GitHub name, email and avatar.
-        </p>
+          {errorMessage && (
+            <p
+              role="alert"
+              className="mt-5 border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              {errorMessage}
+            </p>
+          )}
+          <Button
+            className="mt-6 w-full"
+            disabled={isPending}
+            onClick={() => {
+              setIsPending(true);
+              void signIn("github", { callbackUrl }).catch(() =>
+                setIsPending(false),
+              );
+            }}
+          >
+            {isPending ? (
+              <Spinner
+                size="small"
+                className="h-4 w-4 text-primary-foreground"
+              />
+            ) : (
+              <>
+                <Github className="mr-2 h-4 w-4" />
+                Continue with GitHub
+              </>
+            )}
+          </Button>
+          <p className="mt-4 font-mono text-[11px] uppercase leading-relaxed tracking-[0.14em] text-muted-foreground">
+            Name, email and avatar. Nothing else.
+          </p>
+        </div>
       </div>
     </section>
   );

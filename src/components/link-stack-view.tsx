@@ -44,7 +44,7 @@ function LinkList({
       variants={container}
       initial="hidden"
       animate="show"
-      className="overflow-hidden rounded-2xl border border-border bg-background"
+      className="slip overflow-hidden"
     >
       {links.map((link, index) => (
         <motion.div
@@ -96,9 +96,7 @@ export default function LinkStackView({
   return (
     <div className="space-y-3 pt-4 text-left">
       <div className="flex items-center justify-between gap-4 px-1">
-        <h2 className="text-sm font-medium text-muted-foreground">
-          Recent links
-        </h2>
+        <h2 className="eyebrow">Recent on this browser</h2>
         <Link
           href="/signin?callbackUrl=/dashboard"
           className="inline-flex items-center gap-1 text-sm font-medium text-brand hover:underline"

@@ -4,71 +4,71 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 38 42% 91%;
+    --foreground: 22 28% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 42 62% 97%;
+    --card-foreground: 22 28% 11%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 42 62% 97%;
+    --popover-foreground: 22 28% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 7 72% 36%;
+    --primary-foreground: 40 50% 97%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 36 26% 85%;
+    --secondary-foreground: 22 28% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 35 22% 85%;
+    --muted-foreground: 24 12% 32%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 36 30% 82%;
+    --accent-foreground: 22 28% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 40%;
+    --destructive-foreground: 40 50% 97%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 18% 72%;
+    --input: 30 16% 68%;
+    --ring: 7 72% 36%;
 
-    --brand: 244 76% 58%;
-    --brand-foreground: 0 0% 100%;
+    --brand: 7 74% 36%;
+    --brand-foreground: 40 50% 97%;
 
-    --radius: 0.75rem;
+    --radius: 0.3rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 24 18% 7%;
+    --foreground: 38 38% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 24 14% 11%;
+    --card-foreground: 38 38% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 24 14% 11%;
+    --popover-foreground: 38 38% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 8 84% 64%;
+    --primary-foreground: 24 22% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 24 10% 16%;
+    --secondary-foreground: 38 38% 92%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 24 10% 16%;
+    --muted-foreground: 32 16% 72%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 24 12% 18%;
+    --accent-foreground: 38 38% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 40 50% 97%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 28 10% 22%;
+    --input: 28 10% 24%;
+    --ring: 8 84% 64%;
 
-    --brand: 244 92% 72%;
-    --brand-foreground: 222.2 84% 4.9%;
+    --brand: 8 86% 66%;
+    --brand-foreground: 24 22% 8%;
   }
 }
 
@@ -77,8 +77,57 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(
+        900px 420px at 0% -10%,
+        hsl(var(--brand) / 0.08),
+        transparent 55%
+      ),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.9'/></svg>");
+    background-size:
+      auto,
+      180px 180px;
+    background-blend-mode: normal, soft-light;
   }
+
+  ::selection {
+    background: hsl(var(--brand) / 0.22);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.22em] text-brand;
+  }
+
+  .slip {
+    position: relative;
+    border: 1px solid hsl(var(--foreground) / 0.16);
+    background-color: hsl(var(--card));
+    box-shadow: 8px 9px 0 0 hsl(var(--foreground) / 0.08);
+  }
+
+  .dark .slip {
+    box-shadow: 8px 9px 0 0 hsl(8 55% 28% / 0.9);
+  }
+}
+
+@keyframes desk-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.desk-rise,
+.desk-in {
+  animation: desk-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 input {
