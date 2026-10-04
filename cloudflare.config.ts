@@ -14,7 +14,15 @@ export default defineConfig({
     compatibilityFlags: ["nodejs_compat"],
     assets: { notFoundHandling: "none" },
     observability: { enabled: true },
-    triggers: [triggers.queue({ name: "wub-log-clicks" })],
+    // One click is one message. Deliver it immediately: the defaults wait for
+    // 10 messages or 5 seconds before the consumer increments click_count.
+    triggers: [
+      triggers.queue({
+        name: "wub-log-clicks",
+        maxBatchSize: 1,
+        maxBatchTimeout: 0,
+      }),
+    ],
     env: {
       ASSETS: bindings.assets(),
       DATABASE_PROVIDER: bindings.text("cloudflare"),
