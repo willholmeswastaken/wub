@@ -6,10 +6,15 @@ const databaseName = "wub";
 const migrationsDir = "migrations/d1";
 
 const databaseId = resolveDatabaseId();
-run("cf", ["d1", "migrations", "apply", databaseId, "--dir", migrationsDir]);
-
-const deployEnv = { ...process.env };
+// The Worker config binds D1 by this id. A name-only binding differs from the
+// dashboard Worker, and `cf deploy` aborts on that difference in CI.
+const deployEnv = { ...process.env, D1_DATABASE_ID: databaseId };
 delete deployEnv.WRANGLER_CI_MATCH_TAG;
+run(
+  "cf",
+  ["d1", "migrations", "apply", databaseId, "--dir", migrationsDir],
+  deployEnv,
+);
 run("cf", ["deploy", "--prebuilt", "--mode", "production"], deployEnv);
 
 function resolveDatabaseId() {

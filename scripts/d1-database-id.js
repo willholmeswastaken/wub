@@ -21,6 +21,21 @@ export function databaseIdFromList(payload, name) {
 }
 
 /**
+ * Bind an existing D1 database by id. The dashboard stores `database_id`.
+ * A name-only binding is a destructive config change, and `cf deploy` aborts
+ * on that in CI.
+ *
+ * @param {string | undefined} databaseId
+ * @param {string} name
+ * @returns {{ id: string } | { name: string }}
+ */
+export function d1BindingOptions(databaseId, name) {
+  const id = databaseId?.trim();
+  if (id) return { id };
+  return { name };
+}
+
+/**
  * @param {unknown} payload
  * @returns {Array<{ name?: string, uuid?: string, id?: string }>}
  */
