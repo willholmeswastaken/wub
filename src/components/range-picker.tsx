@@ -22,7 +22,7 @@ export function RangePicker({
           aria-current={range === value ? "page" : undefined}
           className={cn(
             "rounded-full px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            range === value && "bg-background text-foreground shadow-sm",
+            range === value && "bg-foreground text-background",
           )}
         >
           {range}

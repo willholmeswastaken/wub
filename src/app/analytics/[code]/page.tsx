@@ -59,20 +59,18 @@ function StatTile({
   icon?: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-3xl bg-muted/80 px-5 py-4">
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-2 flex min-w-0 items-center gap-2 font-medium tracking-[-0.02em]">
+    <div className="min-w-0 py-6 sm:px-8 sm:first:pl-0 sm:last:pr-0">
+      <p className="flex min-w-0 items-center gap-2 text-xl font-medium tracking-[-0.03em] md:text-2xl">
         {value ? (
           <>
             {icon && <span className="shrink-0">{icon}</span>}
             <span className="truncate">{value}</span>
           </>
         ) : (
-          <span className="text-muted-foreground">-</span>
+          <span className="text-muted-foreground">—</span>
         )}
       </p>
+      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -110,9 +108,11 @@ export default async function AnalyticsPage({
   const topReferrer = breakdown.referrers[0];
   const topDevice = breakdown.devices[0];
 
+  const displayShort = shortUrl.replace(/^https?:\/\//, "");
+
   return (
-    <div className="pb-16">
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-10 md:py-14">
+    <div className="pb-20">
+      <section className="mx-auto w-full max-w-6xl px-6 py-12 md:px-8 md:py-16">
         <Link
           href="/dashboard"
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -120,42 +120,54 @@ export default async function AnalyticsPage({
           <ArrowLeft className="h-4 w-4" />
           Links
         </Link>
-        <div className="flex items-start gap-4">
-          <UrlFavicon url={clicks.link.url} className="mt-1 h-10 w-10" />
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-2xl font-medium tracking-[-0.04em] sm:text-3xl">
-              {shortUrl.replace(/^https?:\/\//, "")}
-            </h1>
-            <a
-              href={clicks.link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 block truncate text-sm text-muted-foreground hover:underline"
-            >
-              {clicks.link.url}
-            </a>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Created {formatDate(clicks.link.created_at)}
-            </p>
+        <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-5">
+            <UrlFavicon
+              url={clicks.link.url}
+              className="h-14 w-14 rounded-2xl"
+            />
+            <div className="min-w-0">
+              <h1 className="truncate text-4xl font-medium tracking-[-0.05em] sm:text-5xl">
+                /{code}
+              </h1>
+              <p className="mt-2 truncate text-sm text-muted-foreground">
+                <a
+                  href={shortUrl}
+                  className="hover:text-foreground hover:underline"
+                >
+                  {displayShort}
+                </a>
+                <span> · </span>
+                <a
+                  href={clicks.link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground hover:underline"
+                >
+                  {clicks.link.url}
+                </a>
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Created {formatDate(clicks.link.created_at)}
+              </p>
+            </div>
           </div>
+          <LinkActions
+            shortUrl={shortUrl}
+            shortCode={code}
+            url={clicks.link.url}
+          />
         </div>
-        <LinkActions
-          shortUrl={shortUrl}
-          shortCode={code}
-          url={clicks.link.url}
-        />
-        <div className="surface p-5 sm:p-6">
-          <div className="mb-4 flex justify-end">
-            <RangePicker code={code} value={range} />
-          </div>
+        <div className="mt-16 border-t border-border/80 pt-10">
           <ClicksChart
             chartData={clicks.clickRange}
             totalClicks={clicks.totalClicks}
             previousTotalClicks={clicks.previousTotalClicks}
             periodLabel={clickRangeLabel[range]}
+            aside={<RangePicker code={code} value={range} />}
           />
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 divide-y divide-border/80 border-y border-border/80 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <StatTile
             label="Top country"
             value={topCountry ? countryName(topCountry.key) : null}
@@ -178,22 +190,22 @@ export default async function AnalyticsPage({
             }
           />
         </div>
-        <BreakdownCard
-          title="Sources"
-          tabs={[
-            {
-              value: "referrers",
-              label: "Referrers",
-              items: breakdown.referrers.map(({ key, count }) => ({
-                key,
-                count,
-                label: referrerLabel(key),
-                icon: <Globe className="h-4 w-4" />,
-              })),
-            },
-          ]}
-        />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mt-16 grid grid-cols-1 gap-x-16 gap-y-14 lg:grid-cols-3">
+          <BreakdownCard
+            title="Sources"
+            tabs={[
+              {
+                value: "referrers",
+                label: "Referrers",
+                items: breakdown.referrers.map(({ key, count }) => ({
+                  key,
+                  count,
+                  label: referrerLabel(key),
+                  icon: <Globe className="h-4 w-4" />,
+                })),
+              },
+            ]}
+          />
           <BreakdownCard
             title="Locations"
             tabs={[

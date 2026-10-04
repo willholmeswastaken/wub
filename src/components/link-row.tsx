@@ -19,6 +19,7 @@ export function LinkRow({
   accessory,
   sparkline,
   actions,
+  layout = "compact",
 }: {
   url: string;
   shortUrl: string;
@@ -31,12 +32,18 @@ export function LinkRow({
   accessory?: ReactNode;
   sparkline?: number[];
   actions?: ReactNode;
+  layout?: "compact" | "ledger";
 }) {
+  const ledger = layout === "ledger";
+
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3.5 transition-colors sm:gap-4 sm:px-5",
-        href && "hover:bg-muted/50",
+        "group relative transition-colors",
+        ledger
+          ? "flex items-center gap-4 px-1 py-4 md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_6rem] md:items-center md:gap-x-8 md:rounded-2xl md:px-4 md:py-5"
+          : "flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5",
+        href && "hover:bg-muted/70",
         isExpired && "text-muted-foreground",
         isHighlighted && "bg-brand/10 hover:bg-brand/10",
       )}
@@ -49,12 +56,14 @@ export function LinkRow({
           <span className="sr-only">View analytics for {shortUrl}</span>
         </Link>
       )}
-      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center gap-3">
-        <UrlFavicon url={url} />
+      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center gap-4">
+        <UrlFavicon url={url} className={ledger ? "h-10 w-10" : undefined} />
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "truncate text-sm font-medium tracking-[-0.01em]",
+              ledger
+                ? "truncate text-base font-medium tracking-[-0.02em]"
+                : "truncate text-sm font-medium tracking-[-0.01em]",
               isExpired && "line-through",
             )}
           >
@@ -80,18 +89,37 @@ export function LinkRow({
       {sparkline && (
         <Sparkline
           values={sparkline}
-          className="pointer-events-none relative hidden sm:block"
+          width={ledger ? 112 : 56}
+          height={ledger ? 32 : 20}
+          className={cn(
+            "pointer-events-none relative",
+            ledger ? "hidden md:block" : "hidden sm:block",
+          )}
         />
       )}
-      <div className="pointer-events-none relative w-12 shrink-0 text-right">
-        <p className="text-sm font-semibold tabular-nums">
+      <div
+        className={cn(
+          "pointer-events-none relative shrink-0 text-right",
+          ledger ? "w-14 md:w-auto" : "w-12",
+        )}
+      >
+        <p
+          className={cn(
+            "tabular-nums tracking-[-0.04em]",
+            ledger
+              ? "text-lg font-medium md:text-[1.65rem]"
+              : "text-sm font-semibold",
+          )}
+        >
           {clicks.toLocaleString()}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p
+          className={cn("text-xs text-muted-foreground", ledger && "md:hidden")}
+        >
           {clicks === 1 ? "click" : "clicks"}
         </p>
       </div>
-      <div className="relative z-10 flex items-center gap-1">
+      <div className="relative z-10 flex items-center justify-end gap-1">
         <CopyButton
           text={shortUrl}
           isExpired={isExpired}

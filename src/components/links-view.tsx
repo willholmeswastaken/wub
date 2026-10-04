@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { type LinkRouterOutputs } from "@/server/api/routers/link";
 import { useRecentlyClaimed } from "@/stores/link";
 import { api } from "@/trpc/react";
-import { Link2, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type Result = {
@@ -85,60 +85,72 @@ export function LinksView({
   }, [links, query, sort]);
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-6 px-5 py-10 md:py-14">
-      <div>
-        <h1 className="text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
-          Links
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Paste a long link. The short one is copied for you.
+    <section className="mx-auto w-full max-w-6xl px-6 py-12 md:px-8 md:py-16">
+      <div className="flex items-end justify-between gap-8">
+        <div>
+          <h1 className="text-4xl font-medium tracking-[-0.05em] sm:text-5xl">
+            Links
+          </h1>
+          <p className="mt-3 max-w-md text-sm text-muted-foreground md:text-base">
+            Paste a long link. The short one is copied for you.
+          </p>
+        </div>
+        <p className="hidden text-right sm:block">
+          <span className="block text-4xl font-medium tabular-nums tracking-[-0.05em]">
+            {links.length}
+          </span>
+          <span className="text-sm text-muted-foreground">saved</span>
         </p>
       </div>
-      <ShortenForm
-        focusOnMount
-        capturePaste
-        shortcuts={{ modK: true }}
-        slugPrefix={projectUrl}
-        onSubmit={async (url, { slug }) => {
-          const link = await createLink.mutateAsync({ url, slug });
-          const shortUrl = `${projectUrl}${link.short_code}`;
-          const autoCopied = await copyToClipboard(shortUrl);
-          utils.link.getUserLinks.setData(undefined, (previous) => [
-            {
-              short_code: link.short_code,
+      <div className="mt-10">
+        <ShortenForm
+          focusOnMount
+          capturePaste
+          shortcuts={{ modK: true }}
+          slugPrefix={projectUrl}
+          onSubmit={async (url, { slug }) => {
+            const link = await createLink.mutateAsync({ url, slug });
+            const shortUrl = `${projectUrl}${link.short_code}`;
+            const autoCopied = await copyToClipboard(shortUrl);
+            utils.link.getUserLinks.setData(undefined, (previous) => [
+              {
+                short_code: link.short_code,
+                url: link.url,
+                created_at: link.created_at ?? new Date(),
+                click_count: 0,
+                last_clicked: null,
+                recentClicks: [0, 0, 0, 0, 0, 0, 0],
+              },
+              ...(previous ?? []).filter(
+                (existing) => existing.short_code !== link.short_code,
+              ),
+            ]);
+            setResult({
+              shortCode: link.short_code,
+              shortUrl,
               url: link.url,
-              created_at: link.created_at ?? new Date(),
-              click_count: 0,
-              last_clicked: null,
-              recentClicks: [0, 0, 0, 0, 0, 0, 0],
-            },
-            ...(previous ?? []).filter(
-              (existing) => existing.short_code !== link.short_code,
-            ),
-          ]);
-          setResult({
-            shortCode: link.short_code,
-            shortUrl,
-            url: link.url,
-            autoCopied,
-          });
-          setQuery("");
-          void utils.link.getUserLinks.invalidate();
-        }}
-      />
-      {result && (
-        <LinkResultCard
-          key={result.shortCode}
-          shortUrl={result.shortUrl}
-          url={result.url}
-          autoCopied={result.autoCopied}
+              autoCopied,
+            });
+            setQuery("");
+            void utils.link.getUserLinks.invalidate();
+          }}
         />
+      </div>
+      {result && (
+        <div className="mt-6">
+          <LinkResultCard
+            key={result.shortCode}
+            shortUrl={result.shortUrl}
+            url={result.url}
+            autoCopied={result.autoCopied}
+          />
+        </div>
       )}
       {links.length === 0 ? (
         <EmptyState projectUrl={projectUrl} />
       ) : (
-        <div className="space-y-3 pt-2">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="mt-14">
+          <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <label htmlFor="link-search" className="sr-only">
@@ -210,34 +222,37 @@ export function LinksView({
               </button>
             </div>
           ) : (
-            <div className="surface overflow-hidden">
-              {visibleLinks.map((link, index) => {
+            <div className="border-t border-border/80">
+              <div className="hidden grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_6rem] gap-x-8 px-4 pb-2 pt-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground md:grid">
+                <span>Link</span>
+                <span>7 days</span>
+                <span className="text-right">Clicks</span>
+                <span className="sr-only">Actions</span>
+              </div>
+              {visibleLinks.map((link) => {
                 const shortUrl = `${projectUrl}${link.short_code}`;
                 return (
-                  <div
+                  <LinkRow
                     key={link.short_code}
-                    className={index > 0 ? "border-t border-border" : undefined}
-                  >
-                    <LinkRow
-                      url={link.url}
-                      shortUrl={shortUrl}
-                      clicks={link.click_count}
-                      subtitle={`${hostnameOf(link.url) ?? link.url} · ${relativeTime(link.created_at)}`}
-                      href={`/analytics/${link.short_code}`}
-                      sparkline={link.recentClicks}
-                      isHighlighted={
-                        claimedCodes.includes(link.short_code) ||
-                        result?.shortCode === link.short_code
-                      }
-                      actions={
-                        <LinkRowMenu
-                          shortCode={link.short_code}
-                          shortUrl={shortUrl}
-                          url={link.url}
-                        />
-                      }
-                    />
-                  </div>
+                    layout="ledger"
+                    url={link.url}
+                    shortUrl={shortUrl}
+                    clicks={link.click_count}
+                    subtitle={`${hostnameOf(link.url) ?? link.url} · ${relativeTime(link.created_at)}`}
+                    href={`/analytics/${link.short_code}`}
+                    sparkline={link.recentClicks}
+                    isHighlighted={
+                      claimedCodes.includes(link.short_code) ||
+                      result?.shortCode === link.short_code
+                    }
+                    actions={
+                      <LinkRowMenu
+                        shortCode={link.short_code}
+                        shortUrl={shortUrl}
+                        url={link.url}
+                      />
+                    }
+                  />
                 );
               })}
             </div>
@@ -250,22 +265,20 @@ export function LinksView({
 
 function EmptyState({ projectUrl }: { projectUrl: string }) {
   return (
-    <div className="px-2 py-6 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-foreground">
-        <Link2 className="h-5 w-5" />
-      </div>
-      <h2 className="mt-5 text-lg font-medium tracking-[-0.02em]">
+    <div className="mt-16 border-t border-border/80 pt-10">
+      <h2 className="text-2xl font-medium tracking-[-0.04em]">
         Your links live here
       </h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
         Paste a long link anywhere on this page to shorten it. Each one gets a
-        row like this, with clicks over the last week:
+        row like this, with clicks over the last week.
       </p>
       <div
         aria-hidden
-        className="surface pointer-events-none mx-auto mt-8 max-w-md select-none overflow-hidden text-left"
+        className="pointer-events-none mt-8 max-w-3xl select-none"
       >
         <LinkRow
+          layout="ledger"
           url="https://github.com"
           shortUrl={`${projectUrl}launch`}
           clicks={62}

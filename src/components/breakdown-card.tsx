@@ -33,7 +33,7 @@ function BreakdownList({ items }: { items: BreakdownItem[] }) {
 
   const visible = showAll ? items : items.slice(0, TOP_N);
   return (
-    <div className="space-y-1">
+    <div>
       {visible.map((item) => (
         <AnalyticDisplay
           key={item.key}
@@ -64,10 +64,10 @@ export function BreakdownCard({
   tabs: BreakdownTab[];
 }) {
   return (
-    <div className="surface p-5 sm:p-6">
+    <div>
       <Tabs defaultValue={tabs[0]?.value}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-medium tracking-[-0.02em]">{title}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3">
+          <h2 className="text-lg font-medium tracking-[-0.03em]">{title}</h2>
           {tabs.length > 1 && (
             <TabsList className="h-auto">
               {tabs.map((tab) => (

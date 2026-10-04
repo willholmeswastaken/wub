@@ -5,6 +5,7 @@ import { type DateObject } from "@/lib/click-date-range";
 import { cn } from "@/lib/utils";
 import { useHydrated } from "@/stores/link";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { type ReactNode } from "react";
 
 function changeLabel(current: number, previous: number) {
   if (previous === 0) return current > 0 ? "New" : null;
@@ -17,53 +18,61 @@ export const ClicksChart = ({
   totalClicks,
   previousTotalClicks,
   periodLabel,
+  aside,
 }: {
   chartData: DateObject[];
   totalClicks: number;
   previousTotalClicks: number;
   periodLabel: string;
+  aside?: ReactNode;
 }) => {
   const hydrated = useHydrated();
   const change = changeLabel(totalClicks, previousTotalClicks);
   const isUp = totalClicks >= previousTotalClicks;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <div className="flex flex-wrap items-baseline gap-3">
-          <p className="text-6xl font-medium tabular-nums tracking-[-0.05em]">
-            {totalClicks.toLocaleString()}
+    <div>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-baseline gap-4">
+            <p className="text-7xl font-medium tabular-nums tracking-[-0.06em] md:text-8xl">
+              {totalClicks.toLocaleString()}
+            </p>
+            {change && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-0.5 text-sm font-medium",
+                  isUp
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-destructive",
+                )}
+              >
+                {change !== "New" &&
+                  (isUp ? (
+                    <ArrowUpRight className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4" />
+                  ))}
+                {change}
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Clicks · {periodLabel.toLowerCase()}
+            {change && change !== "New" && (
+              <>
+                {" "}
+                · {previousTotalClicks.toLocaleString()} in the period before
+              </>
+            )}
           </p>
-          {change && (
-            <span
-              className={cn(
-                "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-sm font-medium",
-                isUp
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : "bg-destructive/10 text-destructive",
-              )}
-            >
-              {change !== "New" &&
-                (isUp ? (
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                ) : (
-                  <ArrowDownRight className="h-3.5 w-3.5" />
-                ))}
-              {change}
-            </span>
-          )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Clicks · {periodLabel.toLowerCase()}
-          {change && change !== "New" && (
-            <> · {previousTotalClicks.toLocaleString()} in the period before</>
-          )}
-        </p>
+        {aside}
       </div>
       {hydrated ? (
         <AreaChart
           type="default"
-          className="h-[220px] w-full"
+          className="mt-8 h-64 w-full md:h-80"
           data={chartData}
           index="date"
           categories={["clicks"]}
@@ -71,7 +80,7 @@ export const ClicksChart = ({
           allowDecimals={false}
         />
       ) : (
-        <div className="h-[220px] w-full animate-pulse rounded-xl bg-muted/60" />
+        <div className="mt-8 h-64 w-full animate-pulse rounded-xl bg-muted/40 md:h-80" />
       )}
     </div>
   );
