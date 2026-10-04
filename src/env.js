@@ -17,13 +17,27 @@ const queueProvider =
       : "qstash";
 const qstashRequired = queueProvider === "qstash";
 
+const databaseProvider =
+  process.env.DATABASE_PROVIDER === "neon" ||
+  process.env.DATABASE_PROVIDER === "cloudflare"
+    ? process.env.DATABASE_PROVIDER
+    : isCloudflareWorker()
+      ? "cloudflare"
+      : "neon";
+const neonRequired = databaseProvider === "neon";
+
 export const env = createEnv({
   /**
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: neonRequired ? z.string().url() : z.string().url().optional(),
+    DATABASE_PROVIDER: z.preprocess(
+      (value) =>
+        value === "neon" || value === "cloudflare" ? value : undefined,
+      z.enum(["neon", "cloudflare"]).optional(),
+    ),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -76,6 +90,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_PROVIDER: process.env.DATABASE_PROVIDER,
     NODE_ENV: process.env.NODE_ENV,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
