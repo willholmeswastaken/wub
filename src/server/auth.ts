@@ -1,12 +1,15 @@
 import { env } from "@/env";
 import { sessionWithUserId } from "@/server/auth-session";
 import { getAuthAdapter } from "@/server/db";
+import { ensureGithubProfileEmail } from "@/server/github-email";
 import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
-import GithubProviderImport from "next-auth/providers/github";
+import GithubProviderImport, {
+  type GithubProfile,
+} from "next-auth/providers/github";
 
 type GithubProviderFn = typeof GithubProviderImport;
 const githubProviderModule = GithubProviderImport as
@@ -53,6 +56,16 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
       GithubProvider({
         clientId: env.GITHUB_CLIENT_ID,
         clientSecret: env.GITHUB_CLIENT_SECRET,
+        userinfo: {
+          async request({ client, tokens }) {
+            const accessToken = tokens.access_token;
+            if (!accessToken) {
+              throw new Error("GitHub did not return an access token");
+            }
+            const profile = await client.userinfo<GithubProfile>(accessToken);
+            return ensureGithubProfileEmail(profile, accessToken);
+          },
+        },
       }),
       /**
        * ...add more providers here.
