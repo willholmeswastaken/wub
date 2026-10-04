@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { d1BindingOptions, databaseIdFromList } from "./d1-database-id.js";
+import { databaseIdFromList } from "./d1-database-id.js";
 
 describe("databaseIdFromList", () => {
   test("reads the uuid for the named database", () => {
@@ -41,14 +41,5 @@ describe("databaseIdFromList", () => {
         "wub",
       ),
     ).toThrow(/found 2/);
-  });
-});
-
-describe("d1BindingOptions", () => {
-  test("binds by id when the database already exists", () => {
-    expect(d1BindingOptions("db-1", "wub")).toEqual({ id: "db-1" });
-    expect(d1BindingOptions("  db-1  ", "wub")).toEqual({ id: "db-1" });
-    expect(d1BindingOptions(undefined, "wub")).toEqual({ name: "wub" });
-    expect(d1BindingOptions("  ", "wub")).toEqual({ name: "wub" });
   });
 });

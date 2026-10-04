@@ -1,7 +1,5 @@
 import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 
-import { d1BindingOptions } from "./scripts/d1-database-id.js";
-import { findD1DatabaseId } from "./scripts/find-d1-database.js";
 import { findKvNamespaceId } from "./scripts/find-kv-namespace.js";
 import { linksKvTitle } from "./scripts/kv-namespace-id.js";
 
@@ -10,16 +8,6 @@ const secret = () => bindings.secret();
 // Workers Builds sets this to the connected Worker. cf keeps an explicit name
 // instead, so the deploy name check fails when the dashboard Worker differs.
 const workerName = process.env.WRANGLER_CI_OVERRIDE_NAME || "wub";
-const databaseName = "wub";
-// Evaluated when the build writes worker.config.json. `cf deploy --prebuilt`
-// uploads that file, so the id has to be here rather than only in deploy.js.
-const databaseId =
-  process.env.D1_DATABASE_ID?.trim() ||
-  findD1DatabaseId({
-    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-    apiToken: process.env.CLOUDFLARE_API_TOKEN,
-    name: databaseName,
-  });
 const linksKvId =
   process.env.LINKS_KV_ID?.trim() ||
   findKvNamespaceId({
@@ -49,7 +37,7 @@ export default defineConfig({
     env: {
       ASSETS: bindings.assets(),
       DATABASE_PROVIDER: bindings.text("cloudflare"),
-      DB: bindings.d1(d1BindingOptions(databaseId, databaseName)),
+      DB: bindings.d1({ name: "wub" }),
       LINKS: bindings.kv(linksKvId ? { id: linksKvId } : {}),
       CLICK_ANALYTICS: bindings.analyticsEngineDataset({ name: "wub_clicks" }),
       ANALYTICS: bindings.analyticsSQL(),
