@@ -1,6 +1,7 @@
 import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
 
 import { d1BindingOptions } from "./scripts/d1-database-id.js";
+import { findD1DatabaseId } from "./scripts/find-d1-database.js";
 import { findKvNamespaceId } from "./scripts/find-kv-namespace.js";
 import { linksKvTitle } from "./scripts/kv-namespace-id.js";
 
@@ -10,9 +11,15 @@ const secret = () => bindings.secret();
 // instead, so the deploy name check fails when the dashboard Worker differs.
 const workerName = process.env.WRANGLER_CI_OVERRIDE_NAME || "wub";
 const databaseName = "wub";
-// scripts/deploy.js sets this to the existing database UUID. The dashboard
-// Worker stores that id, and a name-only binding makes `cf deploy` abort.
-const databaseId = process.env.D1_DATABASE_ID?.trim();
+// Evaluated when the build writes worker.config.json. `cf deploy --prebuilt`
+// uploads that file, so the id has to be here rather than only in deploy.js.
+const databaseId =
+  process.env.D1_DATABASE_ID?.trim() ||
+  findD1DatabaseId({
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+    apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    name: databaseName,
+  });
 const linksKvId =
   process.env.LINKS_KV_ID?.trim() ||
   findKvNamespaceId({

@@ -1,13 +1,21 @@
 import { spawnSync } from "node:child_process";
 
 import { databaseIdFromList } from "./d1-database-id.js";
+import { patchBuildOutputD1 } from "./patch-d1-binding.js";
 
 const databaseName = "wub";
 const migrationsDir = "migrations/d1";
 
 const databaseId = resolveDatabaseId();
-// The Worker config binds D1 by this id. A name-only binding differs from the
-// dashboard Worker, and `cf deploy` aborts on that difference in CI.
+// The build output is what `cf deploy --prebuilt` uploads. Rewrite its D1
+// binding to the UUID the dashboard already has.
+const patched = patchBuildOutputD1(process.cwd(), databaseId);
+if (patched === 0) {
+  console.error(
+    "The build output has no D1 binding to update. Build the Worker before deploying.",
+  );
+  process.exit(1);
+}
 const deployEnv = { ...process.env, D1_DATABASE_ID: databaseId };
 delete deployEnv.WRANGLER_CI_MATCH_TAG;
 run(
