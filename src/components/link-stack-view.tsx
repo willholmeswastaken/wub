@@ -44,7 +44,7 @@ function LinkList({
       variants={container}
       initial="hidden"
       animate="show"
-      className="overflow-hidden rounded-2xl border border-border bg-background"
+      className="surface overflow-hidden"
     >
       {links.map((link, index) => (
         <motion.div

@@ -59,9 +59,11 @@ function StatTile({
   icon?: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-border bg-background p-4">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 flex min-w-0 items-center gap-2 font-semibold">
+    <div className="min-w-0 rounded-3xl bg-muted/80 px-5 py-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-2 flex min-w-0 items-center gap-2 font-medium tracking-[-0.02em]">
         {value ? (
           <>
             {icon && <span className="shrink-0">{icon}</span>}
@@ -109,19 +111,19 @@ export default async function AnalyticsPage({
   const topDevice = breakdown.devices[0];
 
   return (
-    <div className="pb-12">
-      <section className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-8">
+    <div className="pb-16">
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-10 md:py-14">
         <Link
           href="/dashboard"
-          className="-mb-2 inline-flex w-fit items-center gap-1 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4 w-4" />
-          All links
+          Links
         </Link>
         <div className="flex items-start gap-4">
-          <UrlFavicon url={clicks.link.url} className="h-10 w-10" />
+          <UrlFavicon url={clicks.link.url} className="mt-1 h-10 w-10" />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-semibold">
+            <h1 className="truncate text-2xl font-medium tracking-[-0.04em] sm:text-3xl">
               {shortUrl.replace(/^https?:\/\//, "")}
             </h1>
             <a
@@ -142,7 +144,7 @@ export default async function AnalyticsPage({
           shortCode={code}
           url={clicks.link.url}
         />
-        <div className="rounded-2xl border border-border bg-background p-5">
+        <div className="surface p-5 sm:p-6">
           <div className="mb-4 flex justify-end">
             <RangePicker code={code} value={range} />
           </div>

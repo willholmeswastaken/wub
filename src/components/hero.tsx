@@ -27,7 +27,7 @@ function KeepForeverPitch({ expiresAt }: { expiresAt: Date }) {
   return (
     <Link
       href="/signin?callbackUrl=/dashboard"
-      className="flex items-center justify-between gap-4 border-t border-border bg-brand/5 px-5 py-3 text-sm hover:bg-brand/10"
+      className="flex items-center justify-between gap-4 border-t border-border/80 px-5 py-3.5 text-sm transition-colors hover:bg-muted/70"
     >
       <span className="text-muted-foreground">
         {expired ? (
@@ -82,51 +82,58 @@ export function Hero({ isLoggedIn }: { isLoggedIn: boolean }) {
   };
 
   return (
-    <section className="w-full py-16 md:py-28">
-      <div className="container px-4">
-        <div className="flex flex-col items-center gap-10 text-center">
-          <div className="space-y-4">
-            <h1 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
-              Paste a long link.{" "}
-              <span className="text-muted-foreground">Get a short one.</span>
-            </h1>
-            <p className="mx-auto max-w-[560px] text-balance text-base text-muted-foreground md:text-lg">
-              Free and open source. Your short link is copied the moment
-              it&apos;s ready, and you can see who clicks it.
-            </p>
-          </div>
-          <div className="w-full max-w-xl space-y-4">
-            <ShortenForm
-              size="lg"
-              focusOnMount
-              capturePaste
-              shortcuts={{ slash: true, modK: true }}
-              onSubmit={shorten}
-              hint="Tip: paste a link anywhere on this page to shorten it."
+    <section className="relative w-full overflow-hidden px-5 pb-24 pt-16 md:pb-32 md:pt-24">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[420px] w-[min(760px,110%)] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,hsl(var(--brand)/0.12),transparent_70%)]"
+      />
+      <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
+        <div className="space-y-6">
+          <p className="text-[13px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Free · Open source
+          </p>
+          <h1 className="mx-auto max-w-3xl text-balance text-5xl font-medium leading-[0.95] tracking-[-0.05em] sm:text-6xl md:text-7xl">
+            Paste a long link.
+            <span className="mt-2 block text-muted-foreground">
+              Get a short one.
+            </span>
+          </h1>
+          <p className="mx-auto max-w-md text-balance text-base leading-relaxed text-muted-foreground md:text-lg">
+            Your short link is copied the moment it&apos;s ready. Sign in when
+            you want to see who clicks it.
+          </p>
+        </div>
+        <div className="mt-12 w-full max-w-xl space-y-4">
+          <ShortenForm
+            size="lg"
+            focusOnMount
+            capturePaste
+            shortcuts={{ slash: true, modK: true }}
+            onSubmit={shorten}
+            hint="Tip: paste a link anywhere on this page to shorten it."
+          />
+          {result && (
+            <LinkResultCard
+              key={result.shortCode}
+              shortUrl={result.shortUrl}
+              url={result.url}
+              autoCopied={result.autoCopied}
+              footer={
+                isLoggedIn ? (
+                  <Link
+                    href="/dashboard"
+                    className="flex items-center justify-between border-t border-border/80 px-5 py-3.5 text-sm font-medium transition-colors hover:bg-muted/70"
+                  >
+                    See it in your dashboard
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                ) : result.expiresAt ? (
+                  <KeepForeverPitch expiresAt={result.expiresAt} />
+                ) : null
+              }
             />
-            {result && (
-              <LinkResultCard
-                key={result.shortCode}
-                shortUrl={result.shortUrl}
-                url={result.url}
-                autoCopied={result.autoCopied}
-                footer={
-                  isLoggedIn ? (
-                    <Link
-                      href="/dashboard"
-                      className="flex items-center justify-between border-t border-border bg-muted/50 px-5 py-3 text-sm font-medium hover:bg-muted"
-                    >
-                      See it in your dashboard
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  ) : result.expiresAt ? (
-                    <KeepForeverPitch expiresAt={result.expiresAt} />
-                  ) : null
-                }
-              />
-            )}
-            {!isLoggedIn && <LinkStackView excludeCode={result?.shortCode} />}
-          </div>
+          )}
+          {!isLoggedIn && <LinkStackView excludeCode={result?.shortCode} />}
         </div>
       </div>
     </section>

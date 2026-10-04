@@ -85,7 +85,15 @@ export function LinksView({
   }, [links, query, sort]);
 
   return (
-    <section className="mx-auto w-full max-w-[720px] space-y-4 px-4 py-8">
+    <section className="mx-auto w-full max-w-3xl space-y-6 px-5 py-10 md:py-14">
+      <div>
+        <h1 className="text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
+          Links
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Paste a long link. The short one is copied for you.
+        </p>
+      </div>
       <ShortenForm
         focusOnMount
         capturePaste
@@ -150,7 +158,7 @@ export function LinksView({
                 placeholder={`Search ${links.length} ${links.length === 1 ? "link" : "links"}`}
                 autoComplete="off"
                 spellCheck={false}
-                className="h-10 w-full rounded-full border border-input bg-background pl-9 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 w-full rounded-full border border-transparent bg-muted/80 pl-9 pr-9 text-sm outline-none transition-colors focus-visible:border-input focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring"
               />
               {query ? (
                 <button
@@ -162,7 +170,7 @@ export function LinksView({
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : (
-                <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border px-1.5 text-xs text-muted-foreground sm:block">
+                <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md bg-background px-1.5 text-xs text-muted-foreground sm:block">
                   /
                 </kbd>
               )}
@@ -191,7 +199,7 @@ export function LinksView({
             </div>
           </div>
           {visibleLinks.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-sm text-muted-foreground">
+            <div className="px-4 py-16 text-center text-sm text-muted-foreground">
               No links match &ldquo;{query}&rdquo;.{" "}
               <button
                 type="button"
@@ -202,7 +210,7 @@ export function LinksView({
               </button>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-border bg-background">
+            <div className="surface overflow-hidden">
               {visibleLinks.map((link, index) => {
                 const shortUrl = `${projectUrl}${link.short_code}`;
                 return (
@@ -242,18 +250,20 @@ export function LinksView({
 
 function EmptyState({ projectUrl }: { projectUrl: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-        <Link2 className="h-6 w-6" />
+    <div className="px-2 py-6 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-foreground">
+        <Link2 className="h-5 w-5" />
       </div>
-      <h2 className="mt-4 font-semibold">Your links live here</h2>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+      <h2 className="mt-5 text-lg font-medium tracking-[-0.02em]">
+        Your links live here
+      </h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
         Paste a long link anywhere on this page to shorten it. Each one gets a
         row like this, with clicks over the last week:
       </p>
       <div
         aria-hidden
-        className="pointer-events-none mx-auto mt-6 max-w-md select-none overflow-hidden rounded-2xl border border-border bg-background text-left opacity-80"
+        className="surface pointer-events-none mx-auto mt-8 max-w-md select-none overflow-hidden text-left"
       >
         <LinkRow
           url="https://github.com"

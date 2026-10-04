@@ -31,7 +31,7 @@ export const ClicksChart = ({
     <div className="flex flex-col gap-4">
       <div>
         <div className="flex flex-wrap items-baseline gap-3">
-          <p className="text-5xl font-semibold tabular-nums tracking-tight">
+          <p className="text-6xl font-medium tabular-nums tracking-[-0.05em]">
             {totalClicks.toLocaleString()}
           </p>
           {change && (

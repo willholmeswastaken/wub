@@ -15,7 +15,7 @@ export function AnalyticDisplay({
   const share = total > 0 ? Math.min(100, (clicks / total) * 100) : 0;
 
   return (
-    <div className="relative flex h-9 items-center gap-3 overflow-hidden rounded-lg px-3 text-sm">
+    <div className="relative flex h-10 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm">
       <div
         className="absolute inset-y-0 left-0 rounded-lg bg-brand/10"
         style={{ width: `${share}%` }}

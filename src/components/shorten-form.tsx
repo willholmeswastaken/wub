@@ -13,7 +13,7 @@ import {
   validateDestinationUrl,
 } from "@/lib/url";
 import { cn } from "@/lib/utils";
-import { Link2, PencilLine } from "lucide-react";
+import { ArrowRight, Link2, PencilLine } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -179,9 +179,9 @@ export function ShortenForm({
       </label>
       <div
         className={cn(
-          "flex flex-col gap-2 sm:flex-row sm:items-center",
+          "flex flex-col gap-2 rounded-[1.75rem] bg-card p-1.5 shadow-[0_0_0_1px_hsl(var(--border))] sm:flex-row sm:items-center sm:gap-1.5 sm:rounded-full",
           isLarge &&
-            "rounded-2xl border border-border bg-background p-2 shadow-sm transition-shadow focus-within:shadow-md sm:gap-2",
+            "shadow-[0_0_0_1px_hsl(var(--border)),0_24px_50px_-28px_hsl(240_10%_4%/0.45)]",
         )}
       >
         <div className="relative min-w-0 flex-1">
@@ -209,9 +209,8 @@ export function ShortenForm({
             aria-invalid={!!error}
             aria-describedby={message ? messageId : undefined}
             className={cn(
-              "pl-11",
-              isLarge &&
-                "h-12 border-0 text-lg shadow-none focus-visible:ring-0 sm:h-14",
+              "rounded-full border-0 bg-transparent pl-11 shadow-none focus-visible:ring-0",
+              isLarge ? "h-12 text-lg sm:h-14" : "h-11",
             )}
             onChange={(event) => {
               setValue(event.target.value);
@@ -221,13 +220,19 @@ export function ShortenForm({
         </div>
         <Button
           type="submit"
-          className={cn("w-full sm:w-auto", isLarge && "h-12 px-8 sm:h-14")}
+          className={cn(
+            "w-full sm:w-auto",
+            isLarge ? "h-12 px-7 text-base sm:h-14" : "h-11",
+          )}
           disabled={isPending}
         >
           {isPending ? (
             <Spinner size="small" className="h-4 w-4 text-primary-foreground" />
           ) : (
-            "Shorten"
+            <>
+              Shorten
+              {isLarge && <ArrowRight className="ml-2 h-4 w-4" />}
+            </>
           )}
         </Button>
       </div>

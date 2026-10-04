@@ -1,26 +1,20 @@
-import { BarChart3, ClipboardCheck, Github, QrCode } from "lucide-react";
-
 const features = [
   {
-    icon: ClipboardCheck,
     title: "Copied instantly",
     description:
       "Paste a link and the short one is already on your clipboard. No extra clicks.",
   },
   {
-    icon: BarChart3,
     title: "See who clicks",
     description:
       "Clicks over time, countries, cities, devices and browsers for every link.",
   },
   {
-    icon: QrCode,
     title: "QR codes built in",
     description:
       "Every link comes with a QR code you can download for print or slides.",
   },
   {
-    icon: Github,
     title: "Open source",
     description:
       "The whole thing is on GitHub. Read the code, self-host it or contribute.",
@@ -29,33 +23,30 @@ const features = [
 
 export function WhyUs() {
   return (
-    <section className="w-full border-t border-border bg-background py-16 md:py-24">
-      <div className="container px-4">
-        <div className="mx-auto max-w-2xl space-y-3 text-center">
-          <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-            Everything you need, nothing you don&apos;t
-          </h2>
-          <p className="text-balance text-base text-muted-foreground md:text-lg">
-            Try it without an account. Sign in with GitHub to keep your links
-            forever and see their analytics.
-          </p>
-        </div>
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map(({ icon: Icon, title, description }) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-border bg-muted/40 p-6 text-left"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
-                <Icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 font-semibold">{title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
+    <section className="w-full bg-foreground text-background">
+      <div className="mx-auto max-w-5xl px-5 py-20 md:py-28">
+        <p className="text-[13px] font-medium uppercase tracking-[0.22em] text-background/55">
+          Why Wub
+        </p>
+        <h2 className="mt-4 max-w-xl text-balance text-4xl font-medium tracking-[-0.045em] sm:text-5xl">
+          Everything a short link should do.
+        </h2>
+        <p className="mt-5 max-w-md text-base leading-relaxed text-background/70 md:text-lg">
+          Try it without an account. Sign in with GitHub when you want a link to
+          last, and to see who opens it.
+        </p>
+        <dl className="mt-16 grid grid-cols-1 gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map(({ title, description }) => (
+            <div key={title}>
+              <dt className="text-lg font-medium tracking-[-0.02em]">
+                {title}
+              </dt>
+              <dd className="mt-2 text-sm leading-relaxed text-background/65">
                 {description}
-              </p>
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </section>
   );

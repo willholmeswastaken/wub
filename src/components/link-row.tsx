@@ -35,11 +35,10 @@ export function LinkRow({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4",
-        href && "hover:bg-muted/60",
+        "group relative flex items-center gap-3 px-4 py-3.5 transition-colors sm:gap-4 sm:px-5",
+        href && "hover:bg-muted/50",
         isExpired && "text-muted-foreground",
-        isHighlighted &&
-          "bg-brand/10 shadow-[inset_3px_0_0_hsl(var(--brand))] hover:bg-brand/10",
+        isHighlighted && "bg-brand/10 hover:bg-brand/10",
       )}
     >
       {href && (
@@ -55,7 +54,7 @@ export function LinkRow({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "truncate text-sm font-semibold",
+              "truncate text-sm font-medium tracking-[-0.01em]",
               isExpired && "line-through",
             )}
           >

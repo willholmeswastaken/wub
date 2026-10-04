@@ -9,10 +9,5 @@ export default async function Dashboard() {
     redirect("/signin?callbackUrl=/dashboard");
   }
   const links = await api.link.getUserLinks();
-  return (
-    <div>
-      <h1 className="sr-only">Your links</h1>
-      <LinksView initialLinks={links} />
-    </div>
-  );
+  return <LinksView initialLinks={links} />;
 }
