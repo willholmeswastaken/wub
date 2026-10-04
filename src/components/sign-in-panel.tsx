@@ -32,19 +32,17 @@ export function SignInPanel({
     : null;
 
   return (
-    <section className="flex flex-1 items-center justify-center px-4 py-16 md:py-24">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8 shadow-sm">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
-          <Logo />
-        </div>
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">
-          Sign in to Wub
+    <section className="flex flex-1 items-center justify-center px-5 py-20 md:py-28">
+      <div className="w-full max-w-md">
+        <Logo />
+        <h1 className="mt-8 text-5xl font-medium tracking-[-0.05em]">
+          Sign in
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Keep your links forever and see who clicks them.
+        <p className="mt-4 max-w-sm text-base leading-relaxed text-muted-foreground">
+          Keep every link, and see who opens it.
         </p>
         {linkCount > 0 && (
-          <p className="mt-6 flex items-start gap-2 rounded-xl bg-brand/5 p-3 text-sm">
+          <p className="mt-8 flex items-start gap-2 rounded-2xl bg-brand/10 px-4 py-3 text-sm">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
             <span>
               Your {linkCount === 1 ? "link" : `${linkCount} links`} from this
@@ -55,13 +53,13 @@ export function SignInPanel({
         {errorMessage && (
           <p
             role="alert"
-            className="mt-6 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
+            className="mt-8 rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive"
           >
             {errorMessage}
           </p>
         )}
         <Button
-          className="mt-6 w-full"
+          className="mt-10 h-12 w-full text-base"
           disabled={isPending}
           onClick={() => {
             setIsPending(true);
@@ -79,7 +77,7 @@ export function SignInPanel({
             </>
           )}
         </Button>
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
           We only use your GitHub name, email and avatar.
         </p>
       </div>

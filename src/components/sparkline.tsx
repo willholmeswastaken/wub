@@ -3,12 +3,14 @@ import { cn } from "@/lib/utils";
 export function Sparkline({
   values,
   className,
+  width = 56,
+  height = 20,
 }: {
   values: number[];
   className?: string;
+  width?: number;
+  height?: number;
 }) {
-  const width = 56;
-  const height = 20;
   const max = Math.max(...values, 1);
   const step = values.length > 1 ? width / (values.length - 1) : width;
   const points = values

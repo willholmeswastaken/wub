@@ -23,7 +23,7 @@ export function LinkActions({
   const router = useRouter();
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex items-start gap-5">
       <CopyButton text={shortUrl} labeled />
       <QRCodeButton url={shortUrl} />
       <button

@@ -37,7 +37,7 @@ export function HeaderLinks({
             href="/dashboard"
             aria-current={inProduct ? "page" : undefined}
             className={cn(
-              "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "rounded-full px-3.5 py-1.5 text-sm font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               inProduct && "bg-muted text-foreground",
             )}
           >

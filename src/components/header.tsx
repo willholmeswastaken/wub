@@ -8,10 +8,10 @@ export async function Header() {
   const session = await getServerAuthSession();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/75 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-6 md:px-8">
         <Link
-          className="mr-2 flex items-center gap-2 rounded-md font-semibold tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mr-1 flex items-center gap-2.5 rounded-full text-[15px] font-medium tracking-[-0.03em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href="/"
         >
           <Logo />

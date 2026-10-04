@@ -59,7 +59,7 @@ export function SlugField({
       <label htmlFor={inputId} className="sr-only">
         Custom short link
       </label>
-      <div className="flex h-11 items-center overflow-hidden rounded-xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+      <div className="flex h-12 items-center overflow-hidden rounded-2xl border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
         <span className="shrink-0 select-none pl-4 text-sm text-muted-foreground">
           {prefix.replace(/^https?:\/\//, "")}
         </span>

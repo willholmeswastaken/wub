@@ -8,10 +8,10 @@ import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { getServerAuthSession } from "@/server/auth";
 import { TRPCReactProvider } from "@/trpc/react";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { headers } from "next/headers";
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-sans",
 });
@@ -38,7 +38,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${inter.variable}`}>
+      <body className={`font-sans ${outfit.variable}`}>
         <Providers>
           <ProjectUrlProvider host={host} protocol={protocol}>
             <TRPCReactProvider>
