@@ -1,15 +1,31 @@
 import { env } from "@/env";
+import { getDatabaseLayer } from "@/server/db";
 import logger from "@/server/logger";
-import { ManagedRuntime } from "effect";
+import { Layer, ManagedRuntime } from "effect";
 
 import { ClickQueue } from "./click-queue";
 import { type QueueProvider, resolveQueueProvider } from "./provider";
-import { ClickRecorderLive, recordClickOutcome } from "./record-click";
+import {
+  type ClickRecorder,
+  ClickRecorderLive,
+  recordClickOutcome,
+} from "./record-click";
 import { logClickEventSchema, type LogClickEvent } from "./schema";
 
-export const clickRecorderRuntime = ManagedRuntime.make(ClickRecorderLive);
-
 type ClickQueueRuntime = ManagedRuntime.ManagedRuntime<ClickQueue, never>;
+type ClickRecorderRuntime = ManagedRuntime.ManagedRuntime<ClickRecorder, never>;
+
+let clickRecorderRuntimePromise: Promise<ClickRecorderRuntime> | undefined;
+
+async function getClickRecorderRuntime() {
+  clickRecorderRuntimePromise ??= (async () => {
+    const databaseLayer = await getDatabaseLayer();
+    return ManagedRuntime.make(
+      ClickRecorderLive.pipe(Layer.provide(databaseLayer)),
+    );
+  })();
+  return clickRecorderRuntimePromise;
+}
 
 let clickQueueRuntimePromise: Promise<ClickQueueRuntime> | undefined;
 
@@ -34,6 +50,11 @@ export async function publishClick(event: LogClickEvent) {
   return runtime.runPromise(ClickQueue.use((queue) => queue.publish(event)));
 }
 
+export async function recordClick(event: LogClickEvent) {
+  const runtime = await getClickRecorderRuntime();
+  return runtime.runPromise(recordClickOutcome(event));
+}
+
 export async function consumeClickMessage(body: unknown) {
   const parsed = logClickEventSchema.safeParse(body);
   if (!parsed.success) {
@@ -41,7 +62,7 @@ export async function consumeClickMessage(body: unknown) {
     return "invalid" as const;
   }
 
-  return clickRecorderRuntime.runPromise(recordClickOutcome(parsed.data));
+  return recordClick(parsed.data);
 }
 
 export { ClickQueue, recordClickOutcome };

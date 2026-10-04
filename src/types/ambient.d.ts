@@ -3,6 +3,12 @@ declare module "cloudflare:workers" {
     CLICK_QUEUE: {
       send(body: unknown): Promise<unknown>;
     };
+    DB: {
+      exec(query: string): Promise<unknown>;
+      prepare(query: string): unknown;
+      batch(statements: unknown[]): Promise<unknown[]>;
+    };
+    DATABASE_PROVIDER?: string;
   };
 }
 
