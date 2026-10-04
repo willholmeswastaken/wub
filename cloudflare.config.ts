@@ -14,7 +14,15 @@ export default defineConfig({
     compatibilityFlags: ["nodejs_compat"],
     assets: { notFoundHandling: "none" },
     observability: { enabled: true },
-    triggers: [triggers.queue({ name: "wub-log-clicks" })],
+    // One click is one message. Deliver it immediately: the defaults wait for
+    // 10 messages or 5 seconds before the consumer increments click_count.
+    triggers: [
+      triggers.queue({
+        name: "wub-log-clicks",
+        maxBatchSize: 1,
+        maxBatchTimeout: 0,
+      }),
+    ],
     env: {
       ASSETS: bindings.assets(),
       DATABASE_PROVIDER: bindings.text("cloudflare"),
@@ -32,6 +40,11 @@ export default defineConfig({
       QSTASH_CURRENT_SIGNING_KEY: secret(),
       QSTASH_NEXT_SIGNING_KEY: secret(),
       CLICK_QUEUE: bindings.queue({ name: "wub-log-clicks" }),
+      // Keep in sync with the Upstash sliding window in src/server/rate-limit/upstash.ts.
+      LINK_RATE_LIMITER: bindings.rateLimit({
+        namespace: "1001",
+        simple: { limit: 10, period: 10 },
+      }),
     },
   }),
 });
