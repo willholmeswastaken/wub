@@ -1,13 +1,19 @@
 import { expect, test } from "bun:test";
 
-import { previousRangeStart, rangeStart } from "@/lib/click-date-range";
+import {
+  fillClickBuckets,
+  previousRangeStart,
+  rangeStart,
+} from "@/lib/click-date-range";
 import {
   CLICK_BLOB_FIELDS,
   clickDataPoint,
 } from "@/server/analytics/datapoint";
 import {
+  analyticsFromEvents,
   analyticsFromRows,
-  clickAnalyticsQueries,
+  clickEventsQuery,
+  isAnalyticsRetryable,
   previousTotalQuery,
   sparklineDayKey,
   sparklineQuery,
@@ -59,33 +65,27 @@ test("click datapoints keep a stable blob order and index by short code", () => 
   ]);
 });
 
-test("analytics SQL uses the Analytics SQL API dialect", () => {
-  const now = new Date("2026-10-04T12:00:00Z");
-  const queries = clickAnalyticsQueries("docs", "7d", now);
-  expect(queries).toHaveLength(7);
-  for (const query of queries) {
-    expect(query.params.code).toBe("docs");
-    expect(query.params.start).toBe(rangeStart("7d", now).toISOString());
-    expectSqlApi(query.query);
-    expect(query.query).toContain("COUNT(*)");
-    expect(query.query).toContain("timestamp >= $start");
-  }
-  expect(queries.some((query) => query.query.includes("UNION"))).toBe(false);
-  expect(queries.some((query) => query.query.includes(" AS kind"))).toBe(false);
-  expect(queries.some((query) => query.query.includes(" AS key"))).toBe(false);
-  expect(queries[0]?.kind).toBe("bucket");
-  expect(queries[0]?.query).toContain(
-    "toUnixTimestamp(toStartOfDay(timestamp)) AS bucket",
-  );
-  expect(queries[0]?.query).toContain("GROUP BY bucket");
-  const city = queries.find((query) => query.kind === "city");
-  expect(city?.query).toContain("blob2 AS dimension");
-  expect(city?.query).toContain("blob1 AS country");
-  expect(city?.query).toContain("GROUP BY blob2, blob1");
-  const hourly = clickAnalyticsQueries("docs", "24h", now);
-  expect(hourly[0]?.query).toContain(
-    "toUnixTimestamp(toStartOfHour(timestamp))",
-  );
+test("analytics SQL reads each click instead of grouping in the engine", () => {
+  const now = new Date("2026-10-04T12:00:00.000Z");
+  const query = clickEventsQuery("docs", "7d", now);
+  expect(query.params.code).toBe("docs");
+  expect(query.params.start).toBe(rangeStart("7d", now).toISOString());
+  expect(query.params.until).toBe(now.toISOString());
+  expectSqlApi(query.query);
+  expect(query.query).toContain("blob1 AS country");
+  expect(query.query).toContain("blob2 AS city");
+  expect(query.query).toContain("blob6 AS referrer");
+  expect(query.query).toContain("timestamp >= $start");
+  expect(query.query).toContain("ORDER BY timestamp");
+  expect(query.query).toContain("LIMIT 10000");
+  expect(query.query.includes("GROUP BY")).toBe(false);
+  expect(query.query.includes("COUNT(*)")).toBe(false);
+  expect(query.query.includes("toUnixTimestamp")).toBe(false);
+  expect(query.query.includes("toStartOfDay")).toBe(false);
+  expect(query.query.includes("toStartOfHour")).toBe(false);
+  const hourly = clickEventsQuery("docs", "24h", now);
+  expect(hourly.params.start).toBe(rangeStart("24h", now).toISOString());
+  expect(hourly.query.includes("GROUP BY")).toBe(false);
 
   const previous = previousTotalQuery("docs", "7d", now);
   expectSqlApi(previous.query);
@@ -104,6 +104,23 @@ test("analytics SQL uses the Analytics SQL API dialect", () => {
   expect(sparkline.query).toContain("index1 IN ($code0, $code1)");
   expect(sparkline.params.start).toBe("2026-09-28T00:00:00.000Z");
   expect(sparkline.params.code1).toBe("blog");
+});
+
+test("click windows stay on UTC day and hour boundaries", () => {
+  const now = new Date("2026-10-04T12:30:00.000Z");
+  expect(rangeStart("7d", now).toISOString()).toBe("2026-09-28T00:00:00.000Z");
+  expect(rangeStart("24h", now).toISOString()).toBe("2026-10-03T13:00:00.000Z");
+  expect(previousRangeStart("7d", now).toISOString()).toBe(
+    "2026-09-21T00:00:00.000Z",
+  );
+  const chart = fillClickBuckets(
+    "7d",
+    [{ at: new Date("2026-10-04T18:00:00.000Z"), count: 2 }],
+    now,
+  );
+  expect(chart).toHaveLength(7);
+  expect(chart[6]).toEqual({ date: "4 Oct", clicks: 2 });
+  expect(chart[0]?.clicks).toBe(0);
 });
 
 test("sparkline days and buckets convert unix seconds to UTC", () => {
@@ -133,6 +150,99 @@ function expectSqlApi(query: string) {
   expect(query.includes(" AS kind")).toBe(false);
   expect(query.includes(" AS key")).toBe(false);
 }
+
+test("click events aggregate in UTC and still count an unreadable timestamp", () => {
+  const analytics = analyticsFromEvents(
+    [
+      {
+        timestamp: "2026-10-04 00:00:00",
+        country: "US",
+        city: "Austin",
+        device: "mobile",
+        browser: "Chrome",
+        os: "iOS",
+        referrer: "github.com",
+      },
+      {
+        timestamp: "2026-10-04T18:00:00.000Z",
+        country: "US",
+        city: "Austin",
+        device: "mobile",
+        browser: "Chrome",
+        os: "iOS",
+        referrer: "direct",
+      },
+      {
+        timestamp: "not-a-date",
+        country: "unknown",
+        city: "unknown",
+        device: "",
+        browser: "unknown",
+        os: "unknown",
+        referrer: "",
+      },
+    ],
+    "7d",
+    1,
+  );
+  expect(analytics.total).toBe(3);
+  expect(analytics.previousTotal).toBe(1);
+  expect(analytics.buckets).toEqual([
+    { at: new Date("2026-10-04T00:00:00.000Z"), count: 2 },
+  ]);
+  expect(analytics.countries).toEqual([{ key: "US", count: 2 }]);
+  expect(analytics.cities).toEqual([
+    { key: "Austin", country: "US", count: 2 },
+  ]);
+  expect(analytics.devices).toEqual([{ key: "mobile", count: 2 }]);
+  expect(analytics.referrers).toEqual([
+    { key: "direct", count: 1 },
+    { key: "github.com", count: 1 },
+  ]);
+
+  const hourly = analyticsFromEvents(
+    [
+      {
+        timestamp: "2026-10-04 15:10:00",
+        country: "GB",
+        city: "London",
+        device: "desktop",
+        browser: "Firefox",
+        os: "Windows",
+        referrer: "direct",
+      },
+      {
+        timestamp: 1_791_129_000,
+        country: "US",
+        city: "Austin",
+        device: "mobile",
+        browser: "Chrome",
+        os: "iOS",
+        referrer: "direct",
+      },
+    ],
+    "24h",
+    0,
+  );
+  expect(hourly.buckets).toEqual([
+    { at: new Date("2026-10-04T15:00:00.000Z"), count: 2 },
+  ]);
+  expect(hourly.cities).toEqual([
+    { key: "Austin", country: "US", count: 1 },
+    { key: "London", country: "GB", count: 1 },
+  ]);
+});
+
+test("transient analytics errors are retried and rejected SQL is not", () => {
+  expect(isAnalyticsRetryable({ retryable: false })).toBe(false);
+  expect(isAnalyticsRetryable({ retryable: true, status: 422 })).toBe(true);
+  expect(isAnalyticsRetryable({ status: 429 })).toBe(true);
+  expect(isAnalyticsRetryable({ status: 422 })).toBe(false);
+  expect(isAnalyticsRetryable(new Error("503 Service Unavailable"))).toBe(true);
+  expect(isAnalyticsRetryable(new Error("422 invalid SQL"))).toBe(false);
+  expect(isAnalyticsRetryable(new Error("not authorized"))).toBe(false);
+  expect(isAnalyticsRetryable(new Error("socket hang up"))).toBe(true);
+});
 
 test("analytics rows fill the dashboard breakdown shape", () => {
   const analytics = analyticsFromRows(

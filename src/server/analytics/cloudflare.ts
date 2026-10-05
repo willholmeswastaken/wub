@@ -5,13 +5,15 @@ import { env as workersEnv } from "cloudflare:workers";
 
 import { clickDataPoint, type ClickDataPoint } from "./datapoint";
 import {
-  analyticsFromRows,
-  clickAnalyticsQueries,
+  analyticsFromEvents,
+  clickEventsQuery,
+  currentTotalQuery,
+  isAnalyticsRetryable,
   previousTotalQuery,
   sparklineDayKey,
   sparklineQuery,
-  toAnalyticsRows,
   type AnalyticsQuery,
+  type ClickEventRow,
 } from "./query";
 
 type AnalyticsSql = {
@@ -36,13 +38,42 @@ export function writeClickDataPoint(
   dataset.writeDataPoint(clickDataPoint(event));
 }
 
+const RETRY_DELAYS_MS = [40, 80, 160];
+
 async function runQuery<T>(request: AnalyticsQuery): Promise<T[]> {
   const binding = analyticsSql();
   if (!binding) {
     throw new Error("ANALYTICS binding is missing");
   }
-  const result = await binding.query(request);
-  return (result.data ?? []) as T[];
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const result = await binding.query({
+        query: request.query,
+        params: { ...request.params },
+      });
+      return (result.data ?? []) as T[];
+    } catch (cause) {
+      lastError = cause;
+      const delay = RETRY_DELAYS_MS[attempt];
+      if (delay == null || !isAnalyticsRetryable(cause)) break;
+      logger.info(
+        {
+          message: cause instanceof Error ? cause.message : "analytics",
+          attempt,
+        },
+        "Retrying analytics query",
+      );
+      await sleep(delay + Math.floor(Math.random() * 20));
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Analytics query failed");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function runQuerySafe<T>(request: AnalyticsQuery): Promise<T[]> {
@@ -57,29 +88,51 @@ async function runQuerySafe<T>(request: AnalyticsQuery): Promise<T[]> {
   }
 }
 
+function countFrom(rows: { clicks: number | string | null }[]) {
+  const total = Number(rows[0]?.clicks ?? 0);
+  return Number.isFinite(total) ? total : 0;
+}
+
 export async function queryClickAnalytics(
   code: string,
   range: ClickRange,
   now = new Date(),
 ): Promise<ClickAnalytics> {
-  const queries = clickAnalyticsQueries(code, range, now);
-  const groups = [];
-  for (const query of queries) {
-    groups.push(
-      toAnalyticsRows(
-        query.kind,
-        await runQuerySafe<Record<string, number | string | null>>(query),
-      ),
+  let events: ClickEventRow[] | null = null;
+  try {
+    events = await runQuery<ClickEventRow>(clickEventsQuery(code, range, now));
+  } catch (cause) {
+    logger.info(
+      { message: cause instanceof Error ? cause.message : "analytics" },
+      "Analytics event query failed",
     );
   }
-  const previous = await runQuerySafe<{ clicks: number | string | null }>(
-    previousTotalQuery(code, range, now),
+  const previousTotal = countFrom(
+    await runQuerySafe<{ clicks: number | string | null }>(
+      previousTotalQuery(code, range, now),
+    ),
   );
-  const previousTotal = Number(previous[0]?.clicks ?? 0);
-  return analyticsFromRows(
-    groups.flat(),
-    Number.isFinite(previousTotal) ? previousTotal : 0,
+  if (events) {
+    return analyticsFromEvents(events, range, previousTotal);
+  }
+  // The event read failed after retries. A plain count still keeps the
+  // headline from turning into a confident zero.
+  const total = countFrom(
+    await runQuerySafe<{ clicks: number | string | null }>(
+      currentTotalQuery(code, range, now),
+    ),
   );
+  return {
+    buckets: [],
+    total,
+    previousTotal,
+    countries: [],
+    cities: [],
+    devices: [],
+    browsers: [],
+    os: [],
+    referrers: [],
+  };
 }
 
 const SPARKLINE_CODE_CHUNK = 40;
