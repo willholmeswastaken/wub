@@ -39,8 +39,6 @@ export default defineConfig({
       DATABASE_PROVIDER: bindings.text("cloudflare"),
       DB: bindings.d1({ name: "wub" }),
       LINKS: bindings.kv(linksKvId ? { id: linksKvId } : {}),
-      CLICK_ANALYTICS: bindings.analyticsEngineDataset({ name: "wub_clicks" }),
-      ANALYTICS: bindings.analyticsSQL(),
       NEXTAUTH_SECRET: secret(),
       NEXTAUTH_URL: secret(),
       GITHUB_CLIENT_ID: secret(),

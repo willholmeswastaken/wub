@@ -50,19 +50,19 @@ export async function recordClickOnD1(
 ): Promise<RecordClickResult> {
   const [updated] = (
     await database.batch([
-      database.prepare(INSERT_CLICK_EVENT_SQL).bind(
-        event.event_id,
-        event.short_code,
-        now,
-        event.country ?? null,
-        event.city ?? null,
-        event.device ?? null,
-        event.browser ?? null,
-        event.os ?? null,
-        // A stored referrer marks the row as complete. Older rows leave it
-        // null so a later read can fill the dimensions once.
-        event.referrer ?? "direct",
-      ),
+      database
+        .prepare(INSERT_CLICK_EVENT_SQL)
+        .bind(
+          event.event_id,
+          event.short_code,
+          now,
+          event.country ?? null,
+          event.city ?? null,
+          event.device ?? null,
+          event.browser ?? null,
+          event.os ?? null,
+          event.referrer ?? "direct",
+        ),
       database.prepare(INCREMENT_LINK_SQL).bind(event.short_code, now),
     ])
   ).slice(1);

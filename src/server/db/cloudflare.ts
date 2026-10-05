@@ -1,5 +1,4 @@
 import { type ClickRange } from "@/lib/click-date-range";
-import { readImportedClicks } from "@/server/analytics/cloudflare";
 import logger from "@/server/logger";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
@@ -203,15 +202,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
       return row ? toLinkSnapshot(row) : null;
     }),
   clickAnalytics: (code, range: ClickRange, now?: Date) =>
-    attempt(() =>
-      clickAnalyticsFromD1(
-        getD1Binding(),
-        code,
-        range,
-        now,
-        readImportedClicks,
-      ),
-    ),
+    attempt(() => clickAnalyticsFromD1(getD1Binding(), code, range, now)),
   insertLink: (link) =>
     attemptInsert(async () => {
       try {

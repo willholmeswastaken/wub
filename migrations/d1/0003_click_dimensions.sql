@@ -1,5 +1,4 @@
--- Click stats are read from D1. Analytics Engine samples adaptively and can
--- return a full result on one request and an empty result on the next.
+-- Country, city, device, browser, OS, and referrer for the analytics page.
 ALTER TABLE "wub_click_event" ADD COLUMN "country" text;
 ALTER TABLE "wub_click_event" ADD COLUMN "city" text;
 ALTER TABLE "wub_click_event" ADD COLUMN "device" text;

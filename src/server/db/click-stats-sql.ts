@@ -1,4 +1,4 @@
-import { type DimensionUpdate, type StoredClick } from "./click-stats";
+import { type StoredClick } from "./click-stats";
 import { type ClickStatementDatabase } from "./record-click-sql";
 
 const LOAD_CLICKS_SQL = `
@@ -15,18 +15,6 @@ FROM wub_click_event e
 INNER JOIN wub_link l ON l.short_code = e.short_code
 WHERE l."userId" = ?1
   AND e.recorded_at >= ?2
-`;
-
-const UPDATE_DIMENSIONS_SQL = `
-UPDATE wub_click_event
-SET country = ?2,
-    city = ?3,
-    device = ?4,
-    browser = ?5,
-    os = ?6,
-    referrer = ?7
-WHERE event_id = ?1
-  AND referrer IS NULL
 `;
 
 type ClickRow = {
@@ -77,39 +65,8 @@ export async function loadUserClickStamps(
   }));
 }
 
-export async function saveClickDimensions(
-  database: ClickStatementDatabase,
-  updates: readonly DimensionUpdate[],
-) {
-  for (const group of chunk(updates, 20)) {
-    await database.batch(
-      group.map((update) =>
-        database
-          .prepare(UPDATE_DIMENSIONS_SQL)
-          .bind(
-            update.event_id,
-            update.country,
-            update.city,
-            update.device,
-            update.browser,
-            update.os,
-            update.referrer,
-          ),
-      ),
-    );
-  }
-}
-
 function asMillis(value: number | string | null) {
   const numeric = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(numeric)) return 0;
   return Math.abs(numeric) > 10_000_000_000 ? numeric : numeric * 1000;
-}
-
-function chunk<T>(items: readonly T[], size: number) {
-  const groups: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    groups.push(items.slice(index, index + size));
-  }
-  return groups;
 }
