@@ -60,9 +60,6 @@ export function redirectDecision(
   return { kind: "redirect", url: target.url };
 }
 
-export async function trackClick(
-  publish: () => Promise<unknown>,
-  write: () => unknown,
-) {
-  await Promise.allSettled([publish(), Promise.resolve().then(write)]);
+export async function trackClick(publish: () => Promise<unknown>) {
+  await publish().catch(() => undefined);
 }

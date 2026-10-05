@@ -9,8 +9,9 @@ export const D1_BOOTSTRAP_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS "wub_click" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "short_code" text NOT NULL, "timestamp" integer DEFAULT (unixepoch() * 1000), "userAgent" text, "ipAddress" text, "country" text, "city" text, "region" text, "latitude" text, "longitude" text, "device" text, "device_vendor" text, "device_model" text, "browser" text, "browser_version" text, "engine" text, "engine_version" text, "os" text, "os_version" text, "cpu_architecture" text, "referrer" text)`,
   `CREATE INDEX IF NOT EXISTS "click_short_code_idx" ON "wub_click" ("short_code")`,
   `CREATE INDEX IF NOT EXISTS "link_userId_idx" ON "wub_link" ("userId")`,
-  `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL, "country" text, "city" text, "device" text, "browser" text, "os" text, "referrer" text)`,
   `CREATE INDEX IF NOT EXISTS "click_event_short_code_idx" ON "wub_click_event" ("short_code")`,
+  `CREATE INDEX IF NOT EXISTS "click_event_code_time_idx" ON "wub_click_event" ("short_code", "recorded_at")`,
 ];
 
 // CREATE TABLE IF NOT EXISTS does not add columns to a database that already
@@ -18,6 +19,12 @@ export const D1_BOOTSTRAP_STATEMENTS = [
 export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_link" ADD COLUMN "claim_token" text`,
   `ALTER TABLE "wub_click" ADD COLUMN "referrer" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "country" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "city" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "device" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "browser" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "os" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "referrer" text`,
 ];
 
 export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {

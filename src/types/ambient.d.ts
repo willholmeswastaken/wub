@@ -17,19 +17,6 @@ declare module "cloudflare:workers" {
       put(key: string, value: string): Promise<void>;
       delete(key: string): Promise<void>;
     };
-    CLICK_ANALYTICS: {
-      writeDataPoint(event: {
-        indexes?: string[];
-        doubles?: number[];
-        blobs?: string[];
-      }): void;
-    };
-    ANALYTICS: {
-      query(request: {
-        query: string;
-        params?: Record<string, string>;
-      }): Promise<{ data: unknown[] }>;
-    };
     DB: {
       exec(query: string): Promise<unknown>;
       prepare(query: string): {

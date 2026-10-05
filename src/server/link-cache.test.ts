@@ -102,14 +102,9 @@ test("redirect decision ignores a failed click publish", async () => {
     kind: "redirect",
     url: "https://example.com/docs",
   });
-  await trackClick(
-    async () => {
-      throw new Error("queue down");
-    },
-    () => {
-      throw new Error("analytics down");
-    },
-  );
+  await trackClick(async () => {
+    throw new Error("queue down");
+  });
   expect(decision.kind).toBe("redirect");
 });
 

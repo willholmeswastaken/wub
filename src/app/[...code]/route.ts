@@ -4,7 +4,6 @@ import {
   shortCodeFromParam,
 } from "@/lib/click-request";
 import { afterResponse } from "@/server/after-response";
-import { getDatabaseProvider } from "@/server/db";
 import { redirectDecision, trackClick } from "@/server/link-cache";
 import logger from "@/server/logger";
 import { publishClick } from "@/server/queue/runtime";
@@ -67,17 +66,7 @@ export async function GET(
       cpuArchitecture: ua.cpu.architecture,
       referrer: request.headers.get("referer"),
     });
-    afterResponse(() =>
-      trackClick(
-        () => publishClick(event),
-        () => {
-          if (getDatabaseProvider() !== "cloudflare") return;
-          return import("@/server/analytics/cloudflare").then((mod) =>
-            mod.writeClickDataPoint(event),
-          );
-        },
-      ),
-    );
+    afterResponse(() => trackClick(() => publishClick(event)));
   }
 
   functionLogger.info("Short link found");
