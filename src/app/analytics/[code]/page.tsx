@@ -26,6 +26,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { type ReactNode } from "react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const deviceIcons: Record<string, typeof Monitor> = {
   desktop: Monitor,
   mobile: Smartphone,
