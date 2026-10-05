@@ -34,47 +34,46 @@ export type AnalyticsQuery = {
 const BREAKDOWNS = [
   {
     kind: "country",
-    key: "blob1",
-    extra: "''",
+    value: "blob1",
     filter: "blob1 != '' AND blob1 != 'unknown'",
     groupBy: "blob1",
   },
   {
     kind: "city",
-    key: "blob2",
-    extra: "blob1",
+    value: "blob2",
+    country: "blob1",
     filter: "blob2 != '' AND blob2 != 'unknown'",
     groupBy: "blob2, blob1",
   },
   {
     kind: "device",
-    key: "blob3",
-    extra: "''",
+    value: "blob3",
     filter: "blob3 != '' AND blob3 != 'unknown'",
     groupBy: "blob3",
   },
   {
     kind: "browser",
-    key: "blob4",
-    extra: "''",
+    value: "blob4",
     filter: "blob4 != '' AND blob4 != 'unknown'",
     groupBy: "blob4",
   },
   {
     kind: "os",
-    key: "blob5",
-    extra: "''",
+    value: "blob5",
     filter: "blob5 != '' AND blob5 != 'unknown'",
     groupBy: "blob5",
   },
   {
     kind: "referrer",
-    key: "blob6",
-    extra: "''",
+    value: "blob6",
     filter: "blob6 != ''",
     groupBy: "blob6",
   },
 ] as const;
+
+export type ClickAnalyticsQuery = AnalyticsQuery & {
+  kind: "bucket" | (typeof BREAKDOWNS)[number]["kind"];
+};
 
 function linkWindow(code: string, start: Date, until: Date) {
   return {
@@ -88,7 +87,7 @@ export function clickAnalyticsQueries(
   code: string,
   range: ClickRange,
   now = new Date(),
-): AnalyticsQuery[] {
+): ClickAnalyticsQuery[] {
   const params = linkWindow(code, rangeStart(range, now), now);
   const bucketFn = range === "24h" ? "toStartOfHour" : "toStartOfDay";
   const fromClause = `
@@ -99,21 +98,22 @@ export function clickAnalyticsQueries(
   `;
   return [
     {
+      kind: "bucket",
+      // Constants in the SELECT list are not grouped columns. The SQL API
+      // rejects them, so the kind is attached in JavaScript instead.
       query: `
-        SELECT 'bucket' AS kind,
-          toUnixTimestamp(${bucketFn}(timestamp)) AS key,
-          '' AS extra,
+        SELECT toUnixTimestamp(${bucketFn}(timestamp)) AS bucket,
           COUNT(*) AS clicks
         ${fromClause}
-        GROUP BY key
+        GROUP BY bucket
       `,
       params,
     },
     ...BREAKDOWNS.map((breakdown) => ({
+      kind: breakdown.kind,
       query: `
-        SELECT '${breakdown.kind}' AS kind,
-          ${breakdown.key} AS key,
-          ${breakdown.extra} AS extra,
+        SELECT ${breakdown.value} AS dimension,
+          ${"country" in breakdown ? `${breakdown.country} AS country,` : ""}
           COUNT(*) AS clicks
         ${fromClause}
           AND ${breakdown.filter}
@@ -181,14 +181,35 @@ export function sparklineDayKey(value: number | string): string {
   return unixSecondsToIso(value).slice(0, 10);
 }
 
-export function withIsoBucketKeys(
-  rows: Array<Omit<AnalyticsRow, "key"> & { key: number | string }>,
+type AnalyticsResultRow = Record<string, number | string | null | undefined>;
+
+export function toAnalyticsRows(
+  kind: string,
+  rows: readonly AnalyticsResultRow[],
 ): AnalyticsRow[] {
-  return rows.map((row) =>
-    row.kind === "bucket"
-      ? { ...row, key: unixSecondsToIso(row.key) }
-      : { ...row, key: String(row.key) },
-  );
+  return rows.flatMap((row) => {
+    const clicks = row.clicks ?? 0;
+    if (kind === "bucket") {
+      if (row.bucket == null) return [];
+      return [
+        {
+          kind,
+          key: unixSecondsToIso(row.bucket),
+          extra: "",
+          clicks,
+        },
+      ];
+    }
+    if (row.dimension == null || row.dimension === "") return [];
+    return [
+      {
+        kind,
+        key: String(row.dimension),
+        extra: row.country == null ? "" : String(row.country),
+        clicks,
+      },
+    ];
+  });
 }
 
 function asCount(value: number | string) {
