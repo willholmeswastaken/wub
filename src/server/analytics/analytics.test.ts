@@ -11,7 +11,7 @@ import {
   previousTotalQuery,
   sparklineDayKey,
   sparklineQuery,
-  withIsoBucketKeys,
+  toAnalyticsRows,
 } from "@/server/analytics/query";
 import { type LogClickEvent } from "@/server/queue/schema";
 
@@ -71,9 +71,17 @@ test("analytics SQL uses the Analytics SQL API dialect", () => {
     expect(query.query).toContain("timestamp >= $start");
   }
   expect(queries.some((query) => query.query.includes("UNION"))).toBe(false);
+  expect(queries.some((query) => query.query.includes(" AS kind"))).toBe(false);
+  expect(queries.some((query) => query.query.includes(" AS key"))).toBe(false);
+  expect(queries[0]?.kind).toBe("bucket");
   expect(queries[0]?.query).toContain(
-    "toUnixTimestamp(toStartOfDay(timestamp))",
+    "toUnixTimestamp(toStartOfDay(timestamp)) AS bucket",
   );
+  expect(queries[0]?.query).toContain("GROUP BY bucket");
+  const city = queries.find((query) => query.kind === "city");
+  expect(city?.query).toContain("blob2 AS dimension");
+  expect(city?.query).toContain("blob1 AS country");
+  expect(city?.query).toContain("GROUP BY blob2, blob1");
   const hourly = clickAnalyticsQueries("docs", "24h", now);
   expect(hourly[0]?.query).toContain(
     "toUnixTimestamp(toStartOfHour(timestamp))",
@@ -102,12 +110,19 @@ test("sparkline days and buckets convert unix seconds to UTC", () => {
   const start = Date.parse("2026-10-04T00:00:00.000Z") / 1000;
   expect(sparklineDayKey(start)).toBe("2026-10-04");
   expect(sparklineDayKey(String(start))).toBe("2026-10-04");
-  const rows = withIsoBucketKeys([
-    { kind: "bucket", key: start, extra: "", clicks: 4 },
-    { kind: "country", key: "US", extra: "", clicks: 4 },
+  expect(toAnalyticsRows("bucket", [{ bucket: start, clicks: 4 }])).toEqual([
+    {
+      kind: "bucket",
+      key: "2026-10-04T00:00:00.000Z",
+      extra: "",
+      clicks: 4,
+    },
   ]);
-  expect(rows[0]?.key).toBe("2026-10-04T00:00:00.000Z");
-  expect(rows[1]?.key).toBe("US");
+  expect(
+    toAnalyticsRows("city", [
+      { dimension: "Austin", country: "US", clicks: 3 },
+    ]),
+  ).toEqual([{ kind: "city", key: "Austin", extra: "US", clicks: 3 }]);
 });
 
 function expectSqlApi(query: string) {
@@ -115,6 +130,8 @@ function expectSqlApi(query: string) {
   expect(query.includes("toDateTime(")).toBe(false);
   expect(query.includes("_sample_interval")).toBe(false);
   expect(query.includes("UNION")).toBe(false);
+  expect(query.includes(" AS kind")).toBe(false);
+  expect(query.includes(" AS key")).toBe(false);
 }
 
 test("analytics rows fill the dashboard breakdown shape", () => {

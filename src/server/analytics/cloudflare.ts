@@ -10,9 +10,8 @@ import {
   previousTotalQuery,
   sparklineDayKey,
   sparklineQuery,
-  withIsoBucketKeys,
+  toAnalyticsRows,
   type AnalyticsQuery,
-  type AnalyticsRow,
 } from "./query";
 
 type AnalyticsSql = {
@@ -43,7 +42,19 @@ async function runQuery<T>(request: AnalyticsQuery): Promise<T[]> {
     throw new Error("ANALYTICS binding is missing");
   }
   const result = await binding.query(request);
-  return result.data as T[];
+  return (result.data ?? []) as T[];
+}
+
+async function runQuerySafe<T>(request: AnalyticsQuery): Promise<T[]> {
+  try {
+    return await runQuery<T>(request);
+  } catch (cause) {
+    logger.info(
+      { message: cause instanceof Error ? cause.message : "analytics" },
+      "Analytics query failed",
+    );
+    return [];
+  }
 }
 
 export async function queryClickAnalytics(
@@ -52,19 +63,21 @@ export async function queryClickAnalytics(
   now = new Date(),
 ): Promise<ClickAnalytics> {
   const queries = clickAnalyticsQueries(code, range, now);
-  const [groups, previous] = await Promise.all([
-    Promise.all(
-      queries.map((query) =>
-        runQuery<Omit<AnalyticsRow, "key"> & { key: number | string }>(query),
+  const groups = [];
+  for (const query of queries) {
+    groups.push(
+      toAnalyticsRows(
+        query.kind,
+        await runQuerySafe<Record<string, number | string | null>>(query),
       ),
-    ),
-    runQuery<{ clicks: number | string | null }>(
-      previousTotalQuery(code, range, now),
-    ),
-  ]);
+    );
+  }
+  const previous = await runQuerySafe<{ clicks: number | string | null }>(
+    previousTotalQuery(code, range, now),
+  );
   const previousTotal = Number(previous[0]?.clicks ?? 0);
   return analyticsFromRows(
-    withIsoBucketKeys(groups.flat()),
+    groups.flat(),
     Number.isFinite(previousTotal) ? previousTotal : 0,
   );
 }
