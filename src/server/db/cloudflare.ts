@@ -1,8 +1,6 @@
 import { type ClickRange } from "@/lib/click-date-range";
-import {
-  queryClickAnalytics,
-  querySparklineCounts,
-} from "@/server/analytics/cloudflare";
+import { readImportedClicks } from "@/server/analytics/cloudflare";
+import logger from "@/server/logger";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
@@ -11,7 +9,9 @@ import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
 
 import { forgetRedirectTarget, rememberRedirectTarget } from "../kv-links";
+import { loadUserClickStamps } from "./click-stats-sql";
 import { isUniqueViolation, LinkConflictError } from "./conflicts";
+import { clickAnalyticsFromD1 } from "./d1-analytics";
 import {
   AppDatabase,
   ClickNotFoundError,
@@ -26,7 +26,7 @@ import {
 } from "./record-click-sql";
 import * as schema from "./schema.d1";
 import { links } from "./schema.d1";
-import { sparklineSince, userLinksWithSparklineCounts } from "./sparklines";
+import { sparklineSince, userLinksWithSparklines } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] &
@@ -134,11 +134,20 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         },
       });
       if (rows.length === 0) return [];
-      const counts = await querySparklineCounts(
-        rows.map((row) => row.short_code),
-        sparklineSince(),
-      );
-      return userLinksWithSparklineCounts(rows, counts);
+      let stamps: Awaited<ReturnType<typeof loadUserClickStamps>> = [];
+      try {
+        stamps = await loadUserClickStamps(
+          getD1Binding(),
+          userId,
+          sparklineSince(),
+        );
+      } catch (cause) {
+        logger.info(
+          { message: cause instanceof Error ? cause.message : "sparkline" },
+          "Click sparkline query failed",
+        );
+      }
+      return userLinksWithSparklines(rows, stamps);
     }),
   updateLinkUrl: (code, userId, url) =>
     attempt(async () => {
@@ -194,7 +203,15 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
       return row ? toLinkSnapshot(row) : null;
     }),
   clickAnalytics: (code, range: ClickRange, now?: Date) =>
-    attempt(() => queryClickAnalytics(code, range, now)),
+    attempt(() =>
+      clickAnalyticsFromD1(
+        getD1Binding(),
+        code,
+        range,
+        now,
+        readImportedClicks,
+      ),
+    ),
   insertLink: (link) =>
     attemptInsert(async () => {
       try {

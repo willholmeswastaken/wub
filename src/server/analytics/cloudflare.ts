@@ -1,17 +1,13 @@
-import { type ClickRange } from "@/lib/click-date-range";
-import { type ClickAnalytics } from "@/server/db/types";
+import { rangeStart } from "@/lib/click-date-range";
+import { type ImportedClick } from "@/server/db/click-stats";
 import logger from "@/server/logger";
 import { env as workersEnv } from "cloudflare:workers";
 
 import { clickDataPoint, type ClickDataPoint } from "./datapoint";
 import {
-  analyticsFromEvents,
+  analyticsTimestamp,
   clickEventsQuery,
-  currentTotalQuery,
   isAnalyticsRetryable,
-  previousTotalQuery,
-  sparklineDayKey,
-  sparklineQuery,
   type AnalyticsQuery,
   type ClickEventRow,
 } from "./query";
@@ -76,102 +72,55 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runQuerySafe<T>(request: AnalyticsQuery): Promise<T[]> {
-  try {
-    return await runQuery<T>(request);
-  } catch (cause) {
-    logger.info(
-      { message: cause instanceof Error ? cause.message : "analytics" },
-      "Analytics query failed",
-    );
-    return [];
-  }
-}
-
-function countFrom(rows: { clicks: number | string | null }[]) {
-  const total = Number(rows[0]?.clicks ?? 0);
-  return Number.isFinite(total) ? total : 0;
-}
-
-export async function queryClickAnalytics(
+export async function readImportedClicks(
   code: string,
-  range: ClickRange,
   now = new Date(),
-): Promise<ClickAnalytics> {
-  let events: ClickEventRow[] | null = null;
+): Promise<ImportedClick[] | null> {
+  const since = rangeStart("90d", now);
   try {
-    events = await runQuery<ClickEventRow>(clickEventsQuery(code, range, now));
+    const rows = await runQuery<ClickEventRow>(
+      clickEventsQuery(code, "90d", now),
+    );
+    return rows.flatMap((row) => importedClick(row, since, now));
   } catch (cause) {
     logger.info(
       { message: cause instanceof Error ? cause.message : "analytics" },
       "Analytics event query failed",
     );
+    return null;
   }
-  const previousTotal = countFrom(
-    await runQuerySafe<{ clicks: number | string | null }>(
-      previousTotalQuery(code, range, now),
-    ),
-  );
-  if (events) {
-    return analyticsFromEvents(events, range, previousTotal);
-  }
-  // The event read failed after retries. A plain count still keeps the
-  // headline from turning into a confident zero.
-  const total = countFrom(
-    await runQuerySafe<{ clicks: number | string | null }>(
-      currentTotalQuery(code, range, now),
-    ),
-  );
-  return {
-    buckets: [],
-    total,
-    previousTotal,
-    countries: [],
-    cities: [],
-    devices: [],
-    browsers: [],
-    os: [],
-    referrers: [],
-  };
 }
 
-const SPARKLINE_CODE_CHUNK = 40;
-
-export async function querySparklineCounts(
-  codes: readonly string[],
+function importedClick(
+  row: ClickEventRow,
   since: Date,
-) {
-  if (codes.length === 0) return [];
-  try {
-    const groups = await Promise.all(
-      chunk(codes, SPARKLINE_CODE_CHUNK).map((chunkCodes) =>
-        runQuery<{
-          short_code: string;
-          bucket_day: number | string;
-          clicks: number | string;
-        }>(sparklineQuery(chunkCodes, since)),
-      ),
-    );
-    return groups.flat().map((row) => ({
-      short_code: row.short_code,
-      day: sparklineDayKey(row.bucket_day),
-      count: Number(row.clicks) || 0,
-    }));
-  } catch (cause) {
-    // A sparkline is decoration on the links page. A missing dataset or a
-    // rejected query must not turn /dashboard into an error page.
-    logger.info(
-      { message: cause instanceof Error ? cause.message : "sparkline" },
-      "Sparkline query failed",
-    );
-    return [];
-  }
+  until: Date,
+): ImportedClick[] {
+  const record = row as Record<string, number | string | null | undefined>;
+  const at = analyticsTimestamp(record.timestamp ?? record.Timestamp);
+  if (!at) return [];
+  const time = at.getTime();
+  if (time < since.getTime() || time >= until.getTime()) return [];
+  return [
+    {
+      at: time,
+      country: textField(record, "country", "blob1"),
+      city: textField(record, "city", "blob2"),
+      device: textField(record, "device", "blob3"),
+      browser: textField(record, "browser", "blob4"),
+      os: textField(record, "os", "blob5"),
+      referrer: textField(record, "referrer", "blob6"),
+    },
+  ];
 }
 
-function chunk<T>(items: readonly T[], size: number) {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-  return chunks;
+function textField(
+  row: Record<string, number | string | null | undefined>,
+  name: string,
+  fallback: string,
+) {
+  const value = row[name] ?? row[fallback];
+  if (value == null) return null;
+  const text = String(value).trim();
+  return text === "" ? null : text;
 }

@@ -1,6 +1,8 @@
 const INSERT_CLICK_EVENT_SQL = `
-INSERT INTO wub_click_event (event_id, short_code, recorded_at)
-SELECT ?1, ?2, ?3
+INSERT INTO wub_click_event (
+  event_id, short_code, recorded_at, country, city, device, browser, os, referrer
+)
+SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
 WHERE EXISTS (SELECT 1 FROM wub_link WHERE short_code = ?2)
 ON CONFLICT (event_id) DO NOTHING
 `;
@@ -34,14 +36,33 @@ export type RecordClickResult = "recorded" | "duplicate" | "not_found";
 
 export async function recordClickOnD1(
   database: ClickStatementDatabase,
-  event: { event_id: string; short_code: string },
+  event: {
+    event_id: string;
+    short_code: string;
+    country?: string | null;
+    city?: string | null;
+    device?: string | null;
+    browser?: string | null;
+    os?: string | null;
+    referrer?: string | null;
+  },
   now = Date.now(),
 ): Promise<RecordClickResult> {
   const [updated] = (
     await database.batch([
-      database
-        .prepare(INSERT_CLICK_EVENT_SQL)
-        .bind(event.event_id, event.short_code, now),
+      database.prepare(INSERT_CLICK_EVENT_SQL).bind(
+        event.event_id,
+        event.short_code,
+        now,
+        event.country ?? null,
+        event.city ?? null,
+        event.device ?? null,
+        event.browser ?? null,
+        event.os ?? null,
+        // A stored referrer marks the row as complete. Older rows leave it
+        // null so a later read can fill the dimensions once.
+        event.referrer ?? "direct",
+      ),
       database.prepare(INCREMENT_LINK_SQL).bind(event.short_code, now),
     ])
   ).slice(1);

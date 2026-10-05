@@ -38,9 +38,19 @@ export const clickEvents = createTable(
     event_id: text("event_id").primaryKey(),
     short_code: text("short_code").notNull(),
     recorded_at: integer("recorded_at", { mode: "timestamp_ms" }).notNull(),
+    country: text("country"),
+    city: text("city"),
+    device: text("device"),
+    browser: text("browser"),
+    os: text("os"),
+    referrer: text("referrer"),
   },
   (event) => ({
     shortCodeIdx: index("click_event_short_code_idx").on(event.short_code),
+    shortCodeTimeIdx: index("click_event_code_time_idx").on(
+      event.short_code,
+      event.recorded_at,
+    ),
   }),
 );
 
