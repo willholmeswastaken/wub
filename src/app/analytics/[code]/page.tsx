@@ -2,9 +2,10 @@ import { BreakdownCard } from "@/components/breakdown-card";
 import { ClicksChart } from "@/components/clicks-chart";
 import { LinkActions } from "@/components/link-actions";
 import { RangePicker } from "@/components/range-picker";
+import { ShareBar } from "@/components/share-bar";
 import { UrlFavicon } from "@/components/url-favicon";
 import { clickRangeLabel, parseClickRange } from "@/lib/click-date-range";
-import { countryName, flagEmoji, formatDate } from "@/lib/format";
+import { countryName, flagEmoji, formatDate, percentOf } from "@/lib/format";
 import { projectUrlFromHeaders } from "@/lib/project-url";
 import { getServerAuthSession } from "@/server/auth";
 import { api } from "@/trpc/server";
@@ -55,12 +56,21 @@ function referrerLabel(referrer: string) {
 function StatTile({
   label,
   value,
+  count,
+  total,
   icon,
 }: {
   label: string;
   value: string | null;
+  count?: number;
+  total: number;
   icon?: ReactNode;
 }) {
+  const share =
+    value != null && count != null && total > 0
+      ? { count, ratio: (count / total) * 100 }
+      : null;
+
   return (
     <div className="min-w-0 py-6 sm:px-8 sm:first:pl-0 sm:last:pr-0">
       <p className="flex min-w-0 items-center gap-2 text-xl font-medium tracking-[-0.03em] md:text-2xl">
@@ -73,7 +83,26 @@ function StatTile({
           <span className="text-muted-foreground">—</span>
         )}
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
+      {share && (
+        <div className="mt-3 flex items-center gap-3">
+          <ShareBar share={share.ratio} className="w-16 shrink-0" />
+          <p className="min-w-0 truncate text-sm tabular-nums tracking-[-0.02em] text-muted-foreground">
+            <span className="font-medium text-foreground">
+              {share.count.toLocaleString()}
+            </span>
+            <span> · {percentOf(share.count, total)}</span>
+          </p>
+        </div>
+      )}
+      <p
+        className={
+          share
+            ? "mt-2 text-sm text-muted-foreground"
+            : "mt-1 text-sm text-muted-foreground"
+        }
+      >
+        {label}
+      </p>
     </div>
   );
 }
@@ -121,7 +150,7 @@ export default async function AnalyticsPage({
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="h-4 w-4" />
-          Linkz
+          Links
         </Link>
         <div className="mt-8 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-center gap-5">
@@ -174,16 +203,22 @@ export default async function AnalyticsPage({
           <StatTile
             label="Top country"
             value={topCountry ? countryName(topCountry.key) : null}
+            count={topCountry?.count}
+            total={clicks.totalClicks}
             icon={topCountry ? flagEmoji(topCountry.key) : undefined}
           />
           <StatTile
             label="Top source"
             value={topReferrer ? referrerLabel(topReferrer.key) : null}
+            count={topReferrer?.count}
+            total={clicks.totalClicks}
             icon={<Link2 className="h-4 w-4 text-muted-foreground" />}
           />
           <StatTile
             label="Top device"
             value={topDevice ? deviceLabel(topDevice.key) : null}
+            count={topDevice?.count}
+            total={clicks.totalClicks}
             icon={
               topDevice ? (
                 <span className="text-muted-foreground">
