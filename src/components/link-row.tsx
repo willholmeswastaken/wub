@@ -1,8 +1,14 @@
 "use client";
 
+import { ClickDelta } from "@/components/click-delta";
 import { CopyButton } from "@/components/copy-button";
 import { Sparkline } from "@/components/sparkline";
 import { UrlFavicon } from "@/components/url-favicon";
+import {
+  formatWindowDelta,
+  recentWindowTotals,
+  windowDeltaCaption,
+} from "@/lib/click-delta";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { type ReactNode } from "react";
@@ -35,13 +41,19 @@ export function LinkRow({
   layout?: "compact" | "ledger";
 }) {
   const ledger = layout === "ledger";
+  const ledgerWeek = ledger && sparkline ? recentWindowTotals(sparkline) : null;
+  const ledgerDelta = ledgerWeek
+    ? formatWindowDelta(ledgerWeek.current, ledgerWeek.previous, {
+        hideFlat: true,
+      })
+    : null;
 
   return (
     <div
       className={cn(
         "group relative transition-colors",
         ledger
-          ? "flex items-center gap-4 px-1 py-4 md:grid md:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_6rem] md:items-center md:gap-x-8 md:rounded-2xl md:px-4 md:py-5"
+          ? "flex items-center gap-4 px-1 py-4 md:grid md:grid-cols-[minmax(0,1fr)_13rem_5.5rem_6rem] md:items-center md:gap-x-8 md:rounded-2xl md:px-4 md:py-5"
           : "flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5",
         href && "hover:bg-muted/70",
         isExpired && "text-muted-foreground",
@@ -87,20 +99,34 @@ export function LinkRow({
         </div>
       </div>
       {sparkline && (
-        <Sparkline
-          values={sparkline}
-          width={ledger ? 112 : 56}
-          height={ledger ? 32 : 20}
+        <div
           className={cn(
-            "pointer-events-none relative",
-            ledger ? "hidden md:block" : "hidden sm:block",
+            "pointer-events-none relative items-center justify-end gap-3",
+            ledger ? "hidden md:flex" : "hidden sm:flex",
           )}
-        />
+        >
+          {ledgerWeek && (
+            <span className="inline-flex w-[4.75rem] shrink-0 justify-end">
+              {ledgerDelta && (
+                <LedgerDelta
+                  current={ledgerWeek.current}
+                  previous={ledgerWeek.previous}
+                  caption={windowDeltaCaption(ledgerWeek.window)}
+                />
+              )}
+            </span>
+          )}
+          <Sparkline
+            values={sparkline}
+            width={ledger ? 112 : 56}
+            height={ledger ? 32 : 20}
+          />
+        </div>
       )}
       <div
         className={cn(
           "pointer-events-none relative shrink-0 text-right",
-          ledger ? "w-14 md:w-auto" : "w-12",
+          ledger ? "min-w-[4.75rem] md:w-auto md:min-w-0" : "w-12",
         )}
       >
         <p
@@ -116,7 +142,17 @@ export function LinkRow({
         <p
           className={cn("text-xs text-muted-foreground", ledger && "md:hidden")}
         >
-          {clicks === 1 ? "click" : "clicks"}
+          {ledgerDelta && ledgerWeek ? (
+            <LedgerDelta
+              current={ledgerWeek.current}
+              previous={ledgerWeek.previous}
+              caption={windowDeltaCaption(ledgerWeek.window)}
+            />
+          ) : clicks === 1 ? (
+            "click"
+          ) : (
+            "clicks"
+          )}
         </p>
       </div>
       <div className="relative z-10 flex items-center justify-end gap-1">
@@ -128,6 +164,28 @@ export function LinkRow({
         {actions}
       </div>
     </div>
+  );
+}
+
+function LedgerDelta({
+  current,
+  previous,
+  caption,
+}: {
+  current: number;
+  previous: number;
+  caption: string;
+}) {
+  return (
+    <span className="inline-flex justify-end" title={caption}>
+      <span className="sr-only">{caption}: </span>
+      <ClickDelta
+        current={current}
+        previous={previous}
+        hideFlat
+        className="text-xs"
+      />
+    </span>
   );
 }
 

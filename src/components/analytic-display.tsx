@@ -1,3 +1,4 @@
+import { ShareBar } from "@/components/share-bar";
 import { percentOf } from "@/lib/format";
 import { type ReactNode } from "react";
 
@@ -32,9 +33,7 @@ export function AnalyticDisplay({
           {percentOf(clicks, total)}
         </span>
       </div>
-      <div className="mt-2 h-px bg-border" aria-hidden>
-        <div className="h-px bg-foreground" style={{ width: `${share}%` }} />
-      </div>
+      <ShareBar share={share} className="mt-2" />
     </div>
   );
 }

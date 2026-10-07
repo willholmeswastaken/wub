@@ -1,10 +1,18 @@
 "use client";
 
+import { ClickDelta } from "@/components/click-delta";
 import { LinkResultCard } from "@/components/link-result-card";
 import { LinkRow } from "@/components/link-row";
 import { LinkRowMenu } from "@/components/link-row-menu";
 import { useProjectUrl } from "@/components/project-url-provider";
 import { ShortenForm } from "@/components/shorten-form";
+import {
+  formatWindowDelta,
+  recentWindowTotals,
+  seriesTotal,
+  sumSeries,
+  windowDeltaCaption,
+} from "@/lib/click-delta";
 import { copyToClipboard } from "@/lib/clipboard";
 import { relativeTime } from "@/lib/format";
 import { usePendingDeletes } from "@/lib/pending-deletes";
@@ -84,9 +92,22 @@ export function LinksView({
     return filtered;
   }, [links, query, sort]);
 
+  const activity = useMemo(() => {
+    const recentClicks = sumSeries(links.map((link) => link.recentClicks));
+    const period = recentWindowTotals(recentClicks);
+    return {
+      totalClicks: links.reduce((sum, link) => sum + link.click_count, 0),
+      weekClicks: seriesTotal(recentClicks),
+      weekLength: recentClicks.length,
+      current: period.current,
+      previous: period.previous,
+      comparedDays: period.window,
+    };
+  }, [links]);
+
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-12 md:px-8 md:py-16">
-      <div className="flex items-end justify-between gap-8">
+      <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-4xl font-medium tracking-[-0.05em] sm:text-5xl">
             Links
@@ -95,12 +116,15 @@ export function LinksView({
             Paste a long link. The short one is copied for you.
           </p>
         </div>
-        <p className="hidden text-right sm:block">
-          <span className="block text-4xl font-medium tabular-nums tracking-[-0.05em]">
-            {links.length}
-          </span>
-          <span className="text-sm text-muted-foreground">saved</span>
-        </p>
+        <LinksBalance
+          totalClicks={activity.totalClicks}
+          linkCount={links.length}
+          weekClicks={activity.weekClicks}
+          weekLength={activity.weekLength}
+          current={activity.current}
+          previous={activity.previous}
+          comparedDays={activity.comparedDays}
+        />
       </div>
       <div className="mt-10">
         <ShortenForm
@@ -223,12 +247,6 @@ export function LinksView({
             </div>
           ) : (
             <div className="border-t border-border/80">
-              <div className="hidden grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_6rem] gap-x-8 px-4 pb-2 pt-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground md:grid">
-                <span>Link</span>
-                <span>7 days</span>
-                <span className="text-right">Clicks</span>
-                <span className="sr-only">Actions</span>
-              </div>
               {visibleLinks.map((link) => {
                 const shortUrl = `${projectUrl}${link.short_code}`;
                 return (
@@ -260,6 +278,64 @@ export function LinksView({
         </div>
       )}
     </section>
+  );
+}
+
+function LinksBalance({
+  totalClicks,
+  linkCount,
+  weekClicks,
+  weekLength,
+  current,
+  previous,
+  comparedDays,
+}: {
+  totalClicks: number;
+  linkCount: number;
+  weekClicks: number;
+  weekLength: number;
+  current: number;
+  previous: number;
+  comparedDays: number;
+}) {
+  const delta = formatWindowDelta(current, previous);
+
+  return (
+    <div className="sm:text-right">
+      <p className="text-5xl font-medium tabular-nums leading-none tracking-[-0.06em] sm:text-6xl md:text-7xl">
+        {totalClicks.toLocaleString()}
+      </p>
+      <p className="mt-3 text-sm text-muted-foreground">total clicks</p>
+      {delta && (
+        <div className="mt-3">
+          <ClickDelta
+            current={current}
+            previous={previous}
+            className="text-sm"
+          />
+          <p className="mt-1 text-sm text-muted-foreground">
+            {windowDeltaCaption(comparedDays)}
+          </p>
+        </div>
+      )}
+      <p className="mt-3 text-sm text-muted-foreground">
+        {weekLength > 0 && (
+          <>
+            <span className="font-medium tabular-nums text-foreground">
+              {weekClicks.toLocaleString()}
+            </span>{" "}
+            last {weekLength} {weekLength === 1 ? "day" : "days"}
+            <span aria-hidden className="px-1.5">
+              ·
+            </span>
+          </>
+        )}
+        <span className="font-medium tabular-nums text-foreground">
+          {linkCount}
+        </span>{" "}
+        saved
+      </p>
+    </div>
   );
 }
 
