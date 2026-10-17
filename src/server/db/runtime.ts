@@ -1,5 +1,7 @@
 import { env } from "@/env";
+import { type AlertEmailState } from "@/lib/alert-rules";
 import { type ClickRange } from "@/lib/click-date-range";
+import { type NewAlertRule } from "@/server/alerts/types";
 import { TRPCError } from "@trpc/server";
 import { Effect, type Layer, ManagedRuntime } from "effect";
 
@@ -125,6 +127,80 @@ export function claimGuestLinks(
 
 export function deleteExpiredGuestLinks() {
   return run(AppDatabase.use((database) => database.deleteExpiredGuestLinks()));
+}
+
+export function evaluateClickAlerts(eventId: string) {
+  return run(
+    AppDatabase.use((database) => database.evaluateClickAlerts(eventId)),
+  );
+}
+
+export function createAlertRule(rule: NewAlertRule) {
+  return run(AppDatabase.use((database) => database.createAlertRule(rule)));
+}
+
+export function listAlertRules(userId: string) {
+  return run(AppDatabase.use((database) => database.listAlertRules(userId)));
+}
+
+export function pauseAlertRule(id: string, userId: string) {
+  return run(
+    AppDatabase.use((database) => database.pauseAlertRule(id, userId)),
+  );
+}
+
+export function resumeAlertRule(id: string, userId: string) {
+  return run(
+    AppDatabase.use((database) => database.resumeAlertRule(id, userId)),
+  );
+}
+
+export function resetAlertRule(id: string, userId: string) {
+  return run(
+    AppDatabase.use((database) => database.resetAlertRule(id, userId)),
+  );
+}
+
+export function deleteAlertRule(id: string, userId: string) {
+  return run(
+    AppDatabase.use((database) => database.deleteAlertRule(id, userId)),
+  );
+}
+
+export function listAlerts(userId: string) {
+  return run(AppDatabase.use((database) => database.listAlerts(userId)));
+}
+
+export function unreadAlertCount(userId: string) {
+  return run(AppDatabase.use((database) => database.unreadAlertCount(userId)));
+}
+
+export function markAlertRead(id: string, userId: string) {
+  return run(AppDatabase.use((database) => database.markAlertRead(id, userId)));
+}
+
+export function markAllAlertsRead(userId: string) {
+  return run(AppDatabase.use((database) => database.markAllAlertsRead(userId)));
+}
+
+export function getEmailDelivery(userId: string) {
+  return run(AppDatabase.use((database) => database.getEmailDelivery(userId)));
+}
+
+export function setEmailEnabled(userId: string, enabled: boolean) {
+  return run(
+    AppDatabase.use((database) => database.setEmailEnabled(userId, enabled)),
+  );
+}
+
+export function claimAlertEmail(alertId: string) {
+  return run(AppDatabase.use((database) => database.claimAlertEmail(alertId)));
+}
+
+export function settleAlertEmail(alertId: string, state: AlertEmailState) {
+  return run(
+    AppDatabase.use((database) => database.settleAlertEmail(alertId, state)),
+  );
 }
 
 export type { ClickSummary, LinkRecord, LinkSnapshot };

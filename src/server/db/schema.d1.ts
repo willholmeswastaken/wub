@@ -44,6 +44,9 @@ export const clickEvents = createTable(
     browser: text("browser"),
     os: text("os"),
     referrer: text("referrer"),
+    previous_last_clicked: integer("previous_last_clicked", {
+      mode: "timestamp_ms",
+    }),
   },
   (event) => ({
     shortCodeIdx: index("click_event_short_code_idx").on(event.short_code),
@@ -148,6 +151,56 @@ export const sessions = createTable(
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
+
+export const alertRules = createTable(
+  "alert_rule",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    short_code: text("short_code").notNull(),
+    type: text("type").notNull(),
+    threshold: integer("threshold"),
+    status: text("status").notNull().default("active"),
+    generation: integer("generation").notNull().default(0),
+    last_fired_at: integer("last_fired_at", { mode: "timestamp_ms" }),
+    created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updated_at: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (rule) => ({
+    linkIdx: index("alert_rule_link_idx").on(rule.short_code, rule.status),
+    userIdx: index("alert_rule_user_idx").on(rule.userId),
+  }),
+);
+
+export const alerts = createTable(
+  "alert",
+  {
+    id: text("id").primaryKey(),
+    ruleId: text("rule_id").notNull(),
+    userId: text("user_id").notNull(),
+    short_code: text("short_code").notNull(),
+    type: text("type").notNull(),
+    threshold: integer("threshold"),
+    click_count: integer("click_count").notNull(),
+    generation: integer("generation").notNull(),
+    source_event_id: text("source_event_id"),
+    email_state: text("email_state").notNull().default("pending"),
+    created_at: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    read_at: integer("read_at", { mode: "timestamp_ms" }),
+  },
+  (alert) => ({
+    userCreatedIdx: index("alert_user_created_idx").on(
+      alert.userId,
+      alert.created_at,
+    ),
+    eventIdx: index("alert_event_idx").on(alert.source_event_id),
+  }),
+);
+
+export const notificationPrefs = createTable("notification_pref", {
+  userId: text("user_id").primaryKey(),
+  emailEnabled: integer("email_enabled").notNull().default(1),
+});
 
 export const verificationTokens = createTable(
   "verificationToken",

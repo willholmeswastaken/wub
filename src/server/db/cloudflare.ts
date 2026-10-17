@@ -1,4 +1,21 @@
 import { type ClickRange } from "@/lib/click-date-range";
+import {
+  claimAlertEmailOnD1,
+  createAlertRuleOnD1,
+  deleteAlertRuleOnD1,
+  evaluateClickAlertsOnD1,
+  getEmailDeliveryOnD1,
+  listAlertRulesOnD1,
+  listAlertsOnD1,
+  markAlertReadOnD1,
+  markAllAlertsReadOnD1,
+  pauseAlertRuleOnD1,
+  resetAlertRuleOnD1,
+  resumeAlertRuleOnD1,
+  setEmailEnabledOnD1,
+  settleAlertEmailOnD1,
+  unreadAlertCountOnD1,
+} from "@/server/alerts/d1-store";
 import logger from "@/server/logger";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { env as workersEnv } from "cloudflare:workers";
@@ -185,6 +202,12 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         database
           .prepare(`DELETE FROM wub_click WHERE short_code = ?1`)
           .bind(code),
+        database
+          .prepare(`DELETE FROM wub_alert WHERE short_code = ?1`)
+          .bind(code),
+        database
+          .prepare(`DELETE FROM wub_alert_rule WHERE short_code = ?1`)
+          .bind(code),
       ]);
       await forgetRedirectTarget(code);
     }),
@@ -280,4 +303,33 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         return yield* new ClickNotFoundError({ shortCode: event.short_code });
       }
     }),
+  evaluateClickAlerts: (eventId) =>
+    attempt(() => evaluateClickAlertsOnD1(getD1Binding(), eventId)),
+  createAlertRule: (rule) =>
+    attempt(() => createAlertRuleOnD1(getD1Binding(), rule)),
+  listAlertRules: (userId) =>
+    attempt(() => listAlertRulesOnD1(getD1Binding(), userId)),
+  pauseAlertRule: (id, userId) =>
+    attempt(() => pauseAlertRuleOnD1(getD1Binding(), id, userId)),
+  resumeAlertRule: (id, userId) =>
+    attempt(() => resumeAlertRuleOnD1(getD1Binding(), id, userId)),
+  resetAlertRule: (id, userId) =>
+    attempt(() => resetAlertRuleOnD1(getD1Binding(), id, userId)),
+  deleteAlertRule: (id, userId) =>
+    attempt(() => deleteAlertRuleOnD1(getD1Binding(), id, userId)),
+  listAlerts: (userId) => attempt(() => listAlertsOnD1(getD1Binding(), userId)),
+  unreadAlertCount: (userId) =>
+    attempt(() => unreadAlertCountOnD1(getD1Binding(), userId)),
+  markAlertRead: (id, userId) =>
+    attempt(() => markAlertReadOnD1(getD1Binding(), id, userId)),
+  markAllAlertsRead: (userId) =>
+    attempt(() => markAllAlertsReadOnD1(getD1Binding(), userId)),
+  getEmailDelivery: (userId) =>
+    attempt(() => getEmailDeliveryOnD1(getD1Binding(), userId)),
+  setEmailEnabled: (userId, enabled) =>
+    attempt(() => setEmailEnabledOnD1(getD1Binding(), userId, enabled)),
+  claimAlertEmail: (alertId) =>
+    attempt(() => claimAlertEmailOnD1(getD1Binding(), alertId)),
+  settleAlertEmail: (alertId, state) =>
+    attempt(() => settleAlertEmailOnD1(getD1Binding(), alertId, state)),
 });

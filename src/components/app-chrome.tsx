@@ -14,7 +14,11 @@ export function AppChrome({
 }) {
   const pathname = usePathname();
   const isProduct =
-    pathname === "/dashboard" || pathname.startsWith("/analytics");
+    pathname === "/dashboard" ||
+    pathname.startsWith("/analytics") ||
+    pathname.startsWith("/settings") ||
+    (pathname.startsWith("/alerts") &&
+      !pathname.startsWith("/alerts/unsubscribe"));
 
   return (
     <div className="flex min-h-[100dvh] flex-col">

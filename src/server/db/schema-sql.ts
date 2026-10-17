@@ -9,9 +9,20 @@ export const D1_BOOTSTRAP_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS "wub_click" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "short_code" text NOT NULL, "timestamp" integer DEFAULT (unixepoch() * 1000), "userAgent" text, "ipAddress" text, "country" text, "city" text, "region" text, "latitude" text, "longitude" text, "device" text, "device_vendor" text, "device_model" text, "browser" text, "browser_version" text, "engine" text, "engine_version" text, "os" text, "os_version" text, "cpu_architecture" text, "referrer" text)`,
   `CREATE INDEX IF NOT EXISTS "click_short_code_idx" ON "wub_click" ("short_code")`,
   `CREATE INDEX IF NOT EXISTS "link_userId_idx" ON "wub_link" ("userId")`,
-  `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL, "country" text, "city" text, "device" text, "browser" text, "os" text, "referrer" text)`,
+  `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL, "country" text, "city" text, "device" text, "browser" text, "os" text, "referrer" text, "previous_last_clicked" integer)`,
   `CREATE INDEX IF NOT EXISTS "click_event_short_code_idx" ON "wub_click_event" ("short_code")`,
   `CREATE INDEX IF NOT EXISTS "click_event_code_time_idx" ON "wub_click_event" ("short_code", "recorded_at")`,
+  `CREATE TABLE IF NOT EXISTS "wub_alert_rule" ("id" text PRIMARY KEY NOT NULL, "user_id" text NOT NULL, "short_code" text NOT NULL, "type" text NOT NULL, "threshold" integer, "status" text NOT NULL DEFAULT 'active', "generation" integer NOT NULL DEFAULT 0, "last_fired_at" integer, "created_at" integer NOT NULL, "updated_at" integer NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS "alert_rule_link_idx" ON "wub_alert_rule" ("short_code", "status")`,
+  `CREATE INDEX IF NOT EXISTS "alert_rule_user_idx" ON "wub_alert_rule" ("user_id")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "alert_rule_wakeup_idx" ON "wub_alert_rule" ("short_code") WHERE "type" = 'wakeup'`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "alert_rule_milestone_idx" ON "wub_alert_rule" ("short_code", "threshold") WHERE "type" = 'milestone'`,
+  `CREATE TABLE IF NOT EXISTS "wub_alert" ("id" text PRIMARY KEY NOT NULL, "rule_id" text NOT NULL, "user_id" text NOT NULL, "short_code" text NOT NULL, "type" text NOT NULL, "threshold" integer, "click_count" integer NOT NULL, "generation" integer NOT NULL, "source_event_id" text, "email_state" text NOT NULL DEFAULT 'pending', "created_at" integer NOT NULL, "read_at" integer)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "alert_rule_generation_idx" ON "wub_alert" ("rule_id", "generation")`,
+  `CREATE INDEX IF NOT EXISTS "alert_user_created_idx" ON "wub_alert" ("user_id", "created_at")`,
+  `CREATE INDEX IF NOT EXISTS "alert_event_idx" ON "wub_alert" ("source_event_id")`,
+  `CREATE INDEX IF NOT EXISTS "alert_user_unread_idx" ON "wub_alert" ("user_id") WHERE "read_at" IS NULL`,
+  `CREATE TABLE IF NOT EXISTS "wub_notification_pref" ("user_id" text PRIMARY KEY NOT NULL, "email_enabled" integer NOT NULL DEFAULT 1)`,
 ];
 
 // CREATE TABLE IF NOT EXISTS does not add columns to a database that already
@@ -25,6 +36,7 @@ export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_click_event" ADD COLUMN "browser" text`,
   `ALTER TABLE "wub_click_event" ADD COLUMN "os" text`,
   `ALTER TABLE "wub_click_event" ADD COLUMN "referrer" text`,
+  `ALTER TABLE "wub_click_event" ADD COLUMN "previous_last_clicked" integer`,
 ];
 
 export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {

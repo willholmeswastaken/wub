@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Github, Link2, LogOut } from "lucide-react";
+import { api } from "@/trpc/react";
+import { Bell, Github, Link2, LogOut } from "lucide-react";
 import { type Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
@@ -26,8 +27,17 @@ export function HeaderLinks({
   themeToggle: ReactNode;
 }) {
   const pathname = usePathname();
-  const inProduct =
+  const linksCurrent =
     pathname === "/dashboard" || pathname.startsWith("/analytics");
+  const alertsCurrent =
+    pathname.startsWith("/alerts") &&
+    !pathname.startsWith("/alerts/unsubscribe");
+  const unread = api.alert.unreadCount.useQuery(undefined, {
+    enabled: Boolean(user),
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+  });
+  const unreadCount = unread.data ?? 0;
 
   return (
     <>
@@ -35,13 +45,28 @@ export function HeaderLinks({
         <nav className="flex items-center">
           <Link
             href="/dashboard"
-            aria-current={inProduct ? "page" : undefined}
+            aria-current={linksCurrent ? "page" : undefined}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-sm font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              inProduct && "bg-muted text-foreground",
+              linksCurrent && "bg-muted text-foreground",
             )}
           >
             Links
+          </Link>
+          <Link
+            href="/alerts"
+            aria-current={alertsCurrent ? "page" : undefined}
+            className={cn(
+              "inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              alertsCurrent && "bg-muted text-foreground",
+            )}
+          >
+            Alerts
+            {unreadCount > 0 && (
+              <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-foreground px-1.5 text-[11px] font-medium tabular-nums leading-5 text-background">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </Link>
         </nav>
       )}
@@ -79,6 +104,12 @@ export function HeaderLinks({
                 <Link href="/dashboard" className="cursor-pointer">
                   <Link2 className="mr-2 h-4 w-4" />
                   Your links
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/notifications" className="cursor-pointer">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Notifications
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem

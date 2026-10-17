@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
+import { alertRouter } from "./routers/alert";
 import { linkRouter } from "./routers/link";
 
 /**
@@ -9,6 +10,7 @@ import { linkRouter } from "./routers/link";
  */
 export const appRouter = createTRPCRouter({
   link: linkRouter,
+  alert: alertRouter,
 });
 
 // export type definition of API

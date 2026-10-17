@@ -1,5 +1,23 @@
 import { env } from "@/env";
 import { type ClickRange } from "@/lib/click-date-range";
+import {
+  claimAlertEmailOnNeon,
+  createAlertRuleOnNeon,
+  deleteAlertRuleOnNeon,
+  deleteLinkAlertsOnNeon,
+  evaluateClickAlertsOnNeon,
+  getEmailDeliveryOnNeon,
+  listAlertRulesOnNeon,
+  listAlertsOnNeon,
+  markAlertReadOnNeon,
+  markAllAlertsReadOnNeon,
+  pauseAlertRuleOnNeon,
+  resetAlertRuleOnNeon,
+  resumeAlertRuleOnNeon,
+  setEmailEnabledOnNeon,
+  settleAlertEmailOnNeon,
+  unreadAlertCountOnNeon,
+} from "@/server/alerts/neon-store";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { neon } from "@neondatabase/serverless";
@@ -137,6 +155,7 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
         .returning({ short_code: links.short_code });
       if (deleted.length === 0) return;
       await db.delete(clicks).where(eq(clicks.short_code, code));
+      await deleteLinkAlertsOnNeon(db, code);
     }),
   findLinkSnapshot: (code) =>
     attempt(async () => {
@@ -222,12 +241,17 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
       const updated = yield* Effect.tryPromise({
         try: () =>
           db.execute(sql`
-            WITH inserted AS (
+            WITH previous AS (
+              SELECT last_clicked
+              FROM wub_link
+              WHERE short_code = ${event.short_code}
+            ),
+            inserted AS (
               INSERT INTO wub_click (
                 event_id, short_code, "userAgent", country, city, region,
                 latitude, longitude, device, device_vendor, device_model,
                 browser, browser_version, engine, engine_version, os,
-                os_version, cpu_architecture, referrer
+                os_version, cpu_architecture, referrer, previous_last_clicked
               )
               SELECT
                 ${event.event_id}, ${event.short_code}, ${event.userAgent},
@@ -236,10 +260,9 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
                 ${event.device_vendor}, ${event.device_model}, ${event.browser},
                 ${event.browser_version}, ${event.engine}, ${event.engine_version},
                 ${event.os}, ${event.os_version}, ${event.cpu_architecture},
-                ${event.referrer ?? null}
-              WHERE EXISTS (
-                SELECT 1 FROM wub_link WHERE short_code = ${event.short_code}
-              )
+                ${event.referrer ?? null},
+                (SELECT last_clicked FROM previous)
+              WHERE EXISTS (SELECT 1 FROM previous)
               ON CONFLICT (event_id) DO NOTHING
               RETURNING event_id
             )
@@ -265,4 +288,31 @@ export const NeonAppDatabaseLive = Layer.succeed(AppDatabase, {
         return yield* new ClickNotFoundError({ shortCode: event.short_code });
       }
     }),
+  evaluateClickAlerts: (eventId) =>
+    attempt(() => evaluateClickAlertsOnNeon(db, eventId)),
+  createAlertRule: (rule) => attempt(() => createAlertRuleOnNeon(db, rule)),
+  listAlertRules: (userId) => attempt(() => listAlertRulesOnNeon(db, userId)),
+  pauseAlertRule: (id, userId) =>
+    attempt(() => pauseAlertRuleOnNeon(db, id, userId)),
+  resumeAlertRule: (id, userId) =>
+    attempt(() => resumeAlertRuleOnNeon(db, id, userId)),
+  resetAlertRule: (id, userId) =>
+    attempt(() => resetAlertRuleOnNeon(db, id, userId)),
+  deleteAlertRule: (id, userId) =>
+    attempt(() => deleteAlertRuleOnNeon(db, id, userId)),
+  listAlerts: (userId) => attempt(() => listAlertsOnNeon(db, userId)),
+  unreadAlertCount: (userId) =>
+    attempt(() => unreadAlertCountOnNeon(db, userId)),
+  markAlertRead: (id, userId) =>
+    attempt(() => markAlertReadOnNeon(db, id, userId)),
+  markAllAlertsRead: (userId) =>
+    attempt(() => markAllAlertsReadOnNeon(db, userId)),
+  getEmailDelivery: (userId) =>
+    attempt(() => getEmailDeliveryOnNeon(db, userId)),
+  setEmailEnabled: (userId, enabled) =>
+    attempt(() => setEmailEnabledOnNeon(db, userId, enabled)),
+  claimAlertEmail: (alertId) =>
+    attempt(() => claimAlertEmailOnNeon(db, alertId)),
+  settleAlertEmail: (alertId, state) =>
+    attempt(() => settleAlertEmailOnNeon(db, alertId, state)),
 });

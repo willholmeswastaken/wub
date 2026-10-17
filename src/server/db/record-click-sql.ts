@@ -1,9 +1,11 @@
 const INSERT_CLICK_EVENT_SQL = `
 INSERT INTO wub_click_event (
-  event_id, short_code, recorded_at, country, city, device, browser, os, referrer
+  event_id, short_code, recorded_at, country, city, device, browser, os, referrer,
+  previous_last_clicked
 )
-SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9
-WHERE EXISTS (SELECT 1 FROM wub_link WHERE short_code = ?2)
+SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, last_clicked
+FROM wub_link
+WHERE short_code = ?2
 ON CONFLICT (event_id) DO NOTHING
 `;
 

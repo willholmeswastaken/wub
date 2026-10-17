@@ -3,6 +3,19 @@ declare module "cloudflare:workers" {
     CLICK_QUEUE: {
       send(body: unknown): Promise<unknown>;
     };
+    ALERT_EMAIL_QUEUE?: {
+      send(body: unknown): Promise<unknown>;
+    };
+    EMAIL?: {
+      send(message: {
+        to: string;
+        from: string;
+        subject: string;
+        text?: string;
+        html?: string;
+      }): Promise<{ messageId?: string }>;
+    };
+    ALERT_EMAIL_FROM?: string;
     LINK_RATE_LIMITER: {
       limit(options: { key: string }): Promise<{ success: boolean }>;
     };

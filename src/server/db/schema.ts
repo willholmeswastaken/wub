@@ -71,6 +71,7 @@ export const clicks = createTable(
     os_version: text("os_version"),
     cpu_architecture: text("cpu_architecture"),
     referrer: text("referrer"),
+    previous_last_clicked: timestamp("previous_last_clicked", { mode: "date" }),
   },
   (click) => ({
     shortCodeIdx: index("click_short_code_idx").on(click.short_code),
@@ -148,6 +149,70 @@ export const sessions = createTable(
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
+
+export const alertRules = createTable(
+  "alert_rule",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    short_code: varchar("short_code", { length: 32 }).notNull(),
+    type: text("type").notNull(),
+    threshold: integer("threshold"),
+    status: text("status").notNull().default("active"),
+    generation: integer("generation").notNull().default(0),
+    last_fired_at: timestamp("last_fired_at", { mode: "date" }),
+    created_at: timestamp("created_at", { mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updated_at: timestamp("updated_at", { mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (rule) => ({
+    linkIdx: index("alert_rule_link_idx").on(rule.short_code, rule.status),
+    userIdx: index("alert_rule_user_idx").on(rule.userId),
+  }),
+);
+
+export const alerts = createTable(
+  "alert",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    ruleId: varchar("rule_id", { length: 64 }).notNull(),
+    userId: varchar("user_id", { length: 255 }).notNull(),
+    short_code: varchar("short_code", { length: 32 }).notNull(),
+    type: text("type").notNull(),
+    threshold: integer("threshold"),
+    click_count: integer("click_count").notNull(),
+    generation: integer("generation").notNull(),
+    sourceEventId: varchar("source_event_id", { length: 64 }),
+    email_state: text("email_state").notNull().default("pending"),
+    created_at: timestamp("created_at", { mode: "date" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    read_at: timestamp("read_at", { mode: "date" }),
+  },
+  (alert) => ({
+    userCreatedIdx: index("alert_user_created_idx").on(
+      alert.userId,
+      alert.created_at,
+    ),
+    eventIdx: index("alert_event_idx").on(alert.sourceEventId),
+    generationIdx: uniqueIndex("alert_rule_generation_idx").on(
+      alert.ruleId,
+      alert.generation,
+    ),
+  }),
+);
+
+export const notificationPrefs = createTable("notification_pref", {
+  userId: varchar("user_id", { length: 255 })
+    .primaryKey()
+    .references(() => users.id),
+  emailEnabled: integer("email_enabled").notNull().default(1),
+});
 
 export const verificationTokens = createTable(
   "verificationToken",
