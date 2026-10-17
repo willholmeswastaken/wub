@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertRuleDialog } from "@/components/alert-rule-dialog";
 import { EditLinkDialog } from "@/components/edit-link-dialog";
 import { iconButtonClassName } from "@/components/icon-button";
 import { QRCodeButton } from "@/components/qr-code-button";
@@ -13,6 +14,7 @@ import {
 import { useScheduleDelete } from "@/lib/pending-deletes";
 import {
   BarChart3,
+  Bell,
   MoreHorizontal,
   Pencil,
   QrCode,
@@ -31,6 +33,7 @@ export function LinkRowMenu({
   url: string;
 }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const scheduleDelete = useScheduleDelete();
 
   return (
@@ -72,6 +75,13 @@ export function LinkRowMenu({
             <Pencil className="mr-2 h-4 w-4" />
             Edit destination
           </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onSelect={() => setIsAlertOpen(true)}
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            Add alert
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer text-destructive focus:text-destructive"
@@ -90,6 +100,12 @@ export function LinkRowMenu({
         url={url}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
+      />
+      <AlertRuleDialog
+        open={isAlertOpen}
+        onOpenChange={setIsAlertOpen}
+        links={[{ shortCode, url }]}
+        presetShortCode={shortCode}
       />
     </>
   );

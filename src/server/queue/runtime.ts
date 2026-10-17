@@ -52,7 +52,13 @@ export async function publishClick(event: LogClickEvent) {
 
 export async function recordClick(event: LogClickEvent) {
   const runtime = await getClickRecorderRuntime();
-  return runtime.runPromise(recordClickOutcome(event));
+  const outcome = await runtime.runPromise(recordClickOutcome(event));
+  if (outcome === "recorded") {
+    const { dispatchClickAlerts } = await import("@/server/alerts/deliver");
+    const { publishAlertEmails } = await import("@/server/alerts/publish");
+    await dispatchClickAlerts(event.event_id, publishAlertEmails);
+  }
+  return outcome;
 }
 
 export async function consumeClickMessage(body: unknown) {

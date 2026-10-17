@@ -1,4 +1,14 @@
 import { type ClickRange } from "@/lib/click-date-range";
+import {
+  type AlertEmailClaim,
+  type AlertEmailState,
+  type AlertFeedItem,
+  type AlertRuleRecord,
+  type CreateAlertRuleResult,
+  type EmailDelivery,
+  type NewAlertRule,
+  type PendingAlertEmail,
+} from "@/server/alerts/types";
 import { type LogClickEvent } from "@/server/queue/schema";
 import { Context, Data, type Effect } from "effect";
 import { type Adapter } from "next-auth/adapters";
@@ -74,5 +84,57 @@ export class AppDatabase extends Context.Service<
     readonly recordClick: (
       event: LogClickEvent,
     ) => Effect.Effect<void, ClickNotFoundError | RecordClickError>;
+    readonly evaluateClickAlerts: (
+      eventId: string,
+    ) => Effect.Effect<PendingAlertEmail[], DatabaseError>;
+    readonly createAlertRule: (
+      rule: NewAlertRule,
+    ) => Effect.Effect<CreateAlertRuleResult, DatabaseError>;
+    readonly listAlertRules: (
+      userId: string,
+    ) => Effect.Effect<AlertRuleRecord[], DatabaseError>;
+    readonly pauseAlertRule: (
+      id: string,
+      userId: string,
+    ) => Effect.Effect<AlertRuleRecord | null, DatabaseError>;
+    readonly resumeAlertRule: (
+      id: string,
+      userId: string,
+    ) => Effect.Effect<AlertRuleRecord | null, DatabaseError>;
+    readonly resetAlertRule: (
+      id: string,
+      userId: string,
+    ) => Effect.Effect<AlertRuleRecord | null, DatabaseError>;
+    readonly deleteAlertRule: (
+      id: string,
+      userId: string,
+    ) => Effect.Effect<boolean, DatabaseError>;
+    readonly listAlerts: (
+      userId: string,
+    ) => Effect.Effect<AlertFeedItem[], DatabaseError>;
+    readonly unreadAlertCount: (
+      userId: string,
+    ) => Effect.Effect<number, DatabaseError>;
+    readonly markAlertRead: (
+      id: string,
+      userId: string,
+    ) => Effect.Effect<void, DatabaseError>;
+    readonly markAllAlertsRead: (
+      userId: string,
+    ) => Effect.Effect<void, DatabaseError>;
+    readonly getEmailDelivery: (
+      userId: string,
+    ) => Effect.Effect<EmailDelivery, DatabaseError>;
+    readonly setEmailEnabled: (
+      userId: string,
+      enabled: boolean,
+    ) => Effect.Effect<EmailDelivery, DatabaseError>;
+    readonly claimAlertEmail: (
+      alertId: string,
+    ) => Effect.Effect<AlertEmailClaim | null, DatabaseError>;
+    readonly settleAlertEmail: (
+      alertId: string,
+      state: AlertEmailState,
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("AppDatabase") {}

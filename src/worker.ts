@@ -1,4 +1,6 @@
 import { withWaitUntil } from "@/server/after-response";
+import { consumeAlertEmailMessage } from "@/server/alerts/consume-email";
+import { ALERT_EMAIL_QUEUE } from "@/server/alerts/deliver";
 import { deleteExpiredGuestLinks } from "@/server/db";
 import logger from "@/server/logger";
 import { consumeClickMessage } from "@/server/queue/runtime";
@@ -11,6 +13,7 @@ type QueueMessage = {
 };
 
 type ClickMessageBatch = {
+  readonly queue?: string;
   readonly messages: readonly QueueMessage[];
 };
 
@@ -48,15 +51,25 @@ export default {
     );
   },
   async queue(batch: ClickMessageBatch) {
+    const deliverEmail = (batch.queue ?? "").includes(ALERT_EMAIL_QUEUE);
     await mapWithConcurrency(
       batch.messages,
       QUEUE_CONCURRENCY,
       async (message) => {
         try {
-          await consumeClickMessage(message.body);
+          if (deliverEmail) {
+            await consumeAlertEmailMessage(message.body);
+          } else {
+            await consumeClickMessage(message.body);
+          }
           message.ack();
         } catch (error) {
-          logger.info({ error }, "Click queue message failed, retrying");
+          logger.info(
+            { error, queue: batch.queue },
+            deliverEmail
+              ? "Alert email failed, retrying"
+              : "Click queue message failed, retrying",
+          );
           message.retry();
         }
       },
