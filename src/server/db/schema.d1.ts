@@ -28,7 +28,16 @@ export const links = createTable(
     claim_token: text("claim_token"),
   },
   (link) => ({
-    userIdIdx: index("link_userId_idx").on(link.userId),
+    userCreatedIdx: index("link_user_created_idx").on(
+      link.userId,
+      link.created_at,
+    ),
+    // Hourly purge of anonymous links. A userId index matches `userId IS NULL`
+    // and would read every guest row; this partial index only stores rows that
+    // can expire.
+    guestExpiryIdx: index("link_guest_expiry_idx")
+      .on(link.expires_at)
+      .where(sql`${link.userId} IS NULL AND ${link.expires_at} IS NOT NULL`),
   }),
 );
 
@@ -46,8 +55,9 @@ export const clickEvents = createTable(
     referrer: text("referrer"),
   },
   (event) => ({
-    // Covers analytics GROUP BY and sparkline stamp reads. Replaces
-    // click_event_short_code_idx and the narrow click_event_code_time_idx.
+    // Leading short_code covers equality lookups, range reads, and deletes.
+    // The dimension columns make analytics index-only. A second short_code
+    // index would write an extra row on every click.
     coveringIdx: index("click_event_covering_idx").on(
       event.short_code,
       event.recorded_at,
@@ -95,13 +105,19 @@ export const clicks = createTable(
   }),
 );
 
-export const users = createTable("user", {
-  id: text("id").notNull().primaryKey(),
-  name: text("name"),
-  email: text("email").notNull(),
-  emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
-  image: text("image"),
-});
+export const users = createTable(
+  "user",
+  {
+    id: text("id").notNull().primaryKey(),
+    name: text("name"),
+    email: text("email").notNull(),
+    emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
+    image: text("image"),
+  },
+  (user) => ({
+    emailIdx: index("user_email_idx").on(user.email),
+  }),
+);
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),

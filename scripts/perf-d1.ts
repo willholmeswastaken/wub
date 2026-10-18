@@ -12,13 +12,13 @@
  */
 import { Database } from "bun:sqlite";
 
-import { loadUserClickStamps } from "@/server/db/click-stats-sql";
+import { loadUserClickCounts } from "@/server/db/click-stats-sql";
 import { clickAnalyticsFromD1 } from "@/server/db/d1-analytics";
 import { type ClickStatementDatabase } from "@/server/db/record-click-sql";
 import { applyD1Schema } from "@/server/db/schema-sql";
 import {
   sparklineSince,
-  userLinksWithSparklines,
+  userLinksWithSparklineCounts,
 } from "@/server/db/sparklines";
 
 const LINKS = 5_000;
@@ -283,17 +283,18 @@ async function main() {
 
   const since = sparklineSince(NOW);
   rowsRead.n = 0;
-  const sparkProbe = await loadUserClickStamps(d1, HEAVY_USER, since);
+  const sparkProbe = await loadUserClickCounts(d1, HEAVY_USER, since);
   const sparkRows = rowsRead.n;
   const sparkQueries = observed.splice(0, observed.length);
   const sparks = await time(
     "dashboard sparkline heavy user 7d",
     5,
     async () => {
-      const stamps = await loadUserClickStamps(d1, HEAVY_USER, since);
+      const sparkCounts = await loadUserClickCounts(d1, HEAVY_USER, since);
       return {
-        rows: stamps.length,
-        links: userLinksWithSparklines([], stamps, NOW),
+        rows: sparkCounts.length,
+        clicks: sparkCounts.reduce((sum, row) => sum + row.count, 0),
+        links: userLinksWithSparklineCounts([], sparkCounts, NOW),
       };
     },
   );

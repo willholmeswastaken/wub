@@ -8,10 +8,13 @@ export const D1_BOOTSTRAP_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS "wub_link" ("short_code" text PRIMARY KEY NOT NULL, "url" text NOT NULL, "title" text, "userId" text, "created_at" integer DEFAULT (unixepoch() * 1000) NOT NULL, "click_count" integer DEFAULT 0 NOT NULL, "last_clicked" integer, "expires_at" integer, "claim_token" text, FOREIGN KEY ("userId") REFERENCES "wub_user"("id"))`,
   `CREATE TABLE IF NOT EXISTS "wub_click" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "short_code" text NOT NULL, "timestamp" integer DEFAULT (unixepoch() * 1000), "userAgent" text, "ipAddress" text, "country" text, "city" text, "region" text, "latitude" text, "longitude" text, "device" text, "device_vendor" text, "device_model" text, "browser" text, "browser_version" text, "engine" text, "engine_version" text, "os" text, "os_version" text, "cpu_architecture" text, "referrer" text)`,
   `CREATE INDEX IF NOT EXISTS "click_short_code_idx" ON "wub_click" ("short_code")`,
-  `CREATE INDEX IF NOT EXISTS "link_userId_idx" ON "wub_link" ("userId")`,
+  `CREATE INDEX IF NOT EXISTS "link_user_created_idx" ON "wub_link" ("userId", "created_at")`,
+  `CREATE INDEX IF NOT EXISTS "link_guest_expiry_idx" ON "wub_link" ("expires_at") WHERE "userId" IS NULL AND "expires_at" IS NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS "user_email_idx" ON "wub_user" ("email")`,
   `CREATE TABLE IF NOT EXISTS "wub_click_event" ("event_id" text PRIMARY KEY NOT NULL, "short_code" text NOT NULL, "recorded_at" integer NOT NULL, "country" text, "city" text, "device" text, "browser" text, "os" text, "referrer" text)`,
-  `CREATE INDEX IF NOT EXISTS "click_event_short_code_idx" ON "wub_click_event" ("short_code")`,
   `CREATE INDEX IF NOT EXISTS "click_event_code_time_idx" ON "wub_click_event" ("short_code", "recorded_at")`,
+  `DROP INDEX IF EXISTS "link_userId_idx"`,
+  `DROP INDEX IF EXISTS "click_event_short_code_idx"`,
 ];
 
 // CREATE TABLE IF NOT EXISTS does not add columns to a database that already
@@ -26,6 +29,11 @@ export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_click_event" ADD COLUMN "os" text`,
   `ALTER TABLE "wub_click_event" ADD COLUMN "referrer" text`,
 ];
+
+// Named by the click-log queries that use INDEXED BY. The leftmost columns
+// are (short_code, recorded_at), so it serves the same ranges as the narrow
+// click_event_code_time_idx that 0005 drops.
+export const CLICK_EVENT_RANGE_INDEX = "click_event_covering_idx";
 
 // Applied after the bootstrap indexes so a database created from this list
 // matches migrations/d1/0005_click_event_covering_index.sql. Create the

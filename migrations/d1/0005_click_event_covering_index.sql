@@ -6,10 +6,13 @@
 -- in place. Re-running is safe: the covering index is IF NOT EXISTS and the
 -- drops are IF EXISTS.
 --
--- Ordering: PR #87 adds migrations/d1/0004_click_alerts.sql (alert tables and
--- previous_last_clicked on wub_click_event). This file does not read that
--- column, so 0004 and 0005 can apply in either order. 0003 must run first so
--- the dimension columns exist; deploy applies migrations/d1 in filename order.
+-- Ordering: 0003 creates the dimension columns and the narrow
+-- click_event_code_time_idx. 0004_read_paths.sql drops
+-- click_event_short_code_idx and adds the link and user indexes; it does not
+-- read this index. Deploy applies migrations/d1 in filename order, so this
+-- file runs after 0004. Click lookups by event_id (including a later alerts
+-- migration that adds previous_last_clicked) use the primary key, so they do
+-- not depend on either index this file drops.
 CREATE INDEX IF NOT EXISTS "click_event_covering_idx" ON "wub_click_event" (
   "short_code",
   "recorded_at",

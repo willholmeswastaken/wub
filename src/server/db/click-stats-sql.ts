@@ -1,20 +1,30 @@
 import { type StoredClick } from "./click-stats";
 import { type ClickStatementDatabase } from "./record-click-sql";
+import { CLICK_EVENT_RANGE_INDEX } from "./schema-sql";
 
-const LOAD_CLICKS_SQL = `
+// INDEXED BY keeps the range on (short_code, recorded_at). A short_code-only
+// plan would read every click this link has ever received. The covering index
+// has that prefix and also holds the dimension columns this SELECT reads.
+export const LOAD_CLICKS_SQL = `
 SELECT event_id, recorded_at, country, city, device, browser, os, referrer
-FROM wub_click_event
+FROM wub_click_event INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
 WHERE short_code = ?1
   AND recorded_at >= ?2
   AND recorded_at < ?3
 `;
 
-const USER_STAMPS_SQL = `
-SELECT e.short_code AS short_code, e.recorded_at AS recorded_at
-FROM wub_click_event e
-INNER JOIN wub_link l ON l.short_code = e.short_code
+// One count per link per UTC day. CROSS JOIN keeps the user's links on the
+// outer side so the click log is a per-code range, not a scan of every event.
+export const USER_CLICK_COUNTS_SQL = `
+SELECT l.short_code AS short_code,
+       strftime('%Y-%m-%d', e.recorded_at / 1000, 'unixepoch') AS day,
+       count(*) AS count
+FROM wub_link AS l INDEXED BY link_user_created_idx
+CROSS JOIN wub_click_event AS e INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
 WHERE l."userId" = ?1
+  AND e.short_code = l.short_code
   AND e.recorded_at >= ?2
+GROUP BY l.short_code, day
 `;
 
 type ClickRow = {
@@ -50,19 +60,25 @@ export async function loadStoredClicks(
   }));
 }
 
-export async function loadUserClickStamps(
+export async function loadUserClickCounts(
   database: ClickStatementDatabase,
   userId: string,
   since: Date,
 ) {
   const result = await database
-    .prepare(USER_STAMPS_SQL)
+    .prepare(USER_CLICK_COUNTS_SQL)
     .bind(userId, since.getTime())
-    .all<{ short_code: string; recorded_at: number | string | null }>();
-  return (result.results ?? []).map((row) => ({
-    short_code: row.short_code,
-    timestamp: asMillis(row.recorded_at),
-  }));
+    .all<{ short_code: string; day: string | null; count: number | string }>();
+  return (result.results ?? []).flatMap((row) => {
+    if (!row.day) return [];
+    return [
+      {
+        short_code: row.short_code,
+        day: row.day,
+        count: Number(row.count) || 0,
+      },
+    ];
+  });
 }
 
 function asMillis(value: number | string | null) {

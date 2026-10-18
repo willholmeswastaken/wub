@@ -9,13 +9,19 @@ import {
 } from "@/lib/click-date-range";
 import { analyticsFromStoredClicks } from "@/server/db/click-stats";
 import {
+  LOAD_CLICKS_SQL,
+  USER_CLICK_COUNTS_SQL,
   loadStoredClicks,
-  loadUserClickStamps,
+  loadUserClickCounts,
 } from "@/server/db/click-stats-sql";
 import { clickAnalyticsFromD1 } from "@/server/db/d1-analytics";
-import { recordClickOnD1 } from "@/server/db/record-click-sql";
+import {
+  DELETE_CODE_EVENTS_SQL,
+  DELETE_GUEST_EVENTS_SQL,
+  recordClickOnD1,
+} from "@/server/db/record-click-sql";
 import { applyD1Schema } from "@/server/db/schema-sql";
-import { userLinksWithSparklines } from "@/server/db/sparklines";
+import { userLinksWithSparklineCounts } from "@/server/db/sparklines";
 import { Miniflare } from "miniflare";
 
 const now = new Date("2026-10-04T12:00:00.000Z");
@@ -91,12 +97,12 @@ test("dashboard sparklines come from the click log", async () => {
       { event_id: "66666666-6666-4666-8666-666666666666", short_code: "docs" },
       Date.parse("2026-09-01T00:00:00.000Z"),
     );
-    const stamps = await loadUserClickStamps(
+    const counts = await loadUserClickCounts(
       d1,
       "user-1",
       new Date("2026-09-28T00:00:00.000Z"),
     );
-    const links = userLinksWithSparklines(
+    const links = userLinksWithSparklineCounts(
       [
         {
           short_code: "docs",
@@ -106,10 +112,12 @@ test("dashboard sparklines come from the click log", async () => {
           last_clicked: new Date(currentClick),
         },
       ],
-      stamps,
+      counts,
       now,
     );
-    expect(stamps).toHaveLength(1);
+    expect(counts).toEqual([
+      { short_code: "docs", day: "2026-10-04", count: 1 },
+    ]);
     expect(links[0]?.recentClicks).toEqual([0, 0, 0, 0, 0, 0, 1]);
   } finally {
     await miniflare.dispose();
@@ -507,7 +515,10 @@ test("covering index replaces the narrow click indexes", () => {
     const plans = [
       `SELECT (recorded_at / 86400000) * 86400000 AS bucket, COUNT(*) AS n FROM wub_click_event WHERE short_code = ? AND recorded_at >= ? AND recorded_at < ? GROUP BY bucket`,
       `SELECT country AS key, COUNT(*) AS n FROM wub_click_event WHERE short_code = ? AND recorded_at >= ? AND recorded_at < ? AND country IS NOT NULL GROUP BY country ORDER BY n DESC LIMIT 50`,
-      `SELECT e.short_code, e.recorded_at FROM wub_click_event e INNER JOIN wub_link l ON l.short_code = e.short_code WHERE l."userId" = ? AND e.recorded_at >= ?`,
+      LOAD_CLICKS_SQL,
+      USER_CLICK_COUNTS_SQL,
+      DELETE_CODE_EVENTS_SQL,
+      DELETE_GUEST_EVENTS_SQL,
       `DELETE FROM wub_click_event WHERE short_code = ?`,
       `DELETE FROM wub_click_event WHERE short_code IN (?, ?)`,
       `SELECT count(*) AS count FROM wub_click_event WHERE short_code = ?`,
@@ -519,9 +530,9 @@ test("covering index replaces the narrow click indexes", () => {
       expect(plan.includes("SCAN wub_click_event")).toBe(false);
     }
 
-    // PR #87 looks clicks up by event_id and reads previous_last_clicked, a
-    // column added by 0004. That lookup uses the primary key, not the indexes
-    // 0005 drops, whether 0004 runs before or after this index.
+    // An alerts migration can add previous_last_clicked and look clicks up by
+    // event_id. That lookup uses the primary key, not the indexes 0005 drops.
+    // 0004_read_paths.sql does not add the column; this ALTER stands in for it.
     db.exec(
       `ALTER TABLE wub_click_event ADD COLUMN previous_last_clicked integer`,
     );
@@ -568,7 +579,13 @@ function bucketCount(
 }
 
 function explain(db: Database, sql: string) {
-  const placeholders = sql.match(/\?/g)?.length ?? 0;
+  const numbered = [...sql.matchAll(/\?(\d+)/g)].map((match) =>
+    Number(match[1]),
+  );
+  const placeholders =
+    numbered.length > 0
+      ? Math.max(...numbered)
+      : (sql.match(/\?/g)?.length ?? 0);
   const params = Array.from({ length: placeholders }, (_, index) => index + 1);
   return (
     db.query(`EXPLAIN QUERY PLAN ${sql}`).all(...params) as Array<{
