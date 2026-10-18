@@ -8,7 +8,7 @@ import { Effect, Layer } from "effect";
 import { type Adapter } from "next-auth/adapters";
 
 import { forgetRedirectTarget, rememberRedirectTarget } from "../kv-links";
-import { loadUserClickStamps } from "./click-stats-sql";
+import { loadUserClickCounts } from "./click-stats-sql";
 import { isUniqueViolation, LinkConflictError } from "./conflicts";
 import { clickAnalyticsFromD1 } from "./d1-analytics";
 import {
@@ -20,12 +20,13 @@ import {
 import { toLinkRecord, toLinkSnapshot } from "./map";
 import {
   deleteExpiredGuestLinksOnD1,
+  deleteStoredClicks,
   recordClickOnD1,
   type ClickStatementDatabase,
 } from "./record-click-sql";
 import * as schema from "./schema.d1";
 import { links } from "./schema.d1";
-import { sparklineSince, userLinksWithSparklines } from "./sparklines";
+import { sparklineSince, userLinksWithSparklineCounts } from "./sparklines";
 import { createCloudflareAuthAdapter } from "./sqlite-auth";
 
 type D1Binding = Parameters<typeof drizzle>[0] &
@@ -133,9 +134,9 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         },
       });
       if (rows.length === 0) return [];
-      let stamps: Awaited<ReturnType<typeof loadUserClickStamps>> = [];
+      let counts: Awaited<ReturnType<typeof loadUserClickCounts>> = [];
       try {
-        stamps = await loadUserClickStamps(
+        counts = await loadUserClickCounts(
           getD1Binding(),
           userId,
           sparklineSince(),
@@ -146,7 +147,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
           "Click sparkline query failed",
         );
       }
-      return userLinksWithSparklines(rows, stamps);
+      return userLinksWithSparklineCounts(rows, counts);
     }),
   updateLinkUrl: (code, userId, url) =>
     attempt(async () => {
@@ -178,14 +179,7 @@ export const CloudflareAppDatabaseLive = Layer.succeed(AppDatabase, {
         .bind(code, userId)
         .all<{ short_code: string }>();
       if ((deleted.results?.length ?? 0) === 0) return;
-      await database.batch([
-        database
-          .prepare(`DELETE FROM wub_click_event WHERE short_code = ?1`)
-          .bind(code),
-        database
-          .prepare(`DELETE FROM wub_click WHERE short_code = ?1`)
-          .bind(code),
-      ]);
+      await deleteStoredClicks(database, code);
       await forgetRedirectTarget(code);
     }),
   findLinkSnapshot: (code) =>

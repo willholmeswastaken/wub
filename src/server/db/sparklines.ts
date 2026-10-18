@@ -10,11 +10,6 @@ type UserLinkRow = {
   last_clicked: Date | number | null;
 };
 
-type ClickStamp = {
-  short_code: string;
-  timestamp: Date | number | null;
-};
-
 function asDate(value: Date | number): Date {
   return value instanceof Date ? value : new Date(value);
 }
@@ -35,44 +30,6 @@ export function sparklineDayKeys(now = new Date(), count = SPARKLINE_DAYS) {
 export function sparklineSince(now = new Date()) {
   const [firstDay] = sparklineDayKeys(now);
   return new Date(`${firstDay}T00:00:00.000Z`);
-}
-
-export function countClicksByDay(
-  timestamps: Array<Date | number | null>,
-  days: readonly string[],
-) {
-  const counts = new Map<string, number>();
-  for (const timestamp of timestamps) {
-    if (timestamp == null) continue;
-    const key = (timestamp instanceof Date ? timestamp : new Date(timestamp))
-      .toISOString()
-      .slice(0, 10);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  return days.map((day) => counts.get(day) ?? 0);
-}
-
-export function userLinksWithSparklines(
-  rows: UserLinkRow[],
-  clicks: ClickStamp[],
-  now = new Date(),
-): UserLink[] {
-  const days = sparklineDayKeys(now);
-  const byCode = new Map<string, Array<Date | number | null>>();
-  for (const click of clicks) {
-    const stamps = byCode.get(click.short_code) ?? [];
-    stamps.push(click.timestamp);
-    byCode.set(click.short_code, stamps);
-  }
-
-  return rows.map((row) => ({
-    short_code: row.short_code,
-    url: row.url,
-    created_at: asDate(row.created_at),
-    click_count: row.click_count,
-    last_clicked: asDateOrNull(row.last_clicked),
-    recentClicks: countClicksByDay(byCode.get(row.short_code) ?? [], days),
-  }));
 }
 
 export function userLinksWithSparklineCounts(
