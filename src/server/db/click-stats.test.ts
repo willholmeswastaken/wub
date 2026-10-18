@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
 
-import { loadUserClickStamps } from "@/server/db/click-stats-sql";
+import { loadUserClickCounts } from "@/server/db/click-stats-sql";
 import { clickAnalyticsFromD1 } from "@/server/db/d1-analytics";
 import { recordClickOnD1 } from "@/server/db/record-click-sql";
 import { applyD1Schema } from "@/server/db/schema-sql";
-import { userLinksWithSparklines } from "@/server/db/sparklines";
+import { userLinksWithSparklineCounts } from "@/server/db/sparklines";
 import { Miniflare } from "miniflare";
 
 const now = new Date("2026-10-04T12:00:00.000Z");
@@ -80,12 +80,12 @@ test("dashboard sparklines come from the click log", async () => {
       { event_id: "66666666-6666-4666-8666-666666666666", short_code: "docs" },
       Date.parse("2026-09-01T00:00:00.000Z"),
     );
-    const stamps = await loadUserClickStamps(
+    const counts = await loadUserClickCounts(
       d1,
       "user-1",
       new Date("2026-09-28T00:00:00.000Z"),
     );
-    const links = userLinksWithSparklines(
+    const links = userLinksWithSparklineCounts(
       [
         {
           short_code: "docs",
@@ -95,10 +95,12 @@ test("dashboard sparklines come from the click log", async () => {
           last_clicked: new Date(currentClick),
         },
       ],
-      stamps,
+      counts,
       now,
     );
-    expect(stamps).toHaveLength(1);
+    expect(counts).toEqual([
+      { short_code: "docs", day: "2026-10-04", count: 1 },
+    ]);
     expect(links[0]?.recentClicks).toEqual([0, 0, 0, 0, 0, 0, 1]);
   } finally {
     await miniflare.dispose();

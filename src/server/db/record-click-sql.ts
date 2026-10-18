@@ -15,10 +15,14 @@ WHERE short_code = ?1
   AND changes() = 1
 `;
 
+type StatementResult = {
+  meta?: { changes?: number; rows_read?: number };
+};
+
 type BoundStatement = {
-  run(): Promise<{ meta?: { changes?: number } }>;
+  run(): Promise<StatementResult>;
   first<T>(): Promise<T | null>;
-  all<T>(): Promise<{ results?: T[] }>;
+  all<T>(): Promise<StatementResult & { results?: T[] }>;
 };
 
 type Statement = {
@@ -27,10 +31,89 @@ type Statement = {
 
 export type ClickStatementDatabase = {
   prepare(query: string): Statement;
-  batch(
-    statements: BoundStatement[],
-  ): Promise<Array<{ meta?: { changes?: number } }>>;
+  batch(statements: BoundStatement[]): Promise<StatementResult[]>;
 };
+
+// Guest links expire after 30 minutes, so an hour of them is a small set. Stay
+// under D1's 100 bound parameters and under the 30s query limit by deleting
+// links and their clicks in bounded batches.
+const PURGE_LINK_BATCH = 40;
+const PURGE_CLICK_BATCH = 500;
+const MAX_PURGE_ROUNDS = 12;
+const MAX_CLICK_ROUNDS = 20;
+
+// INDEXED BY is load-bearing. (userId, created_at) also matches `userId IS NULL`,
+// and without stats the planner reads every guest link. D1 bills those rows.
+export const SELECT_EXPIRED_GUEST_LINKS_SQL = `
+SELECT short_code
+FROM wub_link INDEXED BY link_guest_expiry_idx
+WHERE "userId" IS NULL
+  AND expires_at IS NOT NULL
+  AND expires_at <= ?1
+LIMIT ${PURGE_LINK_BATCH}
+`;
+
+const DELETE_GUEST_EVENTS_SQL = `
+DELETE FROM wub_click_event
+WHERE rowid IN (
+  SELECT rowid
+  FROM wub_click_event INDEXED BY click_event_code_time_idx
+  WHERE short_code = ?1
+  LIMIT ${PURGE_CLICK_BATCH}
+)
+AND EXISTS (
+  SELECT 1 FROM wub_link
+  WHERE short_code = ?1
+    AND "userId" IS NULL
+    AND expires_at IS NOT NULL
+    AND expires_at <= ?2
+)
+`;
+
+const DELETE_GUEST_CLICKS_SQL = `
+DELETE FROM wub_click
+WHERE rowid IN (
+  SELECT rowid
+  FROM wub_click INDEXED BY click_short_code_idx
+  WHERE short_code = ?1
+  LIMIT ${PURGE_CLICK_BATCH}
+)
+AND EXISTS (
+  SELECT 1 FROM wub_link
+  WHERE short_code = ?1
+    AND "userId" IS NULL
+    AND expires_at IS NOT NULL
+    AND expires_at <= ?2
+)
+`;
+
+const DELETE_GUEST_LINK_SQL = `
+DELETE FROM wub_link
+WHERE short_code = ?1
+  AND "userId" IS NULL
+  AND expires_at IS NOT NULL
+  AND expires_at <= ?2
+`;
+
+const DELETE_CODE_EVENTS_SQL = `
+DELETE FROM wub_click_event
+WHERE rowid IN (
+  SELECT rowid
+  FROM wub_click_event INDEXED BY click_event_code_time_idx
+  WHERE short_code = ?1
+  LIMIT ${PURGE_CLICK_BATCH}
+)
+`;
+
+const DELETE_CODE_CLICKS_SQL = `
+DELETE FROM wub_click
+WHERE rowid IN (
+  SELECT rowid
+  FROM wub_click INDEXED BY click_short_code_idx
+  WHERE short_code = ?1
+  LIMIT ${PURGE_CLICK_BATCH}
+)
+`;
 
 export type RecordClickResult = "recorded" | "duplicate" | "not_found";
 
@@ -75,30 +158,89 @@ export async function recordClickOnD1(
   return link ? "duplicate" : "not_found";
 }
 
+export async function deleteStoredClicks(
+  database: ClickStatementDatabase,
+  code: string,
+) {
+  for (let round = 0; round < MAX_CLICK_ROUNDS; round += 1) {
+    const [events, clicks] = await database.batch([
+      database.prepare(DELETE_CODE_EVENTS_SQL).bind(code),
+      database.prepare(DELETE_CODE_CLICKS_SQL).bind(code),
+    ]);
+    const eventChanges = events?.meta?.changes ?? 0;
+    const clickChanges = clicks?.meta?.changes ?? 0;
+    if (eventChanges < PURGE_CLICK_BATCH && clickChanges < PURGE_CLICK_BATCH) {
+      return;
+    }
+  }
+}
+
 export async function deleteExpiredGuestLinksOnD1(
   database: ClickStatementDatabase,
   now = Date.now(),
 ) {
-  const deleted = await database
-    .prepare(
-      `DELETE FROM wub_link
-       WHERE "userId" IS NULL AND expires_at IS NOT NULL AND expires_at <= ?1
-       RETURNING short_code`,
-    )
-    .bind(now)
-    .all<{ short_code: string }>();
-  const codes = (deleted.results ?? []).map((row) => row.short_code);
+  const removed: string[] = [];
+  for (let round = 0; round < MAX_PURGE_ROUNDS; round += 1) {
+    const selected = await database
+      .prepare(SELECT_EXPIRED_GUEST_LINKS_SQL)
+      .bind(now)
+      .all<{ short_code: string }>();
+    const codes = (selected.results ?? []).map((row) => row.short_code);
+    if (codes.length === 0) break;
+
+    const finished = await drainGuestClicks(database, codes, now);
+    removed.push(...(await deleteGuestLinks(database, finished, now)));
+    if (codes.length < PURGE_LINK_BATCH) break;
+  }
+  return removed;
+}
+
+async function drainGuestClicks(
+  database: ClickStatementDatabase,
+  codes: readonly string[],
+  now: number,
+) {
+  let pending = [...codes];
+  for (
+    let round = 0;
+    round < MAX_CLICK_ROUNDS && pending.length > 0;
+    round += 1
+  ) {
+    const drained = await database.batch(
+      pending.flatMap((code) => [
+        database.prepare(DELETE_GUEST_EVENTS_SQL).bind(code, now),
+        database.prepare(DELETE_GUEST_CLICKS_SQL).bind(code, now),
+      ]),
+    );
+    pending = pending.filter((_, index) => {
+      const events = drained[index * 2]?.meta?.changes ?? 0;
+      const clicks = drained[index * 2 + 1]?.meta?.changes ?? 0;
+      return events >= PURGE_CLICK_BATCH || clicks >= PURGE_CLICK_BATCH;
+    });
+  }
+  const unfinished = new Set(pending);
+  return codes.filter((code) => !unfinished.has(code));
+}
+
+async function deleteGuestLinks(
+  database: ClickStatementDatabase,
+  codes: readonly string[],
+  now: number,
+) {
   if (codes.length === 0) return [];
-  const placeholders = codes.map((_, index) => `?${index + 1}`).join(", ");
-  await database.batch([
-    database
-      .prepare(
-        `DELETE FROM wub_click_event WHERE short_code IN (${placeholders})`,
-      )
-      .bind(...codes),
-    database
-      .prepare(`DELETE FROM wub_click WHERE short_code IN (${placeholders})`)
-      .bind(...codes),
-  ]);
-  return codes;
+  const deleted = await database.batch(
+    codes.flatMap((code) => [
+      database.prepare(DELETE_GUEST_EVENTS_SQL).bind(code, now),
+      database.prepare(DELETE_GUEST_CLICKS_SQL).bind(code, now),
+      database.prepare(DELETE_GUEST_LINK_SQL).bind(code, now),
+    ]),
+  );
+  const removed: string[] = [];
+  for (let index = 0; index < codes.length; index += 1) {
+    const code = codes[index];
+    if (code && (deleted[index * 3 + 2]?.meta?.changes ?? 0) > 0) {
+      removed.push(code);
+    }
+  }
+  return removed;
 }
