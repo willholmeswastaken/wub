@@ -27,6 +27,14 @@ export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_click_event" ADD COLUMN "referrer" text`,
 ];
 
+// Applied after the bootstrap indexes so a database created from this list
+// matches migrations/d1/0005_click_event_covering_index.sql.
+export const D1_PERF_INDEXES = [
+  `DROP INDEX IF EXISTS "click_event_short_code_idx"`,
+  `DROP INDEX IF EXISTS "click_event_code_time_idx"`,
+  `CREATE INDEX IF NOT EXISTS "click_event_code_time_idx" ON "wub_click_event" ("short_code", "recorded_at", "country", "city", "device", "browser", "os", "referrer")`,
+];
+
 export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {
   for (const statement of D1_BOOTSTRAP_STATEMENTS) {
     await exec(statement);
@@ -38,5 +46,8 @@ export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {
       const message = cause instanceof Error ? cause.message : String(cause);
       if (!/duplicate column/i.test(message)) throw cause;
     }
+  }
+  for (const statement of D1_PERF_INDEXES) {
+    await exec(statement);
   }
 }

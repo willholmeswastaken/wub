@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
 
-import { loadUserClickStamps } from "@/server/db/click-stats-sql";
+import { previousRangeStart } from "@/lib/click-date-range";
+import { analyticsFromStoredClicks } from "@/server/db/click-stats";
+import {
+  loadStoredClicks,
+  loadUserClickStamps,
+} from "@/server/db/click-stats-sql";
 import { clickAnalyticsFromD1 } from "@/server/db/d1-analytics";
 import { recordClickOnD1 } from "@/server/db/record-click-sql";
 import { applyD1Schema } from "@/server/db/schema-sql";
@@ -104,6 +109,95 @@ test("dashboard sparklines come from the click log", async () => {
     await miniflare.dispose();
   }
 });
+
+test("sql analytics match the in-memory aggregation", async () => {
+  const { miniflare, d1 } = await database();
+  try {
+    await insertLink(d1, "docs", "user-1");
+    const rows = [
+      [
+        "2026-10-04T08:00:00.000Z",
+        "US",
+        "Austin",
+        "mobile",
+        "Chrome",
+        "iOS",
+        "github.com",
+      ],
+      [
+        "2026-10-04T18:00:00.000Z",
+        "US",
+        "Austin",
+        "mobile",
+        "Safari",
+        "iOS",
+        "direct",
+      ],
+      [
+        "2026-10-03T02:00:00.000Z",
+        "GB",
+        "London",
+        "desktop",
+        "Firefox",
+        "macOS",
+        "",
+      ],
+      [
+        "2026-10-02T15:10:00.000Z",
+        "unknown",
+        "unknown",
+        "",
+        "unknown",
+        "unknown",
+        "direct",
+      ],
+      [
+        "2026-09-25T08:00:00.000Z",
+        "DE",
+        "Berlin",
+        "tablet",
+        "Chrome",
+        "Android",
+        "t.co",
+      ],
+      [
+        "2026-08-01T00:00:00.000Z",
+        "US",
+        "Austin",
+        "mobile",
+        "Chrome",
+        "iOS",
+        "direct",
+      ],
+    ] as const;
+    for (const [index, row] of rows.entries()) {
+      await d1
+        .prepare(
+          `INSERT INTO wub_click_event (
+             event_id, short_code, recorded_at, country, city, device, browser, os, referrer
+           ) VALUES (?1, 'docs', ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        )
+        .bind(`parity-${index}`, Date.parse(row[0]), ...row.slice(1))
+        .run();
+    }
+
+    for (const range of ["24h", "7d", "30d", "90d"] as const) {
+      const aggregated = await clickAnalyticsFromD1(d1, "docs", range, now);
+      const stored = analyticsFromStoredClicks(
+        await loadStoredClicks(d1, "docs", previousStart(range), now),
+        range,
+        now,
+      );
+      expect(aggregated).toEqual(stored);
+    }
+  } finally {
+    await miniflare.dispose();
+  }
+});
+
+function previousStart(range: "24h" | "7d" | "30d" | "90d") {
+  return previousRangeStart(range, now);
+}
 
 async function insertLink(
   d1: Awaited<ReturnType<typeof database>>["d1"],

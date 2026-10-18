@@ -108,6 +108,36 @@ input {
   font-size: 16px;
 }
 
+@keyframes wub-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes wub-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wub-rise {
+  animation: wub-rise 0.2s ease-out;
+}
+
+.wub-fade-up {
+  animation: wub-fade-up 0.2s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

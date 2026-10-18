@@ -2,26 +2,10 @@
 
 import { type TempLink, useHydrated, useLinkStore } from "@/stores/link";
 import { api } from "@/trpc/react";
-import { motion } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import ShortLink from "./short-link";
-
-const container = {
-  hidden: { opacity: 1 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-};
 
 function createdTime(link: TempLink) {
   if (link.createdAt) return new Date(link.createdAt).getTime();
@@ -40,17 +24,14 @@ function LinkList({
   clicksFor: (link: TempLink) => number;
 }) {
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="surface overflow-hidden"
-    >
+    <div className="surface overflow-hidden">
       {links.map((link, index) => (
-        <motion.div
+        <div
           key={link.shortCode}
-          variants={item}
-          className={index > 0 ? "border-t border-border" : undefined}
+          className={
+            index > 0 ? "wub-fade-up border-t border-border" : "wub-fade-up"
+          }
+          style={{ animationDelay: `${index * 50}ms` }}
         >
           <ShortLink
             url={link.url}
@@ -58,9 +39,9 @@ function LinkList({
             shortUrl={link.shortUrl}
             expiresAt={link.expiresAt}
           />
-        </motion.div>
+        </div>
       ))}
-    </motion.div>
+    </div>
   );
 }
 
