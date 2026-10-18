@@ -28,11 +28,12 @@ export const D1_ADDED_COLUMNS = [
 ];
 
 // Applied after the bootstrap indexes so a database created from this list
-// matches migrations/d1/0005_click_event_covering_index.sql.
+// matches migrations/d1/0005_click_event_covering_index.sql. Create the
+// covering index first; the drops only remove the narrower indexes.
 export const D1_PERF_INDEXES = [
+  `CREATE INDEX IF NOT EXISTS "click_event_covering_idx" ON "wub_click_event" ("short_code", "recorded_at", "country", "city", "device", "browser", "os", "referrer")`,
   `DROP INDEX IF EXISTS "click_event_short_code_idx"`,
   `DROP INDEX IF EXISTS "click_event_code_time_idx"`,
-  `CREATE INDEX IF NOT EXISTS "click_event_code_time_idx" ON "wub_click_event" ("short_code", "recorded_at", "country", "city", "device", "browser", "os", "referrer")`,
 ];
 
 export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {

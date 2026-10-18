@@ -36,11 +36,22 @@ function workerFallbackStubs(): Plugin {
       if (source === "pino") return pinoStub;
       if (packageFallbacks.has(source)) return fallbackStub;
       if (!importer || !source.startsWith(".")) return null;
-      const resolved = path.resolve(path.dirname(importer), source);
-      const withExtension = resolved.endsWith(".ts")
-        ? resolved
-        : `${resolved}.ts`;
-      return localFallbacks[withExtension] ?? null;
+      const importerPath = importer.startsWith("file:")
+        ? fileURLToPath(importer)
+        : importer.split("?")[0]!;
+      const specifier = source.split("?")[0]!;
+      const resolved = path.resolve(path.dirname(importerPath), specifier);
+      const candidates = [
+        resolved,
+        `${resolved}.ts`,
+        `${resolved}.tsx`,
+        `${resolved}.js`,
+      ];
+      for (const candidate of candidates) {
+        const stub = localFallbacks[candidate];
+        if (stub) return stub;
+      }
+      return null;
     },
   };
 }

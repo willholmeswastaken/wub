@@ -131,7 +131,7 @@ input {
 }
 
 .wub-rise {
-  animation: wub-rise 0.2s ease-out;
+  animation: wub-rise 0.2s ease-out both;
 }
 
 .wub-fade-up {

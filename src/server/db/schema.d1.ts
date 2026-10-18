@@ -46,9 +46,9 @@ export const clickEvents = createTable(
     referrer: text("referrer"),
   },
   (event) => ({
-    // Covers analytics GROUP BY and sparkline stamp reads. Replaces the
-    // short_code-only index, which is a prefix of this one.
-    shortCodeTimeIdx: index("click_event_code_time_idx").on(
+    // Covers analytics GROUP BY and sparkline stamp reads. Replaces
+    // click_event_short_code_idx and the narrow click_event_code_time_idx.
+    coveringIdx: index("click_event_covering_idx").on(
       event.short_code,
       event.recorded_at,
       event.country,

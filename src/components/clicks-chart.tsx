@@ -3,7 +3,7 @@
 import { type DateObject } from "@/lib/click-date-range";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 
 function changeLabel(current: number, previous: number) {
   if (previous === 0) return current > 0 ? "New" : null;
@@ -11,19 +11,33 @@ function changeLabel(current: number, previous: number) {
   return `${change > 0 ? "+" : ""}${change}%`;
 }
 
-const VIEW_W = 640;
-const VIEW_H = 220;
-const PAD_X = 28;
+function formatCount(value: number) {
+  // Fixed locale so the server render matches the client. The default
+  // locale can differ between the Worker and the browser.
+  return value.toLocaleString("en-US");
+}
+
+export const CHART_VIEW_W = 640;
+export const CHART_VIEW_H = 220;
+export const CHART_PAD_X = 28;
 const PAD_TOP = 16;
 const PAD_BOTTOM = 28;
 
+export function chartIndexForViewX(viewX: number, length: number) {
+  if (length <= 1) return 0;
+  const innerW = CHART_VIEW_W - CHART_PAD_X * 2;
+  const t = (viewX - CHART_PAD_X) / innerW;
+  const clamped = Math.min(1, Math.max(0, t));
+  return Math.round(clamped * (length - 1));
+}
+
 function chartGeometry(data: DateObject[]) {
   const max = Math.max(...data.map((point) => point.clicks), 1);
-  const innerW = VIEW_W - PAD_X * 2;
-  const innerH = VIEW_H - PAD_TOP - PAD_BOTTOM;
+  const innerW = CHART_VIEW_W - CHART_PAD_X * 2;
+  const innerH = CHART_VIEW_H - PAD_TOP - PAD_BOTTOM;
   const points = data.map((point, index) => {
     const x =
-      PAD_X +
+      CHART_PAD_X +
       (data.length <= 1 ? innerW / 2 : (index / (data.length - 1)) * innerW);
     const y = PAD_TOP + innerH - (point.clicks / max) * innerH;
     return { x, y, point };
@@ -50,6 +64,27 @@ function labelSlots(length: number) {
   );
 }
 
+function viewBoxX(svg: SVGSVGElement, clientX: number, clientY: number) {
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return null;
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = clientY;
+  return point.matrixTransform(matrix.inverse()).x;
+}
+
+function tooltipLeft(svg: SVGSVGElement, frame: HTMLElement, viewX: number) {
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return 0;
+  const point = svg.createSVGPoint();
+  point.x = viewX;
+  point.y = 0;
+  const screen = point.matrixTransform(matrix);
+  const rect = frame.getBoundingClientRect();
+  const raw = screen.x - rect.left;
+  return Math.min(Math.max(0, raw), Math.max(0, rect.width - 128));
+}
+
 export const ClicksChart = ({
   chartData,
   totalClicks,
@@ -66,8 +101,30 @@ export const ClicksChart = ({
   const hydratedChange = changeLabel(totalClicks, previousTotalClicks);
   const isUp = totalClicks >= previousTotalClicks;
   const geometry = chartGeometry(chartData);
-  const [active, setActive] = useState<number | null>(null);
-  const activePoint = active == null ? null : (geometry.points[active] ?? null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState<{ index: number; left: number } | null>(
+    null,
+  );
+  const activePoint =
+    active != null && active.index < geometry.points.length
+      ? (geometry.points[active.index] ?? null)
+      : null;
+
+  function selectFromPointer(event: PointerEvent<SVGSVGElement>) {
+    const frame = frameRef.current;
+    if (!frame || geometry.points.length === 0) return;
+    const x = viewBoxX(event.currentTarget, event.clientX, event.clientY);
+    if (x == null) return;
+    const index = chartIndexForViewX(x, geometry.points.length);
+    const point = geometry.points[index];
+    if (!point) return;
+    const left = Math.round(tooltipLeft(event.currentTarget, frame, point.x));
+    setActive((current) =>
+      current?.index === index && current.left === left
+        ? current
+        : { index, left },
+    );
+  }
 
   return (
     <div>
@@ -75,7 +132,7 @@ export const ClicksChart = ({
         <div>
           <div className="flex flex-wrap items-baseline gap-4">
             <p className="text-7xl font-medium tabular-nums tracking-[-0.06em] md:text-8xl">
-              {totalClicks.toLocaleString()}
+              {formatCount(totalClicks)}
             </p>
             {hydratedChange && (
               <span
@@ -99,50 +156,48 @@ export const ClicksChart = ({
           <p className="mt-2 text-sm text-muted-foreground">
             Clicks · {periodLabel.toLowerCase()}
             {hydratedChange && hydratedChange !== "New" && (
-              <>
-                {" "}
-                · {previousTotalClicks.toLocaleString()} in the period before
-              </>
+              <> · {formatCount(previousTotalClicks)} in the period before</>
             )}
           </p>
         </div>
         {aside}
       </div>
-      <div className="relative mt-8 h-64 w-full md:h-80">
+      <div ref={frameRef} className="relative mt-8 h-64 w-full md:h-80">
         <svg
-          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-          className="h-full w-full text-brand"
-          aria-label={`${totalClicks.toLocaleString()} clicks, ${periodLabel.toLowerCase()}`}
-          onPointerLeave={() => setActive(null)}
-          onPointerMove={(event) => {
-            if (geometry.points.length === 0) return;
-            const rect = event.currentTarget.getBoundingClientRect();
-            const ratio = (event.clientX - rect.left) / rect.width;
-            const index = Math.round(
-              Math.min(1, Math.max(0, ratio)) * (geometry.points.length - 1),
-            );
-            setActive(index);
+          viewBox={`0 0 ${CHART_VIEW_W} ${CHART_VIEW_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="h-full w-full cursor-crosshair text-brand"
+          aria-label={`${formatCount(totalClicks)} clicks, ${periodLabel.toLowerCase()}`}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "mouse") setActive(null);
           }}
+          onPointerMove={selectFromPointer}
+          onPointerDown={selectFromPointer}
         >
           <line
-            x1={PAD_X}
-            x2={VIEW_W - PAD_X}
-            y1={VIEW_H - PAD_BOTTOM}
-            y2={VIEW_H - PAD_BOTTOM}
+            x1={CHART_PAD_X}
+            x2={CHART_VIEW_W - CHART_PAD_X}
+            y1={CHART_VIEW_H - PAD_BOTTOM}
+            y2={CHART_VIEW_H - PAD_BOTTOM}
             className="stroke-border"
             strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
           />
           <text
             x="4"
-            y={PAD_TOP + 4}
-            className="fill-muted-foreground text-[11px]"
+            y={PAD_TOP}
+            fontSize="11"
+            dominantBaseline="hanging"
+            className="fill-muted-foreground"
           >
-            {geometry.max.toLocaleString()}
+            {formatCount(geometry.max)}
           </text>
           <text
             x="4"
-            y={VIEW_H - PAD_BOTTOM}
-            className="fill-muted-foreground text-[11px]"
+            y={CHART_VIEW_H - PAD_BOTTOM - 6}
+            fontSize="11"
+            textAnchor="start"
+            className="fill-muted-foreground"
           >
             0
           </text>
@@ -157,6 +212,7 @@ export const ClicksChart = ({
               strokeWidth="2"
               strokeLinejoin="round"
               strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
             />
           )}
           {activePoint && (
@@ -165,9 +221,10 @@ export const ClicksChart = ({
                 x1={activePoint.x}
                 x2={activePoint.x}
                 y1={PAD_TOP}
-                y2={VIEW_H - PAD_BOTTOM}
+                y2={CHART_VIEW_H - PAD_BOTTOM}
                 className="stroke-border"
                 strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
               />
               <circle
                 cx={activePoint.x}
@@ -182,27 +239,38 @@ export const ClicksChart = ({
             if (!point) return null;
             return (
               <text
-                key={point.point.date}
+                key={`${point.point.date}-${index}`}
                 x={point.x}
-                y={VIEW_H - 8}
+                y={CHART_VIEW_H - 8}
+                fontSize="11"
                 textAnchor="middle"
-                className="fill-muted-foreground text-[11px]"
+                className="fill-muted-foreground"
               >
                 {point.point.date}
               </text>
             );
           })}
         </svg>
+        <div className="sr-only" aria-live="polite">
+          {activePoint
+            ? `${activePoint.point.date}, ${formatCount(activePoint.point.clicks)} clicks`
+            : ""}
+        </div>
+        <ul className="sr-only">
+          {chartData.map((point, index) => (
+            <li key={`${point.date}-${index}`}>
+              {point.date}: {formatCount(point.clicks)} clicks
+            </li>
+          ))}
+        </ul>
         {activePoint && (
           <div
             className="pointer-events-none absolute top-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm"
-            style={{
-              left: `clamp(0px, ${(activePoint.x / VIEW_W) * 100}%, calc(100% - 8rem))`,
-            }}
+            style={{ left: active?.left ?? 0 }}
           >
             <p className="text-muted-foreground">{activePoint.point.date}</p>
             <p className="font-medium tabular-nums">
-              {activePoint.point.clicks.toLocaleString()} clicks
+              {formatCount(activePoint.point.clicks)} clicks
             </p>
           </div>
         )}

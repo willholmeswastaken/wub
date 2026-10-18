@@ -45,17 +45,27 @@ export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
   const qrRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [QRCodeSVG, setQRCodeSVG] = useState<QRCodeComponent | null>(null);
+  const [qrError, setQrError] = useState(false);
 
   useEffect(() => {
-    if (!open || QRCodeSVG) return;
+    if (!open || QRCodeSVG || qrError) return;
     let cancelled = false;
-    void import("qrcode.react").then((module) => {
-      if (!cancelled) setQRCodeSVG(() => module.QRCodeSVG);
-    });
+    void import("qrcode.react")
+      .then((module) => {
+        if (cancelled) return;
+        if (typeof module.QRCodeSVG !== "function") {
+          setQrError(true);
+          return;
+        }
+        setQRCodeSVG(() => module.QRCodeSVG);
+      })
+      .catch(() => {
+        if (!cancelled) setQrError(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, [open, QRCodeSVG]);
+  }, [open, QRCodeSVG, qrError]);
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -110,11 +120,19 @@ export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
                 includeMargin
                 className="h-auto w-full"
               />
+            ) : qrError ? (
+              <p className="flex aspect-square w-full items-center justify-center text-center text-sm text-muted-foreground">
+                Couldn't load the QR code.
+              </p>
             ) : (
               <div className="aspect-square w-full animate-pulse rounded-xl bg-muted/40" />
             )}
           </div>
-          <Button onClick={handleDownload} className="w-full">
+          <Button
+            onClick={handleDownload}
+            className="w-full"
+            disabled={!QRCodeSVG}
+          >
             Download QR code
           </Button>
         </div>

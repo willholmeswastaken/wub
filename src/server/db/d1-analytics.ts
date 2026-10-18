@@ -40,6 +40,9 @@ function ranked(rows: CountRow[]): CountItem[] {
     .map((row) => ({ key: row.key, count: asNumber(row.n) }));
 }
 
+// Equal counts break ties with SQLite's binary collation, which can differ
+// from String#localeCompare. A strictly higher count is never dropped.
+// Totals are a separate SUM, not the sum of these limited lists.
 function dimensionSql(column: string, skipUnknown: boolean) {
   const unknown = skipUnknown ? ` AND ${column} <> 'unknown'` : "";
   return `
