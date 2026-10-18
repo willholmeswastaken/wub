@@ -75,7 +75,7 @@ test("hot queries use indexes and skip unrelated rows", async () => {
     expect(clicks.results).toHaveLength(2);
     expect(withinBudget(clicks.meta?.rows_read, 10)).toBe("indexed");
     expect(await plan(d1, LOAD_CLICKS_SQL, "docs", recent - 1, now)).toContain(
-      "click_event_code_time_idx",
+      "click_event_covering_idx",
     );
 
     const counts = await d1
@@ -93,7 +93,7 @@ test("hot queries use indexes and skip unrelated rows", async () => {
       recent,
     );
     expect(sparklinePlan).toContain("link_user_created_idx");
-    expect(sparklinePlan).toContain("click_event_code_time_idx");
+    expect(sparklinePlan).toContain("click_event_covering_idx");
     expect(sparklinePlan.includes("SCAN") ? sparklinePlan : "indexed").toBe(
       "indexed",
     );

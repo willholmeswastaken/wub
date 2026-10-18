@@ -30,6 +30,20 @@ export const D1_ADDED_COLUMNS = [
   `ALTER TABLE "wub_click_event" ADD COLUMN "referrer" text`,
 ];
 
+// Named by the click-log queries that use INDEXED BY. The leftmost columns
+// are (short_code, recorded_at), so it serves the same ranges as the narrow
+// click_event_code_time_idx that 0005 drops.
+export const CLICK_EVENT_RANGE_INDEX = "click_event_covering_idx";
+
+// Applied after the bootstrap indexes so a database created from this list
+// matches migrations/d1/0005_click_event_covering_index.sql. Create the
+// covering index first; the drops only remove the narrower indexes.
+export const D1_PERF_INDEXES = [
+  `CREATE INDEX IF NOT EXISTS "click_event_covering_idx" ON "wub_click_event" ("short_code", "recorded_at", "country", "city", "device", "browser", "os", "referrer")`,
+  `DROP INDEX IF EXISTS "click_event_short_code_idx"`,
+  `DROP INDEX IF EXISTS "click_event_code_time_idx"`,
+];
+
 export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {
   for (const statement of D1_BOOTSTRAP_STATEMENTS) {
     await exec(statement);
@@ -41,5 +55,8 @@ export async function applyD1Schema(exec: (query: string) => Promise<unknown>) {
       const message = cause instanceof Error ? cause.message : String(cause);
       if (!/duplicate column/i.test(message)) throw cause;
     }
+  }
+  for (const statement of D1_PERF_INDEXES) {
+    await exec(statement);
   }
 }

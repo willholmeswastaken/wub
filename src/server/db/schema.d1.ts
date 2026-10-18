@@ -55,11 +55,18 @@ export const clickEvents = createTable(
     referrer: text("referrer"),
   },
   (event) => ({
-    // Leading short_code covers equality lookups and deletes. A second
-    // short_code-only index would write an extra row on every click.
-    shortCodeTimeIdx: index("click_event_code_time_idx").on(
+    // Leading short_code covers equality lookups, range reads, and deletes.
+    // The dimension columns make analytics index-only. A second short_code
+    // index would write an extra row on every click.
+    coveringIdx: index("click_event_covering_idx").on(
       event.short_code,
       event.recorded_at,
+      event.country,
+      event.city,
+      event.device,
+      event.browser,
+      event.os,
+      event.referrer,
     ),
   }),
 );

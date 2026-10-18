@@ -1,11 +1,13 @@
 import { type StoredClick } from "./click-stats";
 import { type ClickStatementDatabase } from "./record-click-sql";
+import { CLICK_EVENT_RANGE_INDEX } from "./schema-sql";
 
 // INDEXED BY keeps the range on (short_code, recorded_at). A short_code-only
-// plan would read every click this link has ever received.
+// plan would read every click this link has ever received. The covering index
+// has that prefix and also holds the dimension columns this SELECT reads.
 export const LOAD_CLICKS_SQL = `
 SELECT event_id, recorded_at, country, city, device, browser, os, referrer
-FROM wub_click_event INDEXED BY click_event_code_time_idx
+FROM wub_click_event INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
 WHERE short_code = ?1
   AND recorded_at >= ?2
   AND recorded_at < ?3
@@ -18,7 +20,7 @@ SELECT l.short_code AS short_code,
        strftime('%Y-%m-%d', e.recorded_at / 1000, 'unixepoch') AS day,
        count(*) AS count
 FROM wub_link AS l INDEXED BY link_user_created_idx
-CROSS JOIN wub_click_event AS e INDEXED BY click_event_code_time_idx
+CROSS JOIN wub_click_event AS e INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
 WHERE l."userId" = ?1
   AND e.short_code = l.short_code
   AND e.recorded_at >= ?2

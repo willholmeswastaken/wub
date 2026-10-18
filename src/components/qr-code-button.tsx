@@ -11,8 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { QrCode } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 interface QRCodeButtonProps {
   url: string;
@@ -32,8 +31,41 @@ function downloadName(url: string) {
   }
 }
 
+type QRCodeProps = {
+  value: string;
+  size?: number;
+  level?: "L" | "M" | "Q" | "H";
+  includeMargin?: boolean;
+  className?: string;
+};
+
+type QRCodeComponent = (props: QRCodeProps) => ReactNode;
+
 export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
   const qrRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [QRCodeSVG, setQRCodeSVG] = useState<QRCodeComponent | null>(null);
+  const [qrError, setQrError] = useState(false);
+
+  useEffect(() => {
+    if (!open || QRCodeSVG || qrError) return;
+    let cancelled = false;
+    void import("qrcode.react")
+      .then((module) => {
+        if (cancelled) return;
+        if (typeof module.QRCodeSVG !== "function") {
+          setQrError(true);
+          return;
+        }
+        setQRCodeSVG(() => module.QRCodeSVG);
+      })
+      .catch(() => {
+        if (!cancelled) setQrError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, QRCodeSVG, qrError]);
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -60,7 +92,7 @@ export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
           <button type="button" className="flex flex-col items-center gap-2">
@@ -80,15 +112,27 @@ export function QRCodeButton({ url, trigger }: QRCodeButtonProps) {
         </DialogHeader>
         <div className="flex flex-col items-center gap-4">
           <div ref={qrRef} className="w-full max-w-64">
-            <QRCodeSVG
-              value={url}
-              size={256}
-              level="H"
-              includeMargin
-              className="h-auto w-full"
-            />
+            {QRCodeSVG ? (
+              <QRCodeSVG
+                value={url}
+                size={256}
+                level="H"
+                includeMargin
+                className="h-auto w-full"
+              />
+            ) : qrError ? (
+              <p className="flex aspect-square w-full items-center justify-center text-center text-sm text-muted-foreground">
+                Couldn't load the QR code.
+              </p>
+            ) : (
+              <div className="aspect-square w-full animate-pulse rounded-xl bg-muted/40" />
+            )}
           </div>
-          <Button onClick={handleDownload} className="w-full">
+          <Button
+            onClick={handleDownload}
+            className="w-full"
+            disabled={!QRCodeSVG}
+          >
             Download QR code
           </Button>
         </div>

@@ -1,3 +1,5 @@
+import { CLICK_EVENT_RANGE_INDEX } from "./schema-sql";
+
 const INSERT_CLICK_EVENT_SQL = `
 INSERT INTO wub_click_event (
   event_id, short_code, recorded_at, country, city, device, browser, os, referrer
@@ -53,11 +55,11 @@ WHERE "userId" IS NULL
 LIMIT ${PURGE_LINK_BATCH}
 `;
 
-const DELETE_GUEST_EVENTS_SQL = `
+export const DELETE_GUEST_EVENTS_SQL = `
 DELETE FROM wub_click_event
 WHERE rowid IN (
   SELECT rowid
-  FROM wub_click_event INDEXED BY click_event_code_time_idx
+  FROM wub_click_event INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
   WHERE short_code = ?1
   LIMIT ${PURGE_CLICK_BATCH}
 )
@@ -95,11 +97,11 @@ WHERE short_code = ?1
   AND expires_at <= ?2
 `;
 
-const DELETE_CODE_EVENTS_SQL = `
+export const DELETE_CODE_EVENTS_SQL = `
 DELETE FROM wub_click_event
 WHERE rowid IN (
   SELECT rowid
-  FROM wub_click_event INDEXED BY click_event_code_time_idx
+  FROM wub_click_event INDEXED BY ${CLICK_EVENT_RANGE_INDEX}
   WHERE short_code = ?1
   LIMIT ${PURGE_CLICK_BATCH}
 )

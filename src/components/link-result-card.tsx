@@ -4,7 +4,6 @@ import { QRCodeButton } from "@/components/qr-code-button";
 import { Button } from "@/components/ui/button";
 import { UrlFavicon } from "@/components/url-favicon";
 import { copyToClipboard } from "@/lib/clipboard";
-import { motion } from "framer-motion";
 import { Check, Copy, ExternalLink, QrCode, Share2 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -49,12 +48,7 @@ export function LinkResultCard({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-      className="surface w-full overflow-hidden text-left"
-    >
+    <div className="surface wub-rise w-full overflow-hidden text-left">
       <div className="p-5">
         <p
           className="flex items-center gap-1.5 text-sm text-muted-foreground"
@@ -113,6 +107,6 @@ export function LinkResultCard({
         </div>
       </div>
       {footer}
-    </motion.div>
+    </div>
   );
 }
